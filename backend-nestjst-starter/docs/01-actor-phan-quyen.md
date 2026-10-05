@@ -22,17 +22,17 @@ Admin có mọi quyền của Staff. Bảng dưới chỉ ra ranh giới giữa 
 | Chức năng | Customer | Staff | Admin |
 | --- | --- | --- | --- |
 | Xem, tìm kiếm sản phẩm | Có | Có | Có |
-| Mua hàng, quản lý giỏ, xem đơn của mình | Có | Không | Không |
+| Mua hàng (áp tối đa một voucher), quản lý giỏ, xem đơn của mình | Có | Không | Không |
 | Tự hủy đơn của mình (đến hết trạng thái CONFIRMED) | Có | Không | Không |
 | CRUD sản phẩm, biến thể, danh mục, ảnh | Không | Có | Có |
-| Nhập kho, điều chỉnh tồn (bắt buộc lý do) | Không | Có | Có |
-| Xem lịch sử nhập/xuất kho | Không | Có | Có |
+| Nhập kho, điều chỉnh tồn | Không | Có | Có |
 | Xem và xử lý mọi đơn hàng | Không | Có | Có |
 | Hủy đơn chưa thanh toán (bắt buộc lý do) | Không | Có | Có |
 | Hủy hoặc hoàn tiền đơn đã thanh toán | Không | Chỉ tạo yêu cầu | Duyệt |
 | Xem thông tin khách và lịch sử đơn để hỗ trợ | Không | Có | Có |
 | Khóa, mở khóa tài khoản khách | Không | Không | Có |
 | Tạo, sửa, khóa tài khoản Staff; gán role | Không | Không | Có |
+| Tạo, sửa, khóa/mở voucher | Không | Không | Có |
 | Báo cáo vận hành (số đơn, tồn kho) | Không | Có | Có |
 | Báo cáo doanh thu, dashboard tổng quan | Không | Không | Có |
 | Cấu hình hệ thống (phí ship, cổng thanh toán, email) | Không | Không | Có |

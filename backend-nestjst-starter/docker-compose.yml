@@ -1,0 +1,29 @@
+# Hạ tầng cho môi trường dev. Giá trị ${...} được docker compose đọc từ file .env cùng thư mục.
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ecommerce_mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - '127.0.0.1:3307:3306' # host:container (3306 trên host đã bị MySQL cài sẵn chiếm)
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE} # tự tạo sẵn database này lần khởi tạo đầu tiên
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql # giữ dữ liệu khi tắt/xóa container
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro # script chạy một lần khi khởi tạo volume
+    healthcheck:
+      # $$ để biến được đọc bên trong container thay vì bị compose thay thế
+      test: ['CMD-SHELL', 'mysqladmin ping -h localhost -u root -p"$$MYSQL_ROOT_PASSWORD" --silent']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  mysql_data:

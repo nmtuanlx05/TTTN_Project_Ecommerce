@@ -18,7 +18,7 @@ Yêu cầu chia theo ba phía: người dùng, Admin, Staff. Ưu tiên **MVP** l
 | BR-U-10 | Tự hủy đơn khi đơn chưa vào giai đoạn đóng gói (đến hết trạng thái CONFIRMED) | MVP |
 | BR-U-11 | Quản lý hồ sơ cá nhân (tên, số điện thoại), đổi mật khẩu | MVP |
 | BR-U-12 | Sổ địa chỉ nhiều địa chỉ | V2 |
-| BR-U-13 | Áp mã giảm giá | V2 |
+| BR-U-13 | Áp mã giảm giá (tối đa một mã mỗi đơn, guest dùng được) | MVP |
 | BR-U-14 | Yêu cầu đổi/trả hàng | V2 |
 | BR-U-15 | Đánh giá sản phẩm, wishlist | V2 |
 
@@ -35,7 +35,7 @@ Yêu cầu chia theo ba phía: người dùng, Admin, Staff. Ưu tiên **MVP** l
 | BR-A-07 | Duyệt yêu cầu hủy, hoàn tiền đối với đơn đã thanh toán | MVP |
 | BR-A-08 | Cấu hình hệ thống: phí ship, phương thức thanh toán, thông tin liên hệ, email | MVP |
 | BR-A-09 | Xem nhật ký thao tác (ai làm gì, lúc nào) | V2 |
-| BR-A-10 | Tạo và quản lý khuyến mãi, voucher | V2 |
+| BR-A-10 | Tạo và quản lý voucher (mã giảm giá) | MVP |
 | BR-A-11 | Quản lý banner, nội dung trang chủ | V2 |
 | BR-A-12 | Báo cáo lợi nhuận (cần giá vốn) | V2 |
 
@@ -53,11 +53,11 @@ Yêu cầu chia theo ba phía: người dùng, Admin, Staff. Ưu tiên **MVP** l
 
 | Mã | Yêu cầu | Ưu tiên |
 | --- | --- | --- |
-| BR-S-04 | Nhập kho: chọn biến thể, số lượng, ghi chú. Staff tự nhập, không cần Admin duyệt | MVP |
+| BR-S-04 | Nhập kho: chọn biến thể, số lượng; cộng trực tiếp vào `stock`. Staff tự nhập, không cần Admin duyệt | MVP |
 | BR-S-05 | Xuất kho tự động theo đơn khi đơn chuyển sang SHIPPING | MVP |
-| BR-S-06 | Điều chỉnh tồn thủ công (kiểm kê), bắt buộc nhập lý do | MVP |
+| BR-S-06 | Điều chỉnh tồn thủ công (kiểm kê) | MVP |
 | BR-S-07 | Xem tồn kho theo biến thể, lọc biến thể sắp hết hàng | MVP |
-| BR-S-08 | Xem lịch sử nhập, xuất, điều chỉnh | MVP |
+| BR-S-08 | Xem lịch sử nhập, xuất, điều chỉnh | V2 |
 | BR-S-09 | Nhập kho theo phiếu, nhà cung cấp | V2 |
 
 ### 3.3 Đơn hàng
@@ -65,7 +65,7 @@ Yêu cầu chia theo ba phía: người dùng, Admin, Staff. Ưu tiên **MVP** l
 | Mã | Yêu cầu | Ưu tiên |
 | --- | --- | --- |
 | BR-S-10 | Xem danh sách đơn, lọc theo trạng thái, ngày, mã đơn, số điện thoại | MVP |
-| BR-S-11 | Xác nhận đơn và chuyển trạng thái theo đúng chuỗi hợp lệ | MVP |
+| BR-S-11 | Xác nhận đơn (hệ thống gán người xác nhận làm người phụ trách đơn, `handledById`) và chuyển trạng thái theo đúng chuỗi hợp lệ | MVP |
 | BR-S-12 | Hủy đơn chưa thanh toán, bắt buộc ghi lý do | MVP |
 | BR-S-13 | Với đơn đã thanh toán: chỉ tạo yêu cầu hủy, Admin duyệt | MVP |
 | BR-S-14 | In phiếu đóng gói, phiếu giao hàng | MVP |
