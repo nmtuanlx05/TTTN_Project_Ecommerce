@@ -1,0 +1,529 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Font display: Archivo (trục wdth 62–125 + wght 100–900, có dấu tiếng Việt) */
+@import "@fontsource-variable/archivo/wdth.css";
+/* Font body: Be Vietnam Pro — dấu tiếng Việt được vẽ riêng cho từng ký tự nền */
+@import "@fontsource/be-vietnam-pro/400.css";
+@import "@fontsource/be-vietnam-pro/500.css";
+@import "@fontsource/be-vietnam-pro/600.css";
+@import "@fontsource/be-vietnam-pro/700.css";
+/* Font số liệu: Geist Mono — chữ số đều chiều rộng cho cột tiền và mã SKU */
+@import "@fontsource-variable/geist-mono";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================================================
+   1. MÀU — đặt tên theo NGỮ NGHĨA, không theo sắc độ
+   Toàn bộ dựng trong OKLCH rồi xuất hex, nên các bậc sáng đều về mặt cảm nhận.
+   Mọi tỉ lệ tương phản ghi trong comment đều tính bằng công thức WCAG 2.x.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* --- Nền và bề mặt --- */
+  --canvas: #f2f1ee; /* nền trang */
+  --surface: #faf9f7; /* card, panel */
+  --surface-raised: #ffffff; /* dialog, popover, dropdown */
+  --surface-sunken: #e5e4e0; /* header bảng, sidebar admin, khung ảnh */
+  --surface-hover: #ebe9e6; /* nền hover của nút ghost / dòng bảng */
+  --surface-active: #e1dfdc; /* nền khi đang nhấn */
+
+  /* --- Chữ --- */
+  --ink: #171614; /* 16.01 trên canvas */
+  --ink-muted: #5d5a58; /* 6.06 trên canvas, 5.38 trên sunken */
+  --ink-subtle: #6c6a67; /* 4.77 trên canvas — CẤM dùng trên sunken (4.24) */
+  --ink-inverse: #faf9f7; /* chữ trên nền đặc */
+
+  /* --- Viền --- */
+  --border-subtle: #e0dedb; /* hairline trong card, chỉ trang trí */
+  --border-default: #cfcdc9; /* viền mặc định, chỉ trang trí */
+  --border-strong: #a09e9a; /* viền nhấn, nút secondary */
+  --border-control: #7c7a77; /* input/checkbox/radio — 3.79, đạt WCAG 1.4.11 */
+
+  /* --- Hành động chính --- */
+  --primary: #171614;
+  --primary-hover: #2c2a27;
+  --primary-active: #0b0a08;
+  --primary-fg: #faf9f7; /* 17.19 trên primary */
+
+  /* --- Focus --- */
+  --ring: #171614;
+
+  /* --- Trạng thái đơn hàng: mực đậm dần theo tiến độ --- */
+  --status-pending-bg: #f3ecdb;
+  --status-pending-fg: #403416; /* 10.36 */
+  --status-confirmed-bg: #ccd9e5;
+  --status-confirmed-fg: #1f3548; /* 8.80 */
+  --status-packing-bg: #c3bdcb;
+  --status-packing-fg: #352b41; /* 7.29 */
+  --status-shipping-bg: #97acae;
+  --status-shipping-fg: #083439; /* 5.66 */
+  --status-returned-bg: #7f6761;
+  --status-returned-fg: #fef7f5; /* 4.94 */
+  --status-completed-bg: #3e4c41;
+  --status-completed-fg: #f5faf6; /* 8.59 */
+  /* CANCELLED là badge RỖNG — phân biệt bằng hình thức, không chỉ bằng tông */
+  --status-cancelled-bg: transparent;
+  --status-cancelled-fg: #5d5a58; /* 6.06 */
+  --status-cancelled-border: #7c7a77;
+
+  /* --- Trạng thái thanh toán --- */
+  --payment-unpaid-bg: transparent;
+  --payment-unpaid-fg: #5d5a58; /* 6.06 */
+  --payment-unpaid-border: #7c7a77;
+  --payment-paid-bg: #cbd9cd;
+  --payment-paid-fg: #243c29; /* 8.18 */
+  --payment-refunded-bg: #9a95a4;
+  --payment-refunded-fg: #312941; /* 4.73 */
+
+  /* --- Màu phản hồi --- */
+  --success-fg: #37563d; /* 7.26 trên canvas */
+  --success-tint: #e6f2e8;
+  --success-border: #c3d2c6;
+  --warning-fg: #5a4b28; /* 7.52 */
+  --warning-tint: #f3eee1;
+  --warning-border: #d4cdbc;
+  --danger-fg: #684238; /* 7.67 */
+  --danger-tint: #faebe6;
+  --danger-border: #ddc9c3;
+  --info-fg: #335069; /* 7.46 */
+  --info-tint: #e5f0fa;
+  --info-border: #c1d0dd;
+
+  /* --- Nút destructive (nền đặc) --- */
+  --danger-solid: #714137;
+  --danger-solid-hover: #613229;
+  --danger-solid-fg: #fef9f8; /* 8.00 */
+
+  /* --- Khác --- */
+  --skeleton: #e1dfdc;
+
+  /* ========================================================================
+     2. THANG CHỮ — mật độ storefront (mặc định)
+     Heading in hoa luôn có line-height ≥ 1.15 để dấu mũ + dấu thanh chồng
+     nhau vẫn còn chỗ: "ĐƠN HÀNG ĐÃ GIAO — ƯU ĐÃI — KIỂM KÊ KHO — TỔNG CỘNG"
+     ======================================================================== */
+
+  --fs-display: clamp(2.75rem, 6.5vw, 5rem);
+  --fs-h1: clamp(2rem, 3.6vw, 2.75rem);
+  --fs-h2: 1.75rem;
+  --fs-h3: 1.25rem;
+  --fs-body-lg: 1.0625rem; /* 17px */
+  --fs-body: 1rem; /* 16px */
+  --fs-body-sm: 0.875rem; /* 14px — sàn cho văn bản chạy */
+  --fs-caption: 0.8125rem; /* 13px — chỉ cho nhãn/metadata ngắn */
+  --fs-overline: 0.75rem; /* 12px — chỉ cho nhãn in hoa ngắn */
+
+  --lh-display: 1.16;
+  --lh-h1: 1.18;
+  --lh-h2: 1.22;
+  --lh-h3: 1.32;
+  --lh-body-lg: 1.62;
+  --lh-body: 1.6;
+  --lh-body-sm: 1.55;
+  --lh-caption: 1.5;
+  --lh-overline: 1.45;
+
+  --ls-display: -0.01em;
+  --ls-h1: -0.008em;
+  --ls-h2: -0.005em;
+  --ls-h3: 0em;
+  --ls-body-lg: 0em;
+  --ls-body: 0em;
+  --ls-body-sm: 0.002em;
+  --ls-caption: 0.005em;
+  --ls-overline: 0.09em;
+
+  --fw-display: 700;
+  --fw-h1: 700;
+  --fw-h2: 600;
+  --fw-h3: 600;
+  --fw-body-lg: 400;
+  --fw-body: 400;
+  --fw-body-sm: 400;
+  --fw-caption: 400;
+  --fw-overline: 600;
+
+  /* Archivo nén nhẹ về 90% cho display — không bao giờ xuống dưới 85%,
+     dưới mức đó dấu tiếng Việt bắt đầu chồng lấn */
+  --stretch-display: 90%;
+
+  /* ========================================================================
+     3. KHOẢNG CÁCH — mật độ storefront (thoáng)
+     ======================================================================== */
+
+  --sp-gutter: 24px; /* lề trái/phải của trang */
+  --sp-section: 80px; /* giữa hai khối lớn */
+  --sp-card: 24px; /* padding trong card */
+  --sp-row: 16px; /* padding dọc một dòng bảng/danh sách */
+  --sp-stack: 16px; /* giữa các phần tử xếp dọc */
+  --sp-inline: 12px; /* giữa các phần tử trong một cụm ngang */
+  --sp-control-h: 44px; /* chiều cao input/nút — đạt vùng bấm 44px */
+  --sp-control-px: 20px; /* padding ngang của nút */
+
+  /* ========================================================================
+     4. BO GÓC và ĐỘ DÀY VIỀN
+     Tham chiếu gần như vuông; chỉ chip/badge mới bo tròn hoàn toàn.
+     ======================================================================== */
+
+  --radius-control: 2px; /* input, nút, checkbox */
+  --radius-surface: 3px; /* card, dialog, bảng */
+  --radius-pill: 999px; /* badge, chip, nút tròn */
+
+  --stroke-hairline: 1px;
+  --stroke-focus: 2px;
+  --focus-offset: 2px;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --canvas: #11100e; /* đen ngà, không đen tuyền */
+  --surface: #1c1b19;
+  --surface-raised: #262422;
+  --surface-sunken: #090907;
+  --surface-hover: #262422;
+  --surface-active: #2f2e2b;
+
+  --ink: #eeede9; /* trắng ngà, không trắng tinh — 16.23 trên canvas */
+  --ink-muted: #aeaca8; /* 8.39 */
+  --ink-subtle: #959390; /* 6.21 */
+  --ink-inverse: #11100e;
+
+  --border-subtle: #2c2b28;
+  --border-default: #3b3a37;
+  --border-strong: #5f5d59;
+  --border-control: #767370; /* 4.04 trên canvas */
+
+  --primary: #eeede9;
+  --primary-hover: #d7d6d2;
+  --primary-active: #ffffff;
+  --primary-fg: #11100e; /* 16.23 */
+
+  --ring: #eeede9;
+
+  /* Thang trạng thái giữ đúng hướng (đi tới → đậm dần), nhưng độ sáng được
+     chỉnh lại để chữ vẫn đạt tương phản trên nền tối */
+  --status-pending-bg: #423d2f;
+  --status-pending-fg: #ded3ba; /* 7.28 */
+  --status-confirmed-bg: #2d3741;
+  --status-confirmed-fg: #c0d4e6; /* 7.96 */
+  --status-packing-bg: #332e39;
+  --status-packing-fg: #d4cbe0; /* 8.44 */
+  --status-shipping-bg: #1e2f31;
+  --status-shipping-fg: #b4d4d8; /* 8.86 */
+  --status-returned-bg: #34201b;
+  --status-returned-fg: #e8c0b6; /* 9.24 */
+  --status-completed-bg: #18241a;
+  --status-completed-fg: #b8d0bc; /* 9.79 */
+  --status-cancelled-bg: transparent;
+  --status-cancelled-fg: #aeaca8; /* 8.39 */
+  --status-cancelled-border: #767370;
+
+  --payment-unpaid-bg: transparent;
+  --payment-unpaid-fg: #aeaca8; /* 8.39 */
+  --payment-unpaid-border: #767370;
+  --payment-paid-bg: #2e392f;
+  --payment-paid-fg: #c3d7c6; /* 7.95 */
+  --payment-refunded-bg: #2d2935;
+  --payment-refunded-fg: #d0c9e0; /* 8.86 */
+
+  --success-fg: #aac9af; /* 10.58 trên canvas */
+  --success-tint: #212c23;
+  --success-border: #3a493d;
+  --warning-fg: #ccbe9d; /* 10.34 */
+  --warning-tint: #2d281c;
+  --warning-border: #4b4433;
+  --danger-fg: #dcb5ab; /* 10.18 */
+  --danger-tint: #322521;
+  --danger-border: #523f3a;
+  --info-fg: #a6c3dd; /* 10.39 */
+  --info-tint: #1f2a33;
+  --info-border: #384653;
+
+  --danger-solid: #af756a;
+  --danger-solid-hover: #be877c;
+  --danger-solid-fg: #0e0a0a; /* 5.23 */
+
+  --skeleton: #282724;
+}
+
+/* ==========================================================================
+   5. MẬT ĐỘ ADMIN
+   Cách chọn: dùng CLASS SCOPE (.density-admin) ghi đè chính các biến mà
+   storefront dùng, thay vì tạo bộ token --*-admin-* song song.
+   Lý do: component không cần biết nó đang nằm ở khu vực nào. Nó luôn đọc
+   --fs-body / --sp-row; vỏ ngoài quyết định giá trị. Nếu tách tên token thì
+   mỗi component phải có hai biến thể và mọi component mới đều phải nhớ làm
+   cả hai — đó là chỗ hệ thống bắt đầu lệch nhau.
+   ========================================================================== */
+
+.density-admin {
+  --fs-display: 2rem;
+  --fs-h1: 1.5rem;
+  --fs-h2: 1.125rem;
+  --fs-h3: 1rem;
+  --fs-body-lg: 0.9375rem; /* 15px */
+  --fs-body: 0.875rem; /* 14px — sàn cho văn bản chạy */
+  --fs-body-sm: 0.8125rem; /* 13px */
+  --fs-caption: 0.75rem; /* 12px — nhãn ngắn */
+  --fs-overline: 0.6875rem; /* 11px — nhãn in hoa ngắn */
+
+  --lh-display: 1.18;
+  --lh-h1: 1.2;
+  --lh-h2: 1.3;
+  --lh-h3: 1.35;
+  --lh-body-lg: 1.5;
+  --lh-body: 1.5;
+  --lh-body-sm: 1.45;
+
+  --sp-gutter: 16px;
+  --sp-section: 32px;
+  --sp-card: 16px;
+  --sp-row: 8px; /* bảng nhiều dòng vẫn quét mắt được */
+  --sp-stack: 10px;
+  --sp-inline: 8px;
+  --sp-control-h: 36px;
+  --sp-control-px: 12px;
+}
+
+/* Trên mobile, admin nới lại vùng bấm về 44px dù mật độ vẫn dày */
+@media (max-width: 767px) {
+  .density-admin {
+    --sp-control-h: 44px;
+    --sp-row: 12px;
+  }
+}
+
+/* ==========================================================================
+   6. ÁNH XẠ SANG TAILWIND v4
+   @theme inline giữ nguyên tham chiếu var(), nhờ vậy .density-admin ghi đè
+   được. Các alias của shadcn (background/foreground/muted/…) trỏ về cùng
+   token ngữ nghĩa để component có sẵn vẫn chạy.
+   ========================================================================== */
+
+@theme inline {
+  /* Font */
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo Variable", "Be Vietnam Pro", ui-sans-serif, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+
+  /* Màu — tên ngữ nghĩa */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
+
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-ink-inverse: var(--ink-inverse);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-border-control: var(--border-control);
+
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-primary-fg: var(--primary-fg);
+
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-pending-fg: var(--status-pending-fg);
+  --color-status-confirmed-bg: var(--status-confirmed-bg);
+  --color-status-confirmed-fg: var(--status-confirmed-fg);
+  --color-status-packing-bg: var(--status-packing-bg);
+  --color-status-packing-fg: var(--status-packing-fg);
+  --color-status-shipping-bg: var(--status-shipping-bg);
+  --color-status-shipping-fg: var(--status-shipping-fg);
+  --color-status-completed-bg: var(--status-completed-bg);
+  --color-status-completed-fg: var(--status-completed-fg);
+  --color-status-cancelled-bg: var(--status-cancelled-bg);
+  --color-status-cancelled-fg: var(--status-cancelled-fg);
+  --color-status-cancelled-border: var(--status-cancelled-border);
+  --color-status-returned-bg: var(--status-returned-bg);
+  --color-status-returned-fg: var(--status-returned-fg);
+
+  --color-payment-unpaid-bg: var(--payment-unpaid-bg);
+  --color-payment-unpaid-fg: var(--payment-unpaid-fg);
+  --color-payment-unpaid-border: var(--payment-unpaid-border);
+  --color-payment-paid-bg: var(--payment-paid-bg);
+  --color-payment-paid-fg: var(--payment-paid-fg);
+  --color-payment-refunded-bg: var(--payment-refunded-bg);
+  --color-payment-refunded-fg: var(--payment-refunded-fg);
+
+  --color-success-fg: var(--success-fg);
+  --color-success-tint: var(--success-tint);
+  --color-success-border: var(--success-border);
+  --color-warning-fg: var(--warning-fg);
+  --color-warning-tint: var(--warning-tint);
+  --color-warning-border: var(--warning-border);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-tint: var(--danger-tint);
+  --color-danger-border: var(--danger-border);
+  --color-info-fg: var(--info-fg);
+  --color-info-tint: var(--info-tint);
+  --color-info-border: var(--info-border);
+
+  --color-danger-solid: var(--danger-solid);
+  --color-danger-solid-hover: var(--danger-solid-hover);
+  --color-danger-solid-fg: var(--danger-solid-fg);
+
+  --color-skeleton: var(--skeleton);
+
+  /* Alias cho component shadcn có sẵn */
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface-raised);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-fg);
+  --color-secondary: var(--surface-sunken);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--surface-sunken);
+  --color-muted-foreground: var(--ink-muted);
+  --color-accent: var(--surface-hover);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--danger-solid);
+  --color-destructive-foreground: var(--danger-solid-fg);
+  --color-border: var(--border-default);
+  --color-input: var(--border-control);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--surface-sunken);
+  --color-sidebar-foreground: var(--ink);
+  --color-sidebar-primary: var(--primary);
+  --color-sidebar-primary-foreground: var(--primary-fg);
+  --color-sidebar-accent: var(--surface-hover);
+  --color-sidebar-accent-foreground: var(--ink);
+  --color-sidebar-border: var(--border-subtle);
+  --color-sidebar-ring: var(--ring);
+
+  /* Thang chữ */
+  --text-display: var(--fs-display);
+  --text-display--line-height: var(--lh-display);
+  --text-display--letter-spacing: var(--ls-display);
+  --text-display--font-weight: var(--fw-display);
+  --text-h1: var(--fs-h1);
+  --text-h1--line-height: var(--lh-h1);
+  --text-h1--letter-spacing: var(--ls-h1);
+  --text-h1--font-weight: var(--fw-h1);
+  --text-h2: var(--fs-h2);
+  --text-h2--line-height: var(--lh-h2);
+  --text-h2--letter-spacing: var(--ls-h2);
+  --text-h2--font-weight: var(--fw-h2);
+  --text-h3: var(--fs-h3);
+  --text-h3--line-height: var(--lh-h3);
+  --text-h3--letter-spacing: var(--ls-h3);
+  --text-h3--font-weight: var(--fw-h3);
+  --text-body-lg: var(--fs-body-lg);
+  --text-body-lg--line-height: var(--lh-body-lg);
+  --text-body-lg--letter-spacing: var(--ls-body-lg);
+  --text-body: var(--fs-body);
+  --text-body--line-height: var(--lh-body);
+  --text-body--letter-spacing: var(--ls-body);
+  --text-body-sm: var(--fs-body-sm);
+  --text-body-sm--line-height: var(--lh-body-sm);
+  --text-body-sm--letter-spacing: var(--ls-body-sm);
+  --text-caption: var(--fs-caption);
+  --text-caption--line-height: var(--lh-caption);
+  --text-caption--letter-spacing: var(--ls-caption);
+  --text-overline: var(--fs-overline);
+  --text-overline--line-height: var(--lh-overline);
+  --text-overline--letter-spacing: var(--ls-overline);
+  --text-overline--font-weight: var(--fw-overline);
+
+  /* Khoảng cách theo mật độ */
+  --spacing-gutter: var(--sp-gutter);
+  --spacing-section: var(--sp-section);
+  --spacing-card: var(--sp-card);
+  --spacing-row: var(--sp-row);
+  --spacing-stack: var(--sp-stack);
+  --spacing-inline: var(--sp-inline);
+  --spacing-control: var(--sp-control-h);
+  --spacing-control-px: var(--sp-control-px);
+
+  /* Bo góc — ghi đè thang mặc định của shadcn cho khớp tham chiếu */
+  --radius-xs: var(--radius-control);
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-surface);
+  --radius-lg: var(--radius-surface);
+  --radius-xl: 4px;
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
+  --radius-4xl: var(--radius-pill);
+}
+
+/* ==========================================================================
+   7. LỚP NỀN
+   ========================================================================== */
+
+@layer base {
+  * {
+    border-color: var(--border-default);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    font-weight: var(--fw-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
+    text-wrap: balance;
+  }
+
+  ::placeholder {
+    color: var(--ink-subtle);
+  }
+
+  ::selection {
+    background-color: var(--ink);
+    color: var(--ink-inverse);
+  }
+
+  /* Focus nhìn thấy rõ ở cả hai chế độ, dùng chung một quy tắc */
+  :focus-visible {
+    outline: var(--stroke-focus) solid var(--ring);
+    outline-offset: var(--focus-offset);
+    border-radius: var(--radius-control);
+  }
+
+  /* Số tiền và mã đơn luôn thẳng cột */
+  [data-numeric] {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

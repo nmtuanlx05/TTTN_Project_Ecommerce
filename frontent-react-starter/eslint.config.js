@@ -19,4 +19,14 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // src/components/ui là thư mục do `shadcn add` sinh ra và sẽ bị ghi đè.
+    // Quy ước của shadcn là xuất biến thể (buttonVariants, badgeVariants…)
+    // ngay cạnh component, nên react-refresh/only-export-components luôn kêu.
+    // Tắt riêng cho thư mục này thay vì sửa trái quy ước rồi mất khi regenerate.
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

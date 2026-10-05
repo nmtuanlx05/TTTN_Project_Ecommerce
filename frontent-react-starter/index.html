@@ -1,10 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontent-react</title>
+    <title>Hệ thống thiết kế</title>
+    <script>
+      // Đặt chế độ sáng/tối TRƯỚC khi React mount để trang không nhấp nháy.
+      // Giá trị lưu trong localStorage: "light" | "dark" | "system".
+      (function () {
+        try {
+          var saved = localStorage.getItem("theme");
+          var isDark =
+            saved === "dark" ||
+            (saved !== "light" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", isDark);
+          document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+        } catch (e) {
+          // localStorage bị chặn (chế độ riêng tư) — rơi về chế độ sáng
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
