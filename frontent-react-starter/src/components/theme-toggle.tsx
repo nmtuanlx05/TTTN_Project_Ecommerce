@@ -1,5 +1,5 @@
 import { Monitor, Moon, Sun } from "lucide-react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 import { useTheme, type ThemeChoice } from "@/hooks/use-theme"
 
 const OPTIONS: { value: ThemeChoice; label: string; icon: typeof Sun }[] = [

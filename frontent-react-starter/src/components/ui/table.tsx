@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 /**
  * Bảng dùng chung cho cả hai khu vực. Padding dọc lấy từ --sp-row nên bảng

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 /** Đầu mỗi trang quản trị: tiêu đề, mô tả, và một chỗ cho bộ điều khiển. */
 function PageHeader({

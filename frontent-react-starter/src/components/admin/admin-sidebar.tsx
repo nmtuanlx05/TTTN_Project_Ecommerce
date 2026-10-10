@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/components/admin/nav-items";
 
 /**

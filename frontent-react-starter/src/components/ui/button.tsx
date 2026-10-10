@@ -1,7 +1,7 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 import { LoaderCircle } from "lucide-react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 /**
  * Bốn cấp nút, vẫn giữ đơn sắc:

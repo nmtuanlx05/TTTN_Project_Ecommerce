@@ -1,6 +1,6 @@
 import { Toast as ToastPrimitive } from "@base-ui/react/toast"
 import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from "lucide-react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 /**
  * Toast dùng Base UI (đã nằm trong gói shadcn base-nova), không thêm thư viện.

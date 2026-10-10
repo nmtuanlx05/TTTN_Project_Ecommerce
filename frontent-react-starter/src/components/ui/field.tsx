@@ -1,6 +1,6 @@
 import * as React from "react"
 import { CircleAlert } from "lucide-react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
 /**

@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminTopbar } from "@/components/admin/admin-topbar"
 import { ToastProvider, ToastViewport } from "@/components/ui/toast"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 /**
  * Vỏ của khu quản trị. `.density-admin` đặt ở đây một lần — mọi component bên
@@ -10,15 +11,17 @@ import { ToastProvider, ToastViewport } from "@/components/ui/toast"
 function AdminLayout() {
   return (
     <ToastProvider>
-      <div className="density-admin flex min-h-dvh bg-canvas">
-        <AdminSidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <AdminTopbar />
-          <main className="flex-1 px-gutter py-section">
-            <Outlet />
-          </main>
+      <TooltipProvider>
+        <div className="density-admin flex min-h-dvh bg-canvas">
+          <AdminSidebar />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <AdminTopbar />
+            <main className="flex-1 px-gutter py-section">
+              <Outlet />
+            </main>
+          </div>
         </div>
-      </div>
+      </TooltipProvider>
       <ToastViewport />
     </ToastProvider>
   )

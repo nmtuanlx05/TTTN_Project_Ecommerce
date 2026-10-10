@@ -96,13 +96,18 @@ Dark mode không phải đảo ngược máy móc: nền là đen ngà chứ kh�
 là trắng ngà chứ không trắng tinh, và màu trạng thái được chỉnh lại độ sáng
 riêng chứ không lật.
 
-### Hai quy tắc tương phản phải nhớ
+### Ba quy tắc tương phản phải nhớ
 
 1. **Trên `surface-sunken` (header bảng, sidebar admin) cấm dùng `ink-subtle`.**
    Cặp đó chỉ đạt 4.24, dưới ngưỡng AA. Dùng `ink-muted` (5.38).
 2. **Viền của control phải là `border-control`, không phải `border-default`.**
    `border-default` chỉ đạt 1.41 — nó là đường kẻ trang trí. `border-control`
    đạt 3.79, thỏa WCAG 1.4.11 cho ranh giới input/checkbox/radio.
+
+3. **Nền hover phải khác nền của vùng nó nằm trên.** Popup, dropdown, dialog dùng
+   `surface-raised`; dark mode từng đặt `surface-hover` trùng đúng màu đó nên mục
+   đang hover không đổi gì. Hiện hover/raised ở dark là 1.27 (light là 1.21). Chữ
+   `ink-subtle` không dùng trên nền hover (dark chỉ 3.99).
 
 Mọi cặp chữ/nền khác trong hệ thống đều ≥ 4.5. Bảng đầy đủ nằm ở `/styleguide`.
 
@@ -232,6 +237,7 @@ Giao diện viết bằng tiếng Việt. Tên biến, hàm, file, commit messag
 - shadcn/ui style `base-nova` → các component dựng trên `@base-ui/react`
   (không phải Radix). Khi tra tài liệu, tra Base UI.
 - `lucide-react` cho icon.
+- `axios` + `@tanstack/react-query` cho gọi API — xem mục "Quy ước gọi API".
 - `react-hook-form` + `zod` + `@hookform/resolvers` cho form.
 - `@tanstack/react-table` **v9** — API khác hẳn v8: dùng `useTable` +
   `tableFeatures({...})` chứ không phải `useReactTable` + `getCoreRowModel()`.
@@ -240,13 +246,72 @@ Giao diện viết bằng tiếng Việt. Tên biến, hàm, file, commit messag
   `react-toastify` còn trong `package.json` nhưng **không dùng** — nó không đọc
   token của ta.
 
+**`cn()` luôn import từ `@/lib/utils`, không import từ gói `"cn"`.** `utils.ts` đọc các
+`--text-*` trong `global.css` để khai báo chúng là cỡ chữ; gói `"cn"` trần coi
+`text-body-sm` là class màu và xóa nhầm `text-ink`/`text-primary-fg` khi gộp. ESLint
+chặn import `"cn"` ngoài `utils.ts`. Nếu đổi tên token `--text-*` thì `utils.ts` ném
+lỗi lúc nạp thay vì hỏng âm thầm. `shadcn add` có thể sinh file import `"cn"` — sửa
+lại thành `@/lib/utils`, lint sẽ báo.
+
 `src/components/ui/**` là thư mục do `shadcn add` sinh ra và có thể bị ghi đè.
 Quy tắc `react-refresh/only-export-components` đã được tắt riêng cho thư mục này
 trong `eslint.config.js` vì quy ước của shadcn là xuất biến thể cạnh component.
 
+## Quy ước gọi API
+
+Backend NestJS (`backend-nestjst-starter`). Mọi chi tiết endpoint nằm ở
+`backend-nestjst-starter/docs/api/<module>.md` — đọc file đó, không đoán.
+
+**Cấu hình.** `VITE_API_URL` trong `.env` (mẫu ở `.env.example`, dev là
+`http://localhost:3000`). Thiếu biến này thì app báo lỗi ngay lúc nạp. Vite chỉ đọc
+`.env` lúc khởi động nên sửa xong phải chạy lại `npm run dev`. Backend chỉ cho CORS
+origin `http://localhost:5173`, nên dev server phải chạy đúng cổng đó.
+
+**Phân tầng — mỗi tầng một việc:**
+
+| Tầng | File | Việc |
+|---|---|---|
+| Client | `src/lib/api-client.ts` | Instance axios duy nhất, bóc `{ success, data, meta }`, chuẩn hóa lỗi |
+| Lỗi | `src/lib/api-error.ts` | Lớp `ApiError` |
+| Kiểu | `src/types/*.ts` | Khớp hợp đồng API (không có `password`) |
+| API | `src/features/<module>/api.ts` | Một hàm cho mỗi endpoint, trả dữ liệu đã bóc |
+| Hook | `src/features/<module>/queries.ts` | `useXxx` (query) và `useCreateXxx`… (mutation) bọc react-query |
+| UI | `src/pages/**`, `src/components/**` | Chỉ gọi hook, không biết axios |
+
+**Luật:**
+
+- **Cấm gọi axios trực tiếp trong component** (và mọi nơi ngoài `api-client.ts`,
+  `api-error.ts`, `features/*/api.ts`). ESLint chặn bằng `no-restricted-imports`.
+- Hàm trong `api.ts` dùng `apiGet` (đối tượng), `apiGetPage` (danh sách, trả
+  `{ items, meta }`), `apiSend` (POST/PATCH/PUT). Không tự đọc `response.data.data`.
+- **Query key** là `['<module>', params]` (vd `['users', params]`); chi tiết là
+  `['<module>', 'detail', id]`. Mutation thành công thì `invalidateQueries` theo
+  tiền tố `['<module>']`.
+- Danh sách dùng `placeholderData: keepPreviousData` để đổi trang/lọc không chớp
+  skeleton. Skeleton chỉ cho lần tải đầu (`isPending`).
+- Interceptor request của `api-client.ts` đang để trống, là chỗ duy nhất gắn token
+  khi làm Auth.
+
+**Lỗi.** Mọi lỗi ra khỏi tầng API đều là `ApiError`: `statusCode` (0 = không có phản
+hồi: mất mạng, quá thời gian), `message` (tiếng Việt, hiện được cho người dùng),
+`errors` và `fieldErrors` (`{ [field]: message }`). Form nhận lỗi 400 thì đẩy
+`fieldErrors` vào `setError` của react-hook-form; lỗi khác thì hiện `message` bằng
+toast hoặc `Alert`. Lỗi 4xx không được retry.
+
+**Trạng thái danh sách nằm trên URL** (`?q=&role=&page=`…) qua `useSearchParams`, để
+F5 và gửi link không mất. Giá trị trên URL **phải lọc theo whitelist** trước khi
+gửi: backend dùng `forbidNonWhitelisted`, một query lạ hay sai sẽ bị 400. Giá trị
+mặc định không ghi lên URL. Mẫu: `features/users/use-users-search-params.ts`.
+
 ## Trang hiện có
 
-- `/styleguide` — trình bày toàn bộ hệ thống. Mọi route khác hiện redirect về đây.
+- `/styleguide` — trình bày toàn bộ hệ thống.
+- `/admin/dashboard` — dữ liệu giả (`src/lib/mock`).
+- `/admin/users` — danh sách người dùng nối backend thật: tìm kiếm, lọc, sắp xếp, phân trang phía
+  server; thêm/sửa bằng `UserFormDialog` (react-hook-form + zod, `features/users/schemas.ts` phản chiếu
+  validate backend); khóa/mở khóa luôn qua hộp xác nhận. **Chưa phân quyền hiển thị**: STAFF hiện vẫn thấy
+  nút Thêm/Sửa/Khóa — làm cùng lúc với Auth (khi đó thêm nguồn role dùng chung với topbar, đang ghi cứng).
+- Các mục menu còn lại hiện là `PlaceholderPage`; route lạ chuyển về `/admin/dashboard`.
 
 Khi thêm trang nghiệp vụ: đọc `backend-nestjst-starter/docs/` trước, mỗi lần làm
 một module, và cập nhật `/styleguide` nếu có thêm token hoặc component dùng chung.

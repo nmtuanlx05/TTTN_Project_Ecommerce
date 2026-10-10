@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 /**
  * Màn hình rỗng là một lời mời hành động, không phải một lời xin lỗi.

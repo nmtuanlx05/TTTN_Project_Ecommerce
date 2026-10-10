@@ -185,8 +185,11 @@
   --surface: #1c1b19;
   --surface-raised: #262422;
   --surface-sunken: #090907;
-  --surface-hover: #262422;
-  --surface-active: #2f2e2b;
+  /* hover phải khác nền của chính vùng nó nằm trên (popup/dropdown là
+     surface-raised): 1.27 trên raised, ngang bản light (1.21). Chữ ink-muted
+     trên hover còn 5.39; ink-subtle chỉ 3.99 nên không dùng trên nền hover. */
+  --surface-hover: #373532;
+  --surface-active: #42403c; /* ink-muted trên active: 4.56 */
 
   --ink: #eeede9; /* trắng ngà, không trắng tinh — 16.23 trên canvas */
   --ink-muted: #aeaca8; /* 8.39 */

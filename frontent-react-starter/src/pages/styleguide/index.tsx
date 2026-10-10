@@ -16,6 +16,7 @@ import {
 } from "@tanstack/react-table"
 import { ArrowUpDown, PackageOpen, Plus } from "lucide-react"
 
+import { TablePagination } from "@/components/admin/table-pagination"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useTheme } from "@/hooks/use-theme"
 import { Alert } from "@/components/ui/alert"
@@ -642,6 +643,7 @@ const columns: ColumnDef<OrderTableFeatures, OrderRow>[] = [
 
 function TableSection() {
   const [sorting, setSorting] = useState<SortingState>([])
+  const [page, setPage] = useState(1)
   const table = useTable({
     features: orderTableFeatures,
     data: ORDERS,
@@ -696,6 +698,14 @@ function TableSection() {
           ))}
         </TableBody>
       </Table>
+      <div className="mt-stack">
+        <TablePagination
+          meta={{ page, limit: 10, total: 25, totalPages: 3 }}
+          itemCount={page === 3 ? 5 : 10}
+          noun="đơn hàng"
+          onPageChange={setPage}
+        />
+      </div>
       <p className="mt-stack text-caption text-ink-muted">
         Mật độ admin: dòng cao 8px đệm dọc, chữ 13–14px. Cùng component này đặt
         ngoài <code className="font-mono">.density-admin</code> sẽ tự giãn ra theo

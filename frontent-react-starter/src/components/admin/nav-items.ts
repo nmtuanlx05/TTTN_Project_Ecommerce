@@ -65,6 +65,6 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Người dùng",
     icon: Users,
     description: "Tài khoản khách hàng và nhân viên.",
-    ready: false,
+    ready: true,
   },
 ]
