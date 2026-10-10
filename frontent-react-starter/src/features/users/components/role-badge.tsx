@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge"
-import type { Role } from "@/types/user"
+import type { Role } from "../types"
 import { ROLE_LABEL } from "../constants"
 
 // Quyền càng cao, mực càng đậm: cùng logic với badge trạng thái đơn hàng.

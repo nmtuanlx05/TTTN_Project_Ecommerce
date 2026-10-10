@@ -10,7 +10,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state"
 import { PackageSearch } from "lucide-react"
 import { formatNumber, formatVnd } from "@/lib/format"
-import type { TopProduct } from "@/lib/mock/dashboard"
+import type { TopProduct } from "../mock"
 
 function TopProducts({ products }: { products: TopProduct[] }) {
   return (

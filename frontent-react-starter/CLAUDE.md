@@ -6,6 +6,13 @@ viết bất kỳ component nào.
 Backend NestJS nằm ở thư mục song song `backend-nestjst-starter`, có CLAUDE.md
 riêng. Tài liệu nghiệp vụ và schema dữ liệu ở `backend-nestjst-starter/docs/`.
 
+## Cấu trúc thư mục (bắt buộc)
+- Chi tiết: `docs/cau-truc-thu-muc.md`. ĐỌC khi tạo module hoặc trang mới, hoặc khi không chắc đặt file ở đâu. Sửa nhỏ thì không cần đọc.
+- Hai giao diện: storefront (khách) ở `/`, admin (ADMIN và STAFF dùng chung) ở `/admin`. Không làm trang staff riêng.
+- Luật ngắn: pages chỉ ghép (không gọi API, không logic); thứ riêng của tính năng nằm trong `features/<tên>/`; features không import lẫn nhau; mỗi file một component dưới ~150 dòng; chỉ `api.ts` và `lib/api-client.ts` dùng axios; không sửa `components/ui/`.
+- Tạo module mới: làm theo mục "Checklist module mới" trong docs.
+- Đổi cấu trúc thì sửa file docs trước.
+
 ## Luật bắt buộc
 
 > **Mọi màu, cỡ chữ, khoảng cách phải lấy từ token. Cấm hardcode mã màu hoặc
@@ -306,7 +313,7 @@ mặc định không ghi lên URL. Mẫu: `features/users/use-users-search-param
 ## Trang hiện có
 
 - `/styleguide` — trình bày toàn bộ hệ thống.
-- `/admin/dashboard` — dữ liệu giả (`src/lib/mock`).
+- `/admin/dashboard` — dữ liệu giả (`src/features/dashboard/mock.ts`).
 - `/admin/users` — danh sách người dùng nối backend thật: tìm kiếm, lọc, sắp xếp, phân trang phía
   server; thêm/sửa bằng `UserFormDialog` (react-hook-form + zod, `features/users/schemas.ts` phản chiếu
   validate backend); khóa/mở khóa luôn qua hộp xác nhận. **Chưa phân quyền hiển thị**: STAFF hiện vẫn thấy

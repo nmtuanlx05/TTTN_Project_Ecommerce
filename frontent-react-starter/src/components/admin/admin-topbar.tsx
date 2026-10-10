@@ -17,7 +17,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeToggle } from "@/components/admin/theme-toggle"
 import { AdminNav } from "@/components/admin/admin-sidebar"
 import { NAV_ITEMS } from "@/components/admin/nav-items"
 

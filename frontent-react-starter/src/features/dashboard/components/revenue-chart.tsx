@@ -18,7 +18,7 @@ import {
   formatFullDate,
   formatVnd,
 } from "@/lib/format"
-import type { DailyPoint } from "@/lib/mock/dashboard"
+import type { DailyPoint } from "../mock"
 
 /**
  * Doanh thu theo ngày — đơn sắc, một trục.

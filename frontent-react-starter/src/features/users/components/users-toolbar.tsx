@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { Role } from "@/types/user"
+import type { Role } from "../types"
 import { ROLE_LABEL, ROLES } from "../constants"
 
 const SEARCH_DEBOUNCE_MS = 300

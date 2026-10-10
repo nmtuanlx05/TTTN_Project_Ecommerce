@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatTime, formatVnd } from "@/lib/format"
-import type { PendingOrder } from "@/lib/mock/dashboard"
+import type { PendingOrder } from "../mock"
 
 function RecentOrders({ orders }: { orders: PendingOrder[] }) {
   return (

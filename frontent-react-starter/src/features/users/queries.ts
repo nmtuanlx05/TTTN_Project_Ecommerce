@@ -10,7 +10,7 @@ import type {
   UpdateUserInput,
   User,
   UserListParams,
-} from "@/types/user"
+} from "./types"
 import {
   createUser,
   getUser,

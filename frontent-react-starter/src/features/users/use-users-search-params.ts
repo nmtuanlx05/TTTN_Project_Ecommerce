@@ -1,6 +1,6 @@
 import { useSearchParams } from "react-router-dom"
 import type { SortOrder } from "@/types/api"
-import type { Role, UserListParams, UserSortBy } from "@/types/user"
+import type { Role, UserListParams, UserSortBy } from "./types"
 import { DEFAULT_SORT, PAGE_SIZE, ROLES, SORTABLE_COLUMNS } from "./constants"
 
 type UpdateOptions = {
@@ -102,3 +102,5 @@ export function useUsersSearchParams() {
     clearFilters: () => update({ q: undefined, role: undefined, isActive: undefined }),
   }
 }
+
+export type UsersSearch = ReturnType<typeof useUsersSearchParams>

@@ -7,7 +7,7 @@ import {
   formatSignedPercent,
   formatVnd,
 } from "@/lib/format"
-import type { KpiSnapshot } from "@/lib/mock/dashboard"
+import type { KpiSnapshot } from "../mock"
 
 type Metric = {
   key: keyof KpiSnapshot

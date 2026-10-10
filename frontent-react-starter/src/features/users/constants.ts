@@ -1,4 +1,4 @@
-import type { Role, UserSortBy } from "@/types/user"
+import type { Role, UserSortBy } from "./types"
 
 export const PAGE_SIZE = 10
 

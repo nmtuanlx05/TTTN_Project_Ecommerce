@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatNumber } from "@/lib/format"
-import type { LowStockVariant } from "@/lib/mock/dashboard"
+import type { LowStockVariant } from "../mock"
 
 /**
  * Tồn khả dụng = stock − reserved. Khả dụng = 0 nhưng stock > 0 là trường hợp

@@ -6,7 +6,7 @@ import type {
   UpdateUserStatusInput,
   User,
   UserListParams,
-} from "@/types/user"
+} from "./types"
 
 /** Gọi API users (docs/api/users.md). Chỉ `queries.ts` được import file này. */
 

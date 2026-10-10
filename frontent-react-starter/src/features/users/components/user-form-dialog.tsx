@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select"
 import { useToast } from "@/components/ui/toast"
 import type { ApiError } from "@/lib/api-error"
-import type { CreateUserInput, UpdateUserInput, User } from "@/types/user"
+import type { CreateUserInput, UpdateUserInput, User } from "../types"
 import { ROLE_DESCRIPTION, ROLE_LABEL, ROLES } from "../constants"
 import { useCreateUser, useUpdateUser } from "../queries"
 import { createUserSchema, updateUserSchema, type UserFormValues } from "../schemas"

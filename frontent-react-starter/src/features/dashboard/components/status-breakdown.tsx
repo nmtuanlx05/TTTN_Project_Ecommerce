@@ -2,7 +2,7 @@ import { Link } from "react-router-dom"
 import { OrderStatusBadge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatNumber } from "@/lib/format"
-import type { OrderStatusCount } from "@/lib/mock/dashboard"
+import type { OrderStatusCount } from "../mock"
 
 /**
  * Bảy trạng thái đơn, mỗi dòng là một liên kết sang danh sách đã lọc sẵn.
