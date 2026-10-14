@@ -68,11 +68,11 @@ Các quy tắc mà bất kỳ triển khai nào cũng phải giữ nguyên:
   đang giữ) tăng khi một order (đơn hàng) được đặt và giảm khi đơn bị hủy hoặc khi đơn chuyển sang
   giao hàng (đồng thời giảm cả `stock`). Cart không bao giờ giữ/khóa tồn kho — chỉ order mới giữ.
 - **Trạng thái đơn là một chuỗi một chiều nghiêm ngặt**: `PENDING → CONFIRMED → PACKING → SHIPPING →
-  COMPLETED`, với `CANCELLED` và `RETURNED` là các nhánh phụ tách ra từ chuỗi đó. Các chuyển trạng
+COMPLETED`, với `CANCELLED` và `RETURNED` là các nhánh phụ tách ra từ chuỗi đó. Các chuyển trạng
   thái ngoài bảng đã tài liệu hóa (xem `02-business-flow.md`) phải bị từ chối.
 - Đơn online chưa thanh toán sau **30 phút** tự động hủy và nhả `reserved`.
 - Staff có thể hủy trực tiếp đơn chưa thanh toán (bắt buộc có lý do); với đơn **đã thanh toán**,
-  Staff chỉ được tạo *yêu cầu* hủy/hoàn tiền — Admin phải duyệt.
+  Staff chỉ được tạo _yêu cầu_ hủy/hoàn tiền — Admin phải duyệt.
 - Khi tạo order phải kiểm tra lại tồn kho và giá, rồi ghi `Order`/`OrderItem` trong cùng một
   transaction database — không được bán vượt quá tồn khả dụng.
 - Báo cáo doanh thu chỉ tính các đơn `COMPLETED`.
@@ -141,3 +141,91 @@ Order, OrderItem, Voucher).
 - Không tự chạy migrate hay xóa dữ liệu khi chưa được đồng ý.
 - Bảng đặt tên snake_case số nhiều bằng `@@map`. Không cấu hình `onDelete` ở giai đoạn này.
 - Comment và tài liệu viết bằng tiếng Việt. Tên biến, hàm, file, commit message viết bằng tiếng Anh.
+
+# BACKEND CONVENTIONS (NESTJS + PRISMA)
+
+1. Cấu trúc module:
+   - Thư mục: `src/modules/<resource-name>/` (kebab-case).
+   - Gồm: `dto/`, `<name>.controller.ts`, `<name>.service.ts`, `<name>.module.ts`.
+   - Thứ tự tạo: Entity/Schema -> DTOs -> Service -> Controller -> Module.
+
+2. DTO:
+   - Dùng `class-validator` với `message` hoàn toàn bằng tiếng Việt.
+   - `Update<Resource>Dto` kế thừa `Create<Resource>Dto` qua `PartialType` từ `@nestjs/swagger`.
+
+3. Bảo mật Password (Tuyệt đối):
+   - Triệt tiêu trường `password` ngay tại tầng Service bằng helper loại bỏ key hoặc Prisma omit/select cụ thể trước khi trả dữ liệu ra ngoài. Không bao giờ trả `password` thô/hash.
+
+4. Xử lý lỗi (Exception):
+   - Dùng built-in NestJS exceptions (`NotFoundException`, `ConflictException`, `BadRequestException`, `ForbiddenException`).
+   - Thông điệp tiếng Việt thân thiện, không throw trực tiếp lỗi thô của Prisma/MySQL (P2002, foreign key error) ra client.
+
+5. Cấu trúc Response chuẩn:
+   - Single: `{ success: true, data: {...} }`
+   - Paginated: `{ success: true, data: [...], meta: { page, limit, total, totalPages } }`
+   - Lỗi: Đồng bộ qua Exception Filter toàn cục.
+
+6. Phân quyền (RBAC):
+   - Dùng Guard (`JwtAuthGuard`, `RolesGuard`) kết hợp Decorator `@Roles('ADMIN', 'STAFF', 'CUSTOMER')`.
+   - Server-side enforcement 100% cho các API quản trị và nội bộ kho.
+
+7. Prisma & Transaction:
+   - Inject `PrismaService` vào constructor của Service.
+   - Bắt buộc dùng `this.prisma.$transaction([...])` khi thay đổi dữ liệu đồng thời trên nhiều bảng (Checkout, Nhập/Xuất kho).
+
+8. Global Validation:
+   - Đăng ký `ValidationPipe` toàn cục trong `main.ts` với `{ whitelist: true, forbidNonWhitelisted: true, transform: true }`.
+
+9. Swagger:
+   - Mỗi endpoint tối thiểu có: `@ApiOperation({ summary })`, `@ApiResponse({ status, description })`. DTO phải có `@ApiProperty()`.
+
+10. Testing (Mức đồ án):
+    - Không bắt buộc viết unit test cho mỗi service.
+    - Chỉ viết e2e cho module có logic tiền hoặc tồn kho (Orders, Inventory, Payment).
+    - Các module CRUD đơn giản chỉ cần chạy thử bằng tay.
+
+## Quy ước API
+
+Áp dụng cho mọi module; module mới phải theo, không tự định nghĩa dạng response riêng. Phần chung nằm ở
+`src/common/` và `src/app.setup.ts` (`configureApp()` dùng trong `main.ts`) — không lặp lại trong controller.
+
+**Response thành công** (do `ResponseInterceptor` bọc; controller/service chỉ trả dữ liệu thô):
+
+- Đơn: `{ "success": true, "data": { ... } }`
+- Phân trang: `{ "success": true, "data": [ ... ], "meta": { "page", "limit", "total", "totalPages" } }`.
+  Service trả `new Paginated(data, { page, limit, total })` (`src/common/paginated.ts`).
+- Mọi key `password` bị xóa đệ quy khỏi response ở bất kỳ độ sâu nào (lớp chốt thêm); service vẫn phải
+  `select` cụ thể, không dựa hoàn toàn vào lớp này.
+
+**Response lỗi** (do `AllExceptionsFilter` tạo):
+`{ "success": false, "statusCode": 400, "message": "...", "errors"?: [{ "field", "message" }] }`
+
+- Lỗi validate (class-validator) → 400, `message: "Dữ liệu không hợp lệ"`, `errors` liệt kê theo từng trường
+  (trường lồng nhau ghi dạng `a.b`). Trường thừa (`forbidNonWhitelisted`) cũng nằm trong `errors`.
+- Prisma P2002 → 409 (nhắc tới email thì "Email đã được sử dụng", còn lại "Dữ liệu đã tồn tại"); P2025 → 404.
+- Lỗi không lường trước → 500 "Lỗi hệ thống, vui lòng thử lại sau"; chi tiết (SQL, tên bảng, stack) chỉ ghi
+  log server, không trả client.
+- Trong service vẫn ném built-in exception với message tiếng Việt (`NotFoundException`, `ConflictException`...).
+
+**Phân trang và danh sách**: query `page` (≥ 1, mặc định 1) và `limit` (1–100, mặc định 10); `skip = (page - 1) * limit`.
+Tổng `total` đếm theo cùng điều kiện lọc, lấy danh sách và đếm trong một `$transaction`. Sắp xếp dùng
+`sortBy` (whitelist field) + `order` (`asc|desc`), mặc định mới nhất trước. Query boolean (`isActive`) phải
+transform từ chuỗi `"true"/"false"`.
+
+**Param id**: dùng `parseIdPipe` (`src/common/pipes/parse-id.pipe.ts`); id không hợp lệ → 400 "ID không hợp lệ".
+
+**Không xóa cứng**: không có endpoint `DELETE` cho `Product`/`ProductVariant`/`User`/`Voucher`; khóa/mở khóa
+bằng `PATCH /<resource>/:id/status` với body `{ isActive: boolean }`. `Order`/`OrderItem` không bao giờ xóa
+(hủy đơn bằng trạng thái `CANCELLED`).
+
+**DTO**: message class-validator hoàn toàn tiếng Việt. `Update<X>Dto` dùng `PartialType(PickType(Create<X>Dto, [...]))`
+từ `@nestjs/mapped-types` (chưa cài `@nestjs/swagger`), chỉ gồm các trường được phép sửa — ví dụ User không cho
+sửa `email`/`password` qua PATCH thường.
+
+**Lưu ý Jest**: `@nestjs/config` và `@nestjs/mapped-types` (v12) chỉ có bản ESM nên Jest không nạp được; test
+phải `jest.mock` chúng (xem `test/users.e2e-spec.ts`).
+
+## Việc tồn đọng
+
+- **`POST /users` đang nhận `role`, nên ai cũng tạo được user `ADMIN`** (chưa có Auth). Phải chặn ở module Auth:
+  chỉ `ADMIN` được đặt hoặc đổi `role` (áp dụng cho cả `POST /users` và `PATCH /users/:id`).
