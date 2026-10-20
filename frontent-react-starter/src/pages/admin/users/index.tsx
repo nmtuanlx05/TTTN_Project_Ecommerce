@@ -1,19 +1,19 @@
-import { Plus } from "lucide-react"
-import { PageHeader } from "@/components/admin/page-header"
-import { Button } from "@/components/ui/button"
-import { UserFormDialog } from "@/features/users/components/user-form-dialog"
-import { UserStatusDialog } from "@/features/users/components/user-status-dialog"
-import { UsersContent } from "@/features/users/components/users-content"
-import { UsersToolbar } from "@/features/users/components/users-toolbar"
-import type { User } from "@/features/users/types"
-import { useUserStatusAction } from "@/features/users/use-user-status-action"
-import { useUsersSearchParams } from "@/features/users/use-users-search-params"
-import { useDialogTarget } from "@/hooks/use-dialog-target"
+import { Plus } from "lucide-react";
+import { PageHeader } from "@/components/admin/page-header";
+import { Button } from "@/components/ui/button";
+import { UserFormDialog } from "@/features/users/components/user-form-dialog";
+import { UserStatusDialog } from "@/features/users/components/user-status-dialog";
+import { UsersContent } from "@/features/users/components/users-content";
+import { UsersToolbar } from "@/features/users/components/users-toolbar";
+import type { User } from "@/features/users/types";
+import { useUserStatusAction } from "@/features/users/use-user-status-action";
+import { useUsersSearchParams } from "@/features/users/use-users-search-params";
+import { useDialogTarget } from "@/hooks/use-dialog-target";
 
 function UsersPage() {
-  const search = useUsersSearchParams()
-  const form = useDialogTarget<User>()
-  const status = useUserStatusAction()
+  const search = useUsersSearchParams();
+  const form = useDialogTarget<User>();
+  const status = useUserStatusAction();
 
   return (
     <div className="flex flex-col gap-section">
@@ -21,7 +21,7 @@ function UsersPage() {
         title="Người dùng"
         description="Tài khoản khách hàng và nhân viên."
         actions={
-          <Button onClick={() => form.show(null)}>
+          <Button className="cursor-pointer" onClick={() => form.show(null)}>
             <Plus />
             Thêm người dùng
           </Button>
@@ -50,7 +50,7 @@ function UsersPage() {
       <UserFormDialog {...form.dialogProps} user={form.target} />
       <UserStatusDialog {...status.dialogProps} />
     </div>
-  )
+  );
 }
 
-export default UsersPage
+export default UsersPage;
