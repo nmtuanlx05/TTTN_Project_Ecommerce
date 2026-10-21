@@ -8,11 +8,13 @@ import {
   MinLength,
 } from 'class-validator';
 import { Role } from '../../generated/prisma/enums';
+import { NormalizeEmail } from '../../common/transforms/normalize-email';
 
 // Số điện thoại di động Việt Nam: 0xxxxxxxxx hoặc +84xxxxxxxxx (đầu số 3, 5, 7, 8, 9)
 export const VN_PHONE_REGEX = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
 
 export class CreateUserDto {
+  @NormalizeEmail()
   @IsEmail({}, { message: 'Email không đúng định dạng' })
   email: string;
 

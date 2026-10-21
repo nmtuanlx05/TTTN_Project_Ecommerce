@@ -6,8 +6,10 @@ chưa chạy thử trên server có database thật.
 - Base URL dev: `http://localhost:3000` (đọc `PORT` từ env, mặc định 3000)
 - Content-Type: `application/json`
 - CORS: chỉ cho origin `http://localhost:5173`
-- **Chưa có xác thực/phân quyền**: mọi endpoint gọi được mà không cần token. Hệ quả: hiện ai cũng có thể tạo user
-  với `role = ADMIN` qua `POST /users`. Cần đóng lại khi làm Auth (chỉ Admin được đặt/đổi `role`).
+- **Chưa bật guard cho nhóm `/users`**: Auth đã có (xem `docs/api/auth.md`) nhưng chưa gắn vào các endpoint này, nên vẫn
+  gọi được mà không cần token. Hệ quả: hiện ai cũng có thể tạo user với `role = ADMIN` qua `POST /users`. Cần đóng lại ở
+  bước phân quyền (chỉ Admin được đặt/đổi `role`).
+- Email được chuẩn hóa (bỏ khoảng trắng, chữ thường) trước khi kiểm tra trùng và lưu.
 
 ## Dạng response chung
 
@@ -130,7 +132,7 @@ Body: `{ "isActive": false }` (khóa) hoặc `{ "isActive": true }` (mở khóa)
 
 - Thành công: **200**, `data` là User sau cập nhật.
 - Lỗi: 400 (`isActive` không phải boolean, id sai), 404.
-- Lưu ý: hiện chưa có đăng nhập nên chưa có chỗ chặn user bị khóa; việc này làm ở module Auth.
+- User bị khóa (`isActive=false`) không đăng nhập được (403) và token đang cầm bị từ chối ngay ở `/auth/*` (xem `auth.md`).
 
 ## Validate
 

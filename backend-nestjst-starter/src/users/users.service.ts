@@ -10,6 +10,7 @@ import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { Paginated } from '../common/paginated';
 import { Prisma } from '../generated/prisma/client';
+import { normalizeEmail } from '../common/transforms/normalize-email';
 import * as bcrypt from 'bcryptjs';
 
 const userSelectFields = {
@@ -28,9 +29,12 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
+    // Chuẩn hóa lại ở service để các nơi gọi nội bộ (vd Auth) cũng nhất quán, không chỉ qua DTO
+    const email = normalizeEmail(createUserDto.email);
+
     // 1. Kiểm tra email đã tồn tại hay chưa
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: createUserDto.email },
+      where: { email },
     });
 
     if (existingUser) {
@@ -44,12 +48,29 @@ export class UsersService {
     // 3. Tạo user và dùng select để chỉ lấy các trường an toàn về
     return this.prisma.user.create({
       data: {
-        email: createUserDto.email,
+        email,
         password: hashedPassword,
         name: createUserDto.name,
         phone: createUserDto.phone,
         role: createUserDto.role,
       },
+      select: userSelectFields,
+    });
+  }
+
+  // Chỉ dùng nội bộ (Auth): trả cả password để so sánh. Không được gọi từ controller hay trả ra client.
+  async findByEmailWithPassword(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizeEmail(email) },
+      select: { ...userSelectFields, password: true },
+    });
+    return user;
+  }
+
+  // Dùng cho Auth: trả null (không ném 404) để strategy tự quyết định lỗi 401.
+  findForAuth(id: number) {
+    return this.prisma.user.findUnique({
+      where: { id },
       select: userSelectFields,
     });
   }

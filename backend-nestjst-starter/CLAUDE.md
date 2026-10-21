@@ -6,9 +6,9 @@ File này cung cấp hướng dẫn cho Claude Code (claude.ai/code) khi làm vi
 
 Đây là một NestJS starter cho backend e-commerce thời trang. Cây thư mục `src/` hiện tại chỉ là
 scaffold mặc định của Nest (`AppModule`/`AppController`/`AppService` trả về "Hello World") — các module
-nghiệp vụ chưa được xây dựng. Đã có `docker-compose.yml` (service MySQL 8), `.env` và `prisma.config.ts`
+nghiệp vụ chưa được xây dựng. Đã có `docker-compose.yml` (service MySQL 8), `.env.development`/`.env.production` và `prisma.config.ts`
 (Prisma 7: URL kết nối khai báo ở đây, không nằm trong schema). `prisma/schema.prisma` (9 model) đã khớp
-`docs/05` và `docs/06`, nhưng chưa có migration nào. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
+`docs/05` và `docs/06`; migration `init_ecommerce` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
 xây dựng dựa trên đó; coi nó là nguồn thông tin chính khi triển khai tính năng, không phải code `src/`
 hiện tại. Nếu `docs/05` lệch với `prisma/schema.prisma` thì schema là bản chuẩn.
 
@@ -223,9 +223,46 @@ từ `@nestjs/mapped-types` (chưa cài `@nestjs/swagger`), chỉ gồm các tr�
 sửa `email`/`password` qua PATCH thường.
 
 **Lưu ý Jest**: `@nestjs/config` và `@nestjs/mapped-types` (v12) chỉ có bản ESM nên Jest không nạp được; test
-phải `jest.mock` chúng (xem `test/users.e2e-spec.ts`).
+phải `jest.mock` chúng (xem `test/users.e2e-spec.ts`, `test/auth.e2e-spec.ts`). `@nestjs/jwt` và `@nestjs/passport` cũng ESM
+nhưng cần chạy thật, nên được transform qua `transformIgnorePatterns` trong `test/jest-e2e.json`.
+
+## Quy ước Auth
+
+Code ở `src/auth/`; chi tiết endpoint ở `docs/api/auth.md`. Passport: `LocalStrategy` (login), `JwtStrategy` (access),
+`JwtRefreshStrategy` (refresh từ cookie).
+
+- **Access token**: JWT 15 phút, header `Authorization: Bearer`, payload `{ sub: userId, role }`, secret `JWT_ACCESS_SECRET`.
+- **Refresh token**: JWT 7 ngày trong cookie `refresh_token` (`httpOnly`, `sameSite=lax`, `secure` chỉ ở production,
+  `path=/auth`), stateless, xoay vòng mỗi lần `POST /auth/refresh`, secret riêng `JWT_REFRESH_SECRET`.
+- **File env theo `NODE_ENV`** (`src/config/env-file.ts`, dùng chung cho Nest, `prisma.config.ts`, `prisma/seed.ts`): không đặt
+  hoặc `development` → `.env.development`; `production` → `.env.production`. Không còn dùng `.env`. Biến có sẵn trong
+  `process.env` được ưu tiên hơn file. `npm run start:prod`, `db:migrate:prod`, `db:seed:prod` đã đặt `NODE_ENV=production`;
+  `npm run db:up` chạy docker compose với `--env-file .env.development`.
+- **Biến môi trường** (mẫu trong `.env.example`, không commit secret thật): `JWT_ACCESS_SECRET`, `JWT_ACCESS_EXPIRES_IN`,
+  `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRES_IN`. Thiếu biến thì app không khởi động (`src/config/env.validation.ts`).
+  `ADMIN_EMAIL`/`ADMIN_PASSWORD` chỉ dùng cho `npx prisma db seed` (tạo ADMIN đầu tiên, chạy lại an toàn).
+- `JwtStrategy`/`JwtRefreshStrategy` luôn tải lại user từ DB: khóa tài khoản hoặc đổi role có hiệu lực ngay.
+- Login: sai email hoặc mật khẩu → 401 cùng một câu; đúng mật khẩu nhưng `isActive=false` → 403. Email luôn được chuẩn hóa
+  (trim + lowercase) bằng `NormalizeEmail` / `normalizeEmail` (`src/common/transforms/`).
+- `LocalAuthGuard` tự validate body bằng `LoginDto` (guard chạy trước `ValidationPipe`).
+- Đăng ký (`/auth/register`) luôn tạo `CUSTOMER`, gọi `UsersService.create`; `RegisterDto` không có `role`.
+- Mật khẩu tối thiểu 6 ký tự ở `CreateUserDto` và `RegisterDto` (login không giới hạn).
+
+**Bảo vệ endpoint mới**: gắn `@UseGuards(JwtAuthGuard, RolesGuard)` (thứ tự này) rồi `@Roles('ADMIN', 'STAFF')`;
+lấy user bằng `@CurrentUser()`. Endpoint không gắn `@Roles` chỉ yêu cầu đã đăng nhập. `@Public()` chỉ có tác dụng khi
+`JwtAuthGuard` được đăng ký toàn cục (`APP_GUARD`) — hiện chưa bật. Phân quyền luôn kiểm tra ở server.
+
+**Quy tắc `role`**: chỉ `ADMIN` được đặt hoặc đổi `role` (áp dụng cho `POST /users` và `PATCH /users/:id`); đăng ký công khai
+không bao giờ nhận `role`.
 
 ## Việc tồn đọng
 
-- **`POST /users` đang nhận `role`, nên ai cũng tạo được user `ADMIN`** (chưa có Auth). Phải chặn ở module Auth:
-  chỉ `ADMIN` được đặt hoặc đổi `role` (áp dụng cho cả `POST /users` và `PATCH /users/:id`).
+- **`POST /users` đang nhận `role`, nên ai cũng tạo được user `ADMIN`** vì các endpoint cũ chưa gắn guard. Khi gắn
+  guard: chỉ `ADMIN` được đặt hoặc đổi `role` (áp dụng cho cả `POST /users` và `PATCH /users/:id`).
+- **Chưa bật guard toàn cục và chưa phân quyền endpoint cũ** (`/users`...): `JwtAuthGuard`, `RolesGuard`, `@Public()`,
+  `@Roles()` đã có nhưng chỉ `GET /auth/me` đang dùng. Làm ở bước sau, cùng lúc cập nhật frontend để gửi token.
+- **Chưa thu hồi được refresh token**: stateless nên logout chỉ xóa cookie; token bị lộ dùng được tới khi hết 7 ngày
+  (chỉ chặn được bằng cách khóa user hoặc đổi `JWT_REFRESH_SECRET`). Cân nhắc lưu hash refresh token / `tokenVersion` ở V2.
+- **Chưa giới hạn số lần đăng nhập sai** (chưa có rate limit/lockout) cho `/auth/login`.
+- **`test/app.e2e-spec.ts` fail từ trước**: nạp `AppModule` thật mà `@nestjs/config` chỉ có bản ESM (Jest không nạp được)
+  và cần DB. `test/jest-e2e.json` đã cho Jest transform `@nestjs/jwt` và `@nestjs/passport` (cũng ESM) để test Auth chạy được.

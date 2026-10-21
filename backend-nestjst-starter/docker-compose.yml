@@ -1,4 +1,4 @@
-# Hạ tầng cho môi trường dev. Giá trị ${...} được docker compose đọc từ file .env cùng thư mục.
+# Hạ tầng cho môi trường dev. Giá trị ${...} đọc từ .env.development qua `--env-file` (chạy `npm run db:up`).
 services:
   mysql:
     image: mysql:8.0
