@@ -1,29 +1,28 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
-import { AdminLayout } from "@/components/admin/admin-layout"
-import DashboardPage from "@/pages/admin/dashboard"
-import PlaceholderPage from "@/pages/admin/placeholder"
-import UsersPage from "@/pages/admin/users"
+import { BrowserRouter, Route, Routes } from "react-router-dom"
+import { ToastProvider, ToastViewport } from "@/components/ui/toast"
+import { AuthBootstrap } from "@/features/auth/auth-bootstrap"
+import NotFoundPage from "@/pages/not-found"
 import StyleguidePage from "@/pages/styleguide"
+import { adminRoutes } from "@/routes/admin-routes"
+import { authRoutes } from "@/routes/auth-routes"
+import { storefrontRoutes } from "@/routes/storefront-routes"
 import "./global.css"
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="orders/*" element={<PlaceholderPage />} />
-          <Route path="products/*" element={<PlaceholderPage />} />
-          <Route path="categories/*" element={<PlaceholderPage />} />
-          <Route path="inventory/*" element={<PlaceholderPage />} />
-          <Route path="vouchers/*" element={<PlaceholderPage />} />
-          <Route path="users/*" element={<UsersPage />} />
-        </Route>
-
-        <Route path="/styleguide" element={<StyleguidePage />} />
-        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
-      </Routes>
+      <AuthBootstrap>
+        <ToastProvider>
+          <Routes>
+            {authRoutes}
+            {storefrontRoutes}
+            {adminRoutes}
+            <Route path="/styleguide" element={<StyleguidePage />} />
+            <Route path="*" element={<NotFoundPage fullPage />} />
+          </Routes>
+          <ToastViewport />
+        </ToastProvider>
+      </AuthBootstrap>
     </BrowserRouter>
   )
 }

@@ -1,4 +1,5 @@
-import type { Role, UserSortBy } from "./types"
+import type { UserSortBy } from "./types"
+import type { Role } from "@/types/user"
 
 export const PAGE_SIZE = 10
 
@@ -23,9 +24,3 @@ export const ROLE_DESCRIPTION: Record<Role, string> = {
   STAFF: "Vận hành sản phẩm, kho và đơn hàng. Không khóa người dùng, không xem doanh thu.",
   CUSTOMER: "Mua hàng trên website, không vào được trang quản trị.",
 }
-
-/** Khớp `@MinLength` của CreateUserDto ở backend. */
-export const PASSWORD_MIN_LENGTH = 6
-
-/** Khớp `VN_PHONE_REGEX` ở backend: 0xxxxxxxxx hoặc +84xxxxxxxxx, đầu số 3/5/7/8/9. */
-export const VN_PHONE_REGEX = /^(0|\+84)(3|5|7|8|9)\d{8}$/

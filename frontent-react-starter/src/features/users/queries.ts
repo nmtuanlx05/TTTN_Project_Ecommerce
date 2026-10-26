@@ -5,10 +5,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query"
 import type { ApiError } from "@/lib/api-error"
+import type { User } from "@/types/user"
 import type {
   CreateUserInput,
   UpdateUserInput,
-  User,
   UserListParams,
 } from "./types"
 import {

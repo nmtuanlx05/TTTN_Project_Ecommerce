@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/components/admin/nav-items";
+import type { Role } from "@/types/user";
 
 /**
  * Menu điều hướng của khu quản trị.
@@ -9,13 +10,13 @@ import { NAV_ITEMS } from "@/components/admin/nav-items";
  * chuyển sang drawer ở 768px (ta cần 1024px) và mang theo bộ style riêng
  * (nền khối, bo góc, rail) không khớp tông hairline của hệ thống này.
  */
-function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
+function AdminNav({ role, onNavigate }: { role: Role; onNavigate?: () => void }) {
   return (
     <nav
       aria-label="Điều hướng khu quản trị"
       className="flex flex-col gap-0.5 p-2"
     >
-      {NAV_ITEMS.map(({ to, label, icon: Icon, ready }) => (
+      {NAV_ITEMS.filter((item) => item.roles.includes(role)).map(({ to, label, icon: Icon, ready }) => (
         <NavLink
           key={to}
           to={to}
@@ -42,7 +43,7 @@ function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 /** Cột trái cố định, chỉ hiện từ 1024px trở lên. */
-function AdminSidebar() {
+function AdminSidebar({ role }: { role: Role }) {
   return (
     <aside className="hidden w-60 shrink-0 border-r border-border-subtle bg-surface-sunken lg:flex lg:flex-col">
       <div className="flex h-16 items-center border-b border-border-subtle px-4">
@@ -50,7 +51,7 @@ function AdminSidebar() {
           MONO STUDIO
         </span>
       </div>
-      <AdminNav />
+      <AdminNav role={role} />
       <div className="mt-auto border-t border-border-subtle p-4">
         <p className="text-caption text-ink-muted">Khu quản trị nội bộ</p>
       </div>

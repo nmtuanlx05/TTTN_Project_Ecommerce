@@ -13,26 +13,30 @@ Quy ước này là luật. Code mới phải theo. Muốn đổi thì sửa fil
 ````
 src/
 ├─ main.tsx, App.tsx, global.css, vite-env.d.ts   ✓
-├─ routes/        admin-routes, storefront-routes, guards/ (require-auth, require-role)
+├─ routes/        ✓ admin-routes, auth-routes, storefront-routes, admin-layout-container,
+│                 storefront-layout-container, admin-index-redirect, can-access-path, guards/ (require-auth, require-role,
+│                 redirect-if-authenticated)
 ├─ pages/         MỎNG: chỉ ghép
-│   ├─ auth/        login, register
+│   ├─ auth/        login ✓, register ✓
 │   ├─ admin/       dashboard ✓, users ✓, orders, products, categories,
 │   │               inventory, vouchers, placeholder ✓
 │   ├─ styleguide/  ✓ trang nội bộ cho dev (route /styleguide), không thuộc admin
-│   ├─ storefront/  home, catalog, product-detail, cart, checkout,
+│   ├─ forbidden.tsx ✓ (403), not-found.tsx ✓ (404)
+│   ├─ storefront/  home ✓ (hero + khối "sắp ra mắt"), catalog, product-detail, cart, checkout,
 │   │               order-success, my-orders, account
-│   └─ not-found.tsx
 ├─ features/      mỗi thực thể một thư mục theo khuôn mục 3
-│   ├─ auth/ dashboard/ users/ ✓ categories/ products/ inventory/
+│   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ products/ inventory/
 │   └─ cart/ checkout/ orders/ vouchers/ payments/ account/
 ├─ components/
 │   ├─ ui/          shadcn, KHÔNG sửa ✓
 │   ├─ admin/       khung admin và thứ dùng chung nhiều tính năng ✓
-│   ├─ storefront/  khung khách: store-layout, header, footer
-│   └─ shared/      chỉ khi cả admin và storefront cùng dùng; chưa cần thì chưa tạo
+│   ├─ storefront/  ✓ khung khách: storefront-layout, storefront-header, storefront-footer, home-hero
+│   └─ shared/      ✓ chỉ khi cả admin và storefront (kể cả trang auth) cùng dùng: theme-toggle (+ theme-cycle-button,
+│                     theme-options), password-input, user-menu, brand-logo
 ├─ hooks/         hook dùng chung (use-theme ✓, use-mobile ✓, use-debounce)
-├─ lib/           hạ tầng: api-client ✓, api-error ✓, query-client ✓, format ✓, utils ✓, date-range ✓
-├─ types/         kiểu dùng chung (api.ts ✓)
+├─ lib/           hạ tầng: api-client ✓, api-error ✓, query-client ✓, format ✓, utils ✓, date-range ✓,
+│                 form-errors ✓, password-rules ✓ (nguồn duy nhất độ dài mật khẩu), vn-phone ✓, display-name ✓ (tên hiển thị của tài khoản)
+├─ types/         kiểu dùng chung (api.ts ✓, user.ts ✓ — Role và User, dùng ở auth, users, components/admin)
 └─ assets/        ảnh, font nội bộ
 ````
 
@@ -77,7 +81,10 @@ Tính năng chỉ có một phía (users, dashboard, cart) để phẳng `compon
 5. Chạy tsc -b, lint, build; xem light và dark.
 6. Cập nhật mục "Trang hiện có" trong CLAUDE.md.
 
-## 7. Bảng quyền (gợi ý, chốt khi làm Auth)
+## 7. Bảng quyền (đã chốt)
+Nguồn duy nhất là trường `roles` trong `components/admin/nav-items.ts`; menu ẩn mục và route
+(`guarded()` trong `routes/admin-routes.tsx`) đều đọc từ đó. Đổi quyền thì sửa bảng này và `nav-items.ts`.
+
 | Mục | ADMIN | STAFF |
 |---|---|---|
 | Dashboard, báo cáo doanh thu | Có | Không |
@@ -85,12 +92,18 @@ Tính năng chỉ có một phía (users, dashboard, cart) để phẳng `compon
 | Sản phẩm, Danh mục | Có | Xem, sửa |
 | Kho | Có | Có |
 | Voucher | Có | Không |
-| Người dùng | Có | Không hoặc chỉ xem khách |
+| Người dùng | Có | Không |
+
+"Xem, sửa" của Sản phẩm/Danh mục: cả hai role vào được trang; nút nào STAFF không được dùng thì ẩn khi làm module đó,
+bằng `useCurrentRole()` (`features/auth/`). Backend vẫn là nơi chặn thật.
+
+Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 403 toàn trang) → khung admin →
+`RequireRole` theo mục (403 trong khung). Route lạ `*` nằm trong cùng cây nên guard chạy trước 404.
 
 ## 8. Thư mục xuất hiện khi nào
 | Giai đoạn | Thư mục mới |
 |---|---|
-| Auth | features/auth/, routes/, pages/auth/ |
+| Auth ✓ | features/auth/, routes/, pages/auth/ |
 | Danh mục, sản phẩm | features/categories/, features/products/ |
 | Kho | features/inventory/ |
 | Giỏ hàng, đơn hàng, voucher | features/cart/, orders/, vouchers/ |
@@ -99,6 +112,7 @@ Tính năng chỉ có một phía (users, dashboard, cart) để phẳng `compon
 | Dashboard thật | features/dashboard/ nối API thật |
 
 ## 9. Việc tồn đọng
-- Storefront sẽ có mật độ và tông riêng, không dùng `.density-admin`.
+- Storefront dùng mật độ mặc định (không `.density-admin`), tông tối giản biên tập (Archivo cho logo/tiêu đề). Header chưa có điều hướng, giỏ hàng, tìm kiếm.
 - API sản phẩm phải phân biệt admin (thấy cả sản phẩm ẩn) và khách (chỉ sản phẩm đang bán) khi làm backend Products.
 - Ẩn hoặc chặn `/styleguide` ở bản production.
+- `components/shared/` hiện chứa `theme-toggle`, `password-input`, `user-menu`, `brand-logo` (dùng từ hai khu trở lên).

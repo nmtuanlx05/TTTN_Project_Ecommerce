@@ -1,5 +1,6 @@
 import { z } from "zod"
-import { PASSWORD_MIN_LENGTH, VN_PHONE_REGEX } from "./constants"
+import { PASSWORD_TOO_SHORT_MESSAGE, PASSWORD_MIN_LENGTH } from "@/lib/password-rules"
+import { VN_PHONE_REGEX } from "@/lib/vn-phone"
 
 /**
  * Quy tắc phản chiếu CreateUserDto của backend (docs/api/users.md, mục Validate).
@@ -23,7 +24,7 @@ export const createUserSchema = z.object({
   password: z
     .string()
     .min(1, "Nhập mật khẩu cho tài khoản.")
-    .min(PASSWORD_MIN_LENGTH, `Mật khẩu quá ngắn. Nhập ít nhất ${PASSWORD_MIN_LENGTH} ký tự.`),
+    .min(PASSWORD_MIN_LENGTH, PASSWORD_TOO_SHORT_MESSAGE),
   role: z.enum(["ADMIN", "STAFF", "CUSTOMER"], { message: "Chọn một vai trò." }),
 })
 

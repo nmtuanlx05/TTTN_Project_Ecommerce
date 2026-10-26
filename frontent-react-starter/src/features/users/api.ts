@@ -1,10 +1,10 @@
 import { apiGet, apiGetPage, apiSend } from "@/lib/api-client"
 import type { Paginated } from "@/types/api"
+import type { User } from "@/types/user"
 import type {
   CreateUserInput,
   UpdateUserInput,
   UpdateUserStatusInput,
-  User,
   UserListParams,
 } from "./types"
 

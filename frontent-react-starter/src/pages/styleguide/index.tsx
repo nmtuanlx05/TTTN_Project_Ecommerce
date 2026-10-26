@@ -17,7 +17,7 @@ import {
 import { ArrowUpDown, PackageOpen, Plus } from "lucide-react"
 
 import { TablePagination } from "@/components/admin/table-pagination"
-import { ThemeToggle } from "@/components/admin/theme-toggle"
+import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { useTheme } from "@/hooks/use-theme"
 import { Alert } from "@/components/ui/alert"
 import {

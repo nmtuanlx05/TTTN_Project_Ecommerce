@@ -1,19 +1,5 @@
 import type { SortOrder } from "@/types/api"
-
-export type Role = "ADMIN" | "STAFF" | "CUSTOMER"
-
-/** Khớp đối tượng User của API. Backend không bao giờ trả `password`. */
-export interface User {
-  id: number
-  email: string
-  /** `null` với dữ liệu cũ; user mới luôn có tên. */
-  name: string | null
-  phone: string | null
-  role: Role
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
-}
+import type { Role } from "@/types/user"
 
 export type UserSortBy = "createdAt" | "name" | "email"
 

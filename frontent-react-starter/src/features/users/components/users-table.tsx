@@ -18,9 +18,10 @@ import {
 } from "@/components/ui/table"
 import { formatDateTime } from "@/lib/format"
 import type { SortOrder } from "@/types/api"
-import type { User, UserSortBy } from "../types"
+import type { UserSortBy } from "../types"
+import type { User } from "@/types/user"
 import { PAGE_SIZE, SORTABLE_COLUMNS } from "../constants"
-import { displayName } from "../display-name"
+import { displayName } from "@/lib/display-name"
 import { RoleBadge } from "./role-badge"
 import { UserStatus } from "./user-status"
 

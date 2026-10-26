@@ -24,7 +24,9 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import type { ApiError } from "@/lib/api-error";
-import type { CreateUserInput, UpdateUserInput, User } from "../types";
+import { PASSWORD_HINT } from "@/lib/password-rules";
+import type { CreateUserInput, UpdateUserInput } from "../types";
+import type { User } from "@/types/user";
 import { ROLE_DESCRIPTION, ROLE_LABEL, ROLES } from "../constants";
 import { useCreateUser, useUpdateUser } from "../queries";
 import {
@@ -32,7 +34,7 @@ import {
   updateUserSchema,
   type UserFormValues,
 } from "../schemas";
-import { PasswordInput } from "./password-input";
+import { PasswordInput } from "@/components/shared/password-input";
 
 const ROLE_ITEMS = ROLES.map((role) => ({
   value: role,
@@ -300,7 +302,7 @@ function UserForm({
             htmlFor={`${id}-password`}
             required
             error={errors.password?.message}
-            description="Tối thiểu 6 ký tự."
+            description={PASSWORD_HINT}
           >
             <PasswordInput {...register("password")} />
           </Field>

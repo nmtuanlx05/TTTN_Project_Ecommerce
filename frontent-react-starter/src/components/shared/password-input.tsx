@@ -6,8 +6,12 @@ import { Input } from "@/components/ui/input"
  * Ô mật khẩu có nút hiện/ẩn. Nhận `id` và `aria-*` từ `<Field>` rồi chuyển cho input,
  * nên phải là component riêng chứ không bọc trong một div.
  * `ref` là prop thường ở React 19, đủ cho `register()` của react-hook-form.
+ * `autoComplete` mặc định `new-password` (form tạo/đổi mật khẩu); form đăng nhập truyền `current-password`.
  */
-function PasswordInput(props: Omit<React.ComponentProps<typeof Input>, "type">) {
+function PasswordInput({
+  autoComplete = "new-password",
+  ...props
+}: Omit<React.ComponentProps<typeof Input>, "type">) {
   const [visible, setVisible] = useState(false)
   const Icon = visible ? EyeOff : Eye
 
@@ -16,7 +20,7 @@ function PasswordInput(props: Omit<React.ComponentProps<typeof Input>, "type">) 
       <Input
         {...props}
         type={visible ? "text" : "password"}
-        autoComplete="new-password"
+        autoComplete={autoComplete}
         className="pr-11"
       />
       <button

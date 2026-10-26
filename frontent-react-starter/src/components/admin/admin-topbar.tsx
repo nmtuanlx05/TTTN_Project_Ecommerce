@@ -1,35 +1,42 @@
-import { useState } from "react"
-import { Link, useLocation } from "react-router-dom"
-import { ChevronRight, LogOut, Menu, UserRound } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { ChevronRight, Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet"
-import { ThemeToggle } from "@/components/admin/theme-toggle"
-import { AdminNav } from "@/components/admin/admin-sidebar"
-import { NAV_ITEMS } from "@/components/admin/nav-items"
+} from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { UserMenu, type UserMenuAccount } from "@/components/shared/user-menu";
+import { AdminNav } from "@/components/admin/admin-sidebar";
+import { NAV_ITEMS } from "@/components/admin/nav-items";
+import type { Role } from "@/types/user";
 
 function useBreadcrumb() {
-  const { pathname } = useLocation()
-  const match = NAV_ITEMS.find((item) => pathname.startsWith(item.to))
-  return match?.label ?? "Quản trị"
+  const { pathname } = useLocation();
+  const match = NAV_ITEMS.find((item) => pathname.startsWith(item.to));
+  return match?.label ?? "Quản trị";
 }
 
-function AdminTopbar() {
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const current = useBreadcrumb()
+/** Thông tin hiện ở topbar. Truyền từ ngoài vào vì components/ không được đọc phiên đăng nhập. */
+type AdminAccount = Omit<UserMenuAccount, "canAccessAdmin">;
+
+function AdminTopbar({
+  account,
+  role,
+  onLogout,
+  loggingOut,
+}: {
+  account: AdminAccount;
+  role: Role;
+  onLogout: () => void;
+  loggingOut: boolean;
+}) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const current = useBreadcrumb();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-inline border-b border-border-subtle bg-canvas px-gutter">
@@ -37,7 +44,12 @@ function AdminTopbar() {
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
         <SheetTrigger
           render={
-            <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Mở menu" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              aria-label="Mở menu"
+            />
           }
         >
           <Menu />
@@ -49,7 +61,7 @@ function AdminTopbar() {
           <SheetDescription className="sr-only">
             Điều hướng giữa các khu vực của trang quản trị
           </SheetDescription>
-          <AdminNav onNavigate={() => setDrawerOpen(false)} />
+          <AdminNav role={role} onNavigate={() => setDrawerOpen(false)} />
         </SheetContent>
       </Sheet>
 
@@ -57,7 +69,7 @@ function AdminTopbar() {
         <ol className="flex items-center gap-1.5 text-body-sm text-ink-muted">
           <li>
             <Link
-              to="/admin/dashboard"
+              to="/admin"
               className="rounded-xs outline-none hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               Quản trị
@@ -74,33 +86,14 @@ function AdminTopbar() {
 
       <ThemeToggle />
 
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={<Button variant="secondary" size="sm" aria-label="Tài khoản" />}
-        >
-          <UserRound />
-          <span className="hidden sm:inline">Nguyễn Mạnh Tuấn</span>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>
-            <span className="block text-body-sm text-ink">Nguyễn Mạnh Tuấn</span>
-            <span className="block text-caption font-normal text-ink-muted">
-              Quản trị viên
-            </span>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <UserRound />
-            Hồ sơ của tôi
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <LogOut />
-            Đăng xuất
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <UserMenu
+        account={{ ...account, canAccessAdmin: false }}
+        onLogout={onLogout}
+        loggingOut={loggingOut}
+      />
     </header>
-  )
+  );
 }
 
-export { AdminTopbar }
+export { AdminTopbar };
+export type { AdminAccount };

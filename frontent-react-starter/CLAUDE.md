@@ -246,6 +246,7 @@ Giao diện viết bằng tiếng Việt. Tên biến, hàm, file, commit messag
 - `lucide-react` cho icon.
 - `axios` + `@tanstack/react-query` cho gọi API — xem mục "Quy ước gọi API".
 - `react-hook-form` + `zod` + `@hookform/resolvers` cho form.
+- `zustand` chỉ cho store phiên đăng nhập (`features/auth/auth-store.ts`); state khác dùng react-query hoặc state cục bộ.
 - `@tanstack/react-table` **v9** — API khác hẳn v8: dùng `useTable` +
   `tableFeatures({...})` chứ không phải `useReactTable` + `getCoreRowModel()`.
   Xem `src/pages/styleguide/index.tsx` làm mẫu.
@@ -296,8 +297,8 @@ origin `http://localhost:5173`, nên dev server phải chạy đúng cổng đó
   tiền tố `['<module>']`.
 - Danh sách dùng `placeholderData: keepPreviousData` để đổi trang/lọc không chớp
   skeleton. Skeleton chỉ cho lần tải đầu (`isPending`).
-- Interceptor request của `api-client.ts` đang để trống, là chỗ duy nhất gắn token
-  khi làm Auth.
+- `api-client.ts` bật `withCredentials` và là chỗ duy nhất gắn token (`Authorization: Bearer`) và làm
+  mới token khi gặp 401 — xem "Quy ước Auth".
 
 **Lỗi.** Mọi lỗi ra khỏi tầng API đều là `ApiError`: `statusCode` (0 = không có phản
 hồi: mất mạng, quá thời gian), `message` (tiếng Việt, hiện được cho người dùng),
@@ -310,15 +311,80 @@ F5 và gửi link không mất. Giá trị trên URL **phải lọc theo whiteli
 gửi: backend dùng `forbidNonWhitelisted`, một query lạ hay sai sẽ bị 400. Giá trị
 mặc định không ghi lên URL. Mẫu: `features/users/use-users-search-params.ts`.
 
+## Quy ước Auth
+
+Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backend-nestjst-starter/docs/api/auth.md`.
+
+- **Token chỉ ở trong bộ nhớ.** Access token nằm trong `auth-store.ts` (zustand, KHÔNG persist) cùng
+  `{ user, status: 'loading' | 'authenticated' | 'anonymous', sessionExpired }`. Cấm lưu token vào
+  localStorage/sessionStorage, cấm log token hay mật khẩu. Refresh token là cookie `httpOnly` do trình duyệt giữ
+  (`path=/auth`), JS không đọc được; vì thế `withCredentials: true` là bắt buộc.
+- **Khôi phục phiên (F5).** `AuthBootstrap` (bọc toàn bộ `Routes` trong `App.tsx`) gọi `POST /auth/refresh` rồi
+  `GET /auth/me` đúng một lần (promise ở cấp module nên StrictMode không gọi hai lần), trong lúc đó hiện màn hình
+  chờ toàn trang để không nháy sang `/login`. Refresh trả 401 = chưa đăng nhập (không báo lỗi). Lỗi mạng
+  (`statusCode` 0) hoặc 5xx = màn hình lỗi có nút "Thử lại" (promise bị xóa khi thất bại nên chạy lại được), không coi là
+  đã đăng xuất.
+- **Làm mới khi 401.** Interceptor của `lib/api-client.ts`: request đã gửi token mà gặp 401 (trừ `/auth/login`,
+  `/auth/refresh`) thì gọi `refreshSession()` — mọi request lỗi cùng lúc dùng chung một promise — rồi gửi lại request gốc
+  đúng một lần (cờ `_retried`). Refresh bị máy chủ từ chối (4xx) thì `onSessionExpired`: xóa store, xóa cache react-query,
+  `RequireAuth` đưa về `/login` kèm thông báo (hiện một lần). Mất mạng/5xx khi refresh thì **giữ phiên** và chỉ báo lỗi cho
+  request đó.
+- **`lib/` không import `features/`**, nên `features/auth/setup-auth-bridge.ts` (gọi trong `main.tsx`) đăng ký
+  `getAccessToken` / `setAccessToken` / `onSessionExpired` vào `api-client` qua `configureAuth`.
+  `components/` cũng không đọc phiên: `AdminLayout` nhận `account`, `role`, `onLogout` qua props từ
+  `routes/admin-layout-container.tsx`.
+- **Đọc user/role:** `useCurrentUser()`, `useCurrentRole()` (`features/auth/`). Không đọc role từ chỗ nào khác.
+- **Sau đăng nhập** do `RedirectIfAuthenticated` quyết định (một nơi duy nhất): quay lại `state.from` nếu là đường dẫn
+  nội bộ hợp lệ (`isSafeRedirectPath`: bắt đầu bằng `/`, không `//`, không `\`) và vai trò hiện tại vào được; không thì ADMIN →
+  `/admin`, STAFF → `/admin/orders`, CUSTOMER → `/`.
+- **Đăng xuất:** `useLogout()` gọi `/auth/logout` (bỏ qua lỗi), chuyển `/login`, xóa store và cache.
+- **Bảo vệ route mới trong /admin:** (1) thêm mục vào `components/admin/nav-items.ts` với `roles`; (2) khai báo route trong
+  `routes/admin-routes.tsx` bọc bằng `guarded("/admin/<mục>", <Trang />)` — quyền đọc từ `nav-items`, sidebar cũng lọc theo đó.
+  Thứ tự guard: `RequireAuth` → `RequireRole` (ADMIN/STAFF) → khung admin → quyền từng mục; `*` nằm trong cùng cây nên
+  `/admin/abc` khi chưa đăng nhập sang `/login` trước khi thấy 404. Route storefront cần đăng nhập thì bọc `RequireAuth`.
+- **Mật khẩu tối thiểu 6 ký tự; nguồn duy nhất là `src/lib/password-rules.ts`** (`PASSWORD_MIN_LENGTH`, `PASSWORD_HINT`,
+  `PASSWORD_TOO_SHORT_MESSAGE`). Schema, mô tả dưới ô và thông báo lỗi đều import từ đó, **không viết số độ dài ở nơi khác**.
+  Form đăng ký và thêm người dùng dùng hằng này; form đăng nhập chỉ kiểm "không để trống" (mật khẩu cũ vẫn phải đăng nhập
+  được). Không trim mật khẩu. Đổi quy tắc thì sửa backend (`@MinLength`) cùng lúc.
+- **Đăng ký** (`/register`, `register-form.tsx`): không mở phiên. Thành công thì toast, chuyển `/login` kèm `state.email` (chỉ
+  email, không có mật khẩu) để điền sẵn. 409 hiện dưới ô email; `errors[]` gắn đúng ô bằng `applyServerErrors`
+  (`src/lib/form-errors.ts`, dùng chung login và register). `name`/`phone` bỏ trống thì không gửi. `useLogin`/`useRegister`
+  đặt `gcTime: 0` để mật khẩu không nằm lại trong cache mutation.
+- `ToastProvider` + `ToastViewport` nằm ở `App.tsx` (một chỗ cho cả auth và admin); không đặt thêm ở layout con.
+- Guard phía frontend chỉ là UX; chặn thật là việc của backend (hiện backend chưa gắn guard cho `/users`...).
+
 ## Trang hiện có
 
-- `/styleguide` — trình bày toàn bộ hệ thống.
-- `/admin/dashboard` — dữ liệu giả (`src/features/dashboard/mock.ts`).
-- `/admin/users` — danh sách người dùng nối backend thật: tìm kiếm, lọc, sắp xếp, phân trang phía
+- `/login` — đăng nhập (`features/auth/components/login-form.tsx` trong `auth-shell.tsx`). 401/403/lỗi mạng hiện thành
+  Alert đầu form, lỗi `errors[]` gắn đúng ô. Có sáng/tối.
+- `/register` — đăng ký tài khoản CUSTOMER (`features/auth/components/register-form.tsx`): email, mật khẩu + nhập lại, họ tên và số điện thoại tùy chọn.
+- `/` — trang chủ storefront, công khai. Khung `components/storefront/storefront-layout.tsx` (header dính + `<Outlet/>` + footer),
+  nối phiên ở `routes/storefront-layout-container.tsx`. Header: `BrandLogo` bên trái; bên phải `ThemeToggle` và một mục tài khoản —
+  đang tải phiên thì giữ chỗ, chưa đăng nhập chỉ có MỘT nút "Đăng nhập" (không có "Đăng ký": `/login` đã có liên kết sang `/register`),
+  đã đăng nhập thì `UserMenu`. Nội dung: `home-hero.tsx` + `EmptyState` "Sản phẩm sắp ra mắt". **Đây là nền storefront**: khi có
+  `features/products`, thay khối `EmptyState` trong `pages/storefront/home` bằng danh sách sản phẩm; trang storefront mới đặt trong cùng
+  `<Route element={<StorefrontLayoutContainer />}>` ở `routes/storefront-routes.tsx` để có sẵn header/footer.
+- `/styleguide` — trình bày toàn bộ hệ thống (công khai, không cần đăng nhập).
+- `/admin/dashboard` — dữ liệu giả (`src/features/dashboard/mock.ts`). Chỉ ADMIN.
+- `/admin/users` — chỉ ADMIN. Danh sách người dùng nối backend thật: tìm kiếm, lọc, sắp xếp, phân trang phía
   server; thêm/sửa bằng `UserFormDialog` (react-hook-form + zod, `features/users/schemas.ts` phản chiếu
-  validate backend); khóa/mở khóa luôn qua hộp xác nhận. **Chưa phân quyền hiển thị**: STAFF hiện vẫn thấy
-  nút Thêm/Sửa/Khóa — làm cùng lúc với Auth (khi đó thêm nguồn role dùng chung với topbar, đang ghi cứng).
-- Các mục menu còn lại hiện là `PlaceholderPage`; route lạ chuyển về `/admin/dashboard`.
+  validate backend); khóa/mở khóa luôn qua hộp xác nhận. Vì chỉ ADMIN vào được nên không có logic ẩn nút theo role.
+- Các mục menu còn lại hiện là `PlaceholderPage`. Route lạ trong `/admin` hiện 404 trong khung admin; ngoài `/admin` hiện 404 toàn trang.
+- Dùng chung: `components/shared/user-menu.tsx` (menu tài khoản của storefront và admin-topbar; nhận dữ liệu qua props, "Vào trang quản trị" chỉ hiện khi
+  `canAccessAdmin`), `brand-logo.tsx` (logo chữ của header, `AuthShell`, màn hình chờ), `theme-toggle.tsx` (từ `md` nhóm 3 nút, dưới `md` một nút xoay vòng
+  44px — `theme-cycle-button.tsx`, `theme-options.ts`). Tên hiển thị: `lib/display-name.ts` (`name` đã trim, trống thì phần trước `@` của email); chỗ cần phân biệt
+  người dùng (hộp khóa/mở khóa) hiện kèm email.
+- Trang 403 ("Bạn không có quyền truy cập") do `RequireRole` hiển thị tại chỗ.
 
 Khi thêm trang nghiệp vụ: đọc `backend-nestjst-starter/docs/` trước, mỗi lần làm
 một module, và cập nhật `/styleguide` nếu có thêm token hoặc component dùng chung.
+
+## Việc tồn đọng
+
+- Quên mật khẩu / đặt lại mật khẩu (backend chưa có endpoint).
+- Đồng bộ đăng xuất giữa nhiều tab (hiện tab khác chỉ biết khi request kế tiếp gặp 401).
+- Trang đích của STAFF sau đăng nhập đang là `/admin/orders` (placeholder); đổi khi có trang Đơn hàng thật.
+- Trang chủ storefront (`/`) mới có header + hero + khối "sắp ra mắt"; chưa có điều hướng, giỏ hàng, tìm kiếm (thêm khi có chức năng).
+- `user-form-dialog.tsx` còn tự map lỗi API; chuyển sang `applyServerErrors` (`lib/form-errors.ts`) như login/register.
+- Backend chưa gắn guard cho `/users`..., chưa thu hồi được refresh token, chưa giới hạn số lần đăng nhập sai (xem CLAUDE.md backend).
+- Cookie refresh `SameSite=Lax`: khi deploy, frontend và backend phải cùng site (cùng domain gốc) thì cookie mới được gửi.

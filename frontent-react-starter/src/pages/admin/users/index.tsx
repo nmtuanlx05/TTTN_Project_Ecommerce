@@ -5,7 +5,7 @@ import { UserFormDialog } from "@/features/users/components/user-form-dialog";
 import { UserStatusDialog } from "@/features/users/components/user-status-dialog";
 import { UsersContent } from "@/features/users/components/users-content";
 import { UsersToolbar } from "@/features/users/components/users-toolbar";
-import type { User } from "@/features/users/types";
+import type { User } from "@/types/user";
 import { useUserStatusAction } from "@/features/users/use-user-status-action";
 import { useUsersSearchParams } from "@/features/users/use-users-search-params";
 import { useDialogTarget } from "@/hooks/use-dialog-target";

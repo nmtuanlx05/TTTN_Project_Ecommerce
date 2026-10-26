@@ -1,8 +1,8 @@
 import { useToast } from "@/components/ui/toast"
 import { useDialogTarget } from "@/hooks/use-dialog-target"
-import { displayName } from "./display-name"
+import { displayName } from "@/lib/display-name"
 import { useToggleUserStatus } from "./queries"
-import type { User } from "./types"
+import type { User } from "@/types/user"
 
 /**
  * Luồng khóa / mở khóa tài khoản: cả hai đều phải qua hộp xác nhận. Xong thì đóng

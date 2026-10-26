@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router-dom"
 import type { SortOrder } from "@/types/api"
-import type { Role, UserListParams, UserSortBy } from "./types"
+import type { UserListParams, UserSortBy } from "./types"
+import type { Role } from "@/types/user"
 import { DEFAULT_SORT, PAGE_SIZE, ROLES, SORTABLE_COLUMNS } from "./constants"
 
 type UpdateOptions = {

@@ -1,6 +1,6 @@
 import { ConfirmDialog } from "@/components/admin/confirm-dialog"
-import { displayName } from "../display-name"
-import type { User } from "../types"
+import { displayName } from "@/lib/display-name"
+import type { User } from "@/types/user"
 
 /** Hộp xác nhận khóa / mở khóa. `user` được giữ lại khi đóng nên chữ không đổi lúc mờ dần. */
 function UserStatusDialog({
@@ -25,7 +25,8 @@ function UserStatusDialog({
         user ? (
           <>
             <strong className="font-semibold text-ink">{displayName(user)}</strong>
-            {user.name ? ` (${user.email})` : null}{" "}
+            {" "}
+            <span className="text-ink-muted">({user.email})</span>{" "}
             {user.isActive
               ? "sẽ không đăng nhập được nữa. Dữ liệu và lịch sử đơn hàng vẫn được giữ, bạn có thể mở khóa lại bất cứ lúc nào."
               : "sẽ đăng nhập và dùng tài khoản được trở lại như trước. Dữ liệu và lịch sử đơn hàng không bị thay đổi."}

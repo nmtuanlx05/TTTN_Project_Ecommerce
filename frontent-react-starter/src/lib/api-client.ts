@@ -1,4 +1,7 @@
-import axios, { type AxiosRequestConfig } from "axios"
+import axios, {
+  type AxiosRequestConfig,
+  type InternalAxiosRequestConfig,
+} from "axios"
 import { ApiError } from "@/lib/api-error"
 import type { Paginated, PaginationMeta } from "@/types/api"
 
@@ -12,21 +15,109 @@ if (!baseURL) {
 /**
  * Instance axios duy nhất của ứng dụng. Chỉ file này và `features/<module>/api.ts`
  * được import axios; component gọi qua hook trong `queries.ts`.
+ *
+ * `withCredentials` bắt buộc: cookie `refresh_token` (path `/auth`) chỉ được gửi/nhận
+ * khi frontend (:5173) gọi backend (:3000) nếu bật cờ này (docs/api/auth.md).
  */
 const apiClient = axios.create({
   baseURL,
   timeout: 15_000,
+  withCredentials: true,
   headers: { "Content-Type": "application/json" },
 })
 
-// Interceptor duy nhất chừa cho Auth: khi làm đăng nhập, gắn
-// `config.headers.Authorization = "Bearer <token>"` ở đây.
-apiClient.interceptors.request.use((config) => config)
+/**
+ * Cầu nối tới phiên đăng nhập. Store nằm ở `features/auth` mà `lib/` không được
+ * import features, nên `features/auth` đăng ký các callback này từ ngoài
+ * (xem `features/auth/setup-auth-bridge.ts`).
+ */
+interface AuthBridge {
+  getAccessToken: () => string | null
+  setAccessToken: (token: string) => void
+  /** Gọi khi không làm mới được phiên: xóa phiên, xóa cache, chuyển về /login. */
+  onSessionExpired: () => void
+}
+
+let authBridge: AuthBridge | null = null
+
+function configureAuth(bridge: AuthBridge): void {
+  authBridge = bridge
+}
+
+type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean }
+
+/** Hai endpoint này tự trả 401 theo nghĩa riêng, không được kích hoạt làm mới token. */
+function isAuthEndpoint(url: string | undefined): boolean {
+  return !!url && (url.includes("/auth/login") || url.includes("/auth/refresh"))
+}
+
+apiClient.interceptors.request.use((config) => {
+  const token = authBridge?.getAccessToken()
+  if (token) config.headers.set("Authorization", `Bearer ${token}`)
+  return config
+})
+
+let refreshPromise: Promise<string> | null = null
+
+/**
+ * Đổi cookie refresh lấy access token mới. Mọi nơi gọi cùng lúc (nhiều request
+ * 401, AuthBootstrap) dùng chung MỘT promise; xong (thành công hay thất bại) thì
+ * xóa promise để lần gọi sau (vd "Thử lại") chạy lại được.
+ */
+function refreshSession(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = apiClient
+      .post<Envelope<{ accessToken: string }>>("/auth/refresh")
+      .then((response) => {
+        const { accessToken } = unwrap(response.data).data
+        authBridge?.setAccessToken(accessToken)
+        return accessToken
+      })
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+  return refreshPromise
+}
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: unknown) =>
-    axios.isCancel(error) ? Promise.reject(error) : Promise.reject(ApiError.from(error)),
+  async (error: unknown) => {
+    if (axios.isCancel(error)) return Promise.reject(error)
+    const apiError = ApiError.from(error)
+
+    const config = axios.isAxiosError(error)
+      ? (error.config as RetriableConfig | undefined)
+      : undefined
+    const bridge = authBridge
+    const sentAuth = config?.headers?.get("Authorization")
+    // Chỉ làm mới khi request đã gửi token (người chưa đăng nhập gặp 401 thì không có gì để làm mới).
+    const canRefresh =
+      bridge !== null &&
+      !!config &&
+      !config._retried &&
+      !!sentAuth &&
+      apiError.statusCode === 401 &&
+      !isAuthEndpoint(config.url)
+    if (!canRefresh) return Promise.reject(apiError)
+
+    config._retried = true
+    let token: string
+    try {
+      // Request khác đã làm mới xong trong lúc request này đang bay: dùng token mới luôn.
+      const current = bridge.getAccessToken()
+      token = current && `Bearer ${current}` !== sentAuth ? current : await refreshSession()
+    } catch (refreshError) {
+      const failure = ApiError.from(refreshError)
+      // Chỉ kết thúc phiên khi máy chủ từ chối refresh (4xx). Mất mạng hoặc 5xx
+      // thì giữ phiên và báo lỗi cho request gốc để người dùng thử lại.
+      if (failure.statusCode >= 400 && failure.statusCode < 500) bridge.onSessionExpired()
+      return Promise.reject(failure)
+    }
+    config.headers.set("Authorization", `Bearer ${token}`)
+    // `_retried` đã bật nên nếu lần này vẫn lỗi thì chỉ đổi thành ApiError, không vòng lặp.
+    return apiClient(config)
+  },
 )
 
 interface Envelope<T> {
@@ -72,4 +163,4 @@ async function apiSend<T>(
   return unwrap(response.data).data
 }
 
-export { apiClient, apiGet, apiGetPage, apiSend }
+export { apiClient, apiGet, apiGetPage, apiSend, configureAuth, refreshSession }

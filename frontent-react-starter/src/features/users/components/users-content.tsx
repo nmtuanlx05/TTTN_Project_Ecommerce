@@ -5,7 +5,7 @@ import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/ui/empty-state"
 import { useUsers } from "../queries"
-import type { User } from "../types"
+import type { User } from "@/types/user"
 import type { UsersSearch } from "../use-users-search-params"
 import { UsersTable, UsersTableSkeleton } from "./users-table"
 
