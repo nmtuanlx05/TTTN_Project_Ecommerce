@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react"
-import { Search, X } from "lucide-react"
+import { X } from "lucide-react"
+import { SearchInput } from "@/components/admin/search-input"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -12,7 +11,6 @@ import {
 import type { Role } from "@/types/user"
 import { ROLE_LABEL, ROLES } from "../constants"
 
-const SEARCH_DEBOUNCE_MS = 300
 const ALL = "all"
 
 const ROLE_ITEMS = [
@@ -25,44 +23,6 @@ const STATUS_ITEMS = [
   { value: "true", label: "Hoạt động" },
   { value: "false", label: "Đã khóa" },
 ]
-
-/**
- * Ô tìm kiếm giữ chữ gõ trong state cục bộ và chỉ đẩy lên URL sau 300ms không
- * gõ thêm. Khi URL đổi từ bên ngoài (Back, Xóa bộ lọc) thì ô tự theo.
- */
-function SearchInput({ value, onSearch }: { value: string; onSearch: (value: string) => void }) {
-  const [text, setText] = useState(value)
-  const [previousValue, setPreviousValue] = useState(value)
-
-  // URL đổi mà không phải do chính mình đẩy lên (khi đó URL luôn bằng chữ đang gõ).
-  if (value !== previousValue) {
-    setPreviousValue(value)
-    if (value !== text.trim()) setText(value)
-  }
-
-  useEffect(() => {
-    if (text.trim() === value) return
-    const timer = setTimeout(() => onSearch(text.trim()), SEARCH_DEBOUNCE_MS)
-    return () => clearTimeout(timer)
-  }, [text, value, onSearch])
-
-  return (
-    <div className="relative min-w-0 flex-1 md:max-w-sm">
-      <Search
-        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-muted"
-        aria-hidden="true"
-      />
-      <Input
-        type="search"
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        placeholder="Tìm theo tên, email, số điện thoại"
-        aria-label="Tìm người dùng"
-        className="pl-9"
-      />
-    </div>
-  )
-}
 
 function UsersToolbar({
   q,
@@ -85,7 +45,12 @@ function UsersToolbar({
 }) {
   return (
     <div className="flex flex-col gap-inline md:flex-row md:items-center">
-      <SearchInput value={q} onSearch={onSearch} />
+      <SearchInput
+        value={q}
+        onSearch={onSearch}
+        placeholder="Tìm theo tên, email, số điện thoại"
+        label="Tìm người dùng"
+      />
 
       <div className="flex flex-col gap-inline sm:flex-row sm:items-center">
         <Select
