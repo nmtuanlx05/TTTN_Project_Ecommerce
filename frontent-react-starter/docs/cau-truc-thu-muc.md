@@ -18,14 +18,14 @@ src/
 │                 redirect-if-authenticated)
 ├─ pages/         MỎNG: chỉ ghép
 │   ├─ auth/        login ✓, register ✓
-│   ├─ admin/       dashboard ✓, users ✓, orders, products, categories,
+│   ├─ admin/       dashboard ✓, users ✓, categories ✓, orders, products,
 │   │               inventory, vouchers, placeholder ✓
 │   ├─ styleguide/  ✓ trang nội bộ cho dev (route /styleguide), không thuộc admin
 │   ├─ forbidden.tsx ✓ (403), not-found.tsx ✓ (404)
 │   ├─ storefront/  home ✓ (hero + khối "sắp ra mắt"), catalog, product-detail, cart, checkout,
 │   │               order-success, my-orders, account
 ├─ features/      mỗi thực thể một thư mục theo khuôn mục 3
-│   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ products/ inventory/
+│   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ inventory/
 │   └─ cart/ checkout/ orders/ vouchers/ payments/ account/
 ├─ components/
 │   ├─ ui/          shadcn, KHÔNG sửa ✓
@@ -104,7 +104,7 @@ Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 4
 | Giai đoạn | Thư mục mới |
 |---|---|
 | Auth ✓ | features/auth/, routes/, pages/auth/ |
-| Danh mục, sản phẩm | features/categories/, features/products/ |
+| Danh mục ✓, sản phẩm | features/categories/ ✓, features/products/ |
 | Kho | features/inventory/ |
 | Giỏ hàng, đơn hàng, voucher | features/cart/, orders/, vouchers/ |
 | Storefront | pages/storefront/, components/storefront/, features/checkout/, account/ |

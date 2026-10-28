@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { Dialog } from "@base-ui/react/dialog"
+import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 
 /**
@@ -19,6 +20,7 @@ function ConfirmDialog({
   cancelLabel = "Hủy bỏ",
   destructive = false,
   loading = false,
+  error,
   onConfirm,
 }: {
   open: boolean
@@ -29,6 +31,8 @@ function ConfirmDialog({
   cancelLabel?: string
   destructive?: boolean
   loading?: boolean
+  /** Lỗi của lần xác nhận trước (vd. máy chủ từ chối): hiện trong hộp, hộp vẫn mở để người dùng đọc. */
+  error?: string | null
   onConfirm: () => void
 }) {
   return (
@@ -46,6 +50,7 @@ function ConfirmDialog({
               {description}
             </Dialog.Description>
           </div>
+          {error ? <Alert variant="danger">{error}</Alert> : null}
           <div className="flex flex-col-reverse gap-inline sm:flex-row sm:justify-end">
             <Button variant="secondary" disabled={loading} onClick={() => onOpenChange(false)}>
               {cancelLabel}

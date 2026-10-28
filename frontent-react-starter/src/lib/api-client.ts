@@ -153,9 +153,9 @@ async function apiGetPage<T>(
   return { items: body.data, meta: body.meta }
 }
 
-/** POST / PATCH / PUT: trả thẳng `data`. */
+/** POST / PATCH / PUT / DELETE: trả thẳng `data`. */
 async function apiSend<T>(
-  method: "post" | "patch" | "put",
+  method: "post" | "patch" | "put" | "delete",
   url: string,
   body?: unknown,
 ): Promise<T> {
