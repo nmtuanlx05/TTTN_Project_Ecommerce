@@ -1,6 +1,7 @@
 import type { ReactElement } from "react"
 import { Route } from "react-router-dom"
 import { navRoles } from "@/components/admin/nav-items"
+import CategoriesPage from "@/pages/admin/categories"
 import DashboardPage from "@/pages/admin/dashboard"
 import PlaceholderPage from "@/pages/admin/placeholder"
 import UsersPage from "@/pages/admin/users"
@@ -27,10 +28,7 @@ export const adminRoutes = (
         <Route path="dashboard" element={guarded("/admin/dashboard", <DashboardPage />)} />
         <Route path="orders/*" element={guarded("/admin/orders", <PlaceholderPage />)} />
         <Route path="products/*" element={guarded("/admin/products", <PlaceholderPage />)} />
-        <Route
-          path="categories/*"
-          element={guarded("/admin/categories", <PlaceholderPage />)}
-        />
+        <Route path="categories/*" element={guarded("/admin/categories", <CategoriesPage />)} />
         <Route path="inventory/*" element={guarded("/admin/inventory", <PlaceholderPage />)} />
         <Route path="vouchers/*" element={guarded("/admin/vouchers", <PlaceholderPage />)} />
         <Route path="users/*" element={guarded("/admin/users", <UsersPage />)} />

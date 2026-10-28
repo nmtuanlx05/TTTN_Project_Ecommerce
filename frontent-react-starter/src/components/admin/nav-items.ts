@@ -50,7 +50,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Danh mục",
     icon: FolderTree,
     description: "Sắp xếp sản phẩm vào danh mục để khách dễ tìm.",
-    ready: false,
+    ready: true,
     roles: ["ADMIN", "STAFF"],
   },
   {
