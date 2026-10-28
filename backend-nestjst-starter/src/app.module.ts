@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
+import { ProductsModule } from './products/products.module';
 import { ENV_FILE } from './config/env-file';
 import { validateEnv } from './config/env.validation';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
@@ -22,6 +23,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     UsersModule,
     AuthModule,
     CategoriesModule,
+    ProductsModule,
   ],
   controllers: [AppController],
   providers: [
