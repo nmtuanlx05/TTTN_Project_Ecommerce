@@ -1,9 +1,12 @@
 import type { ReactElement } from "react"
-import { Route } from "react-router-dom"
+import { Outlet, Route } from "react-router-dom"
 import { navRoles } from "@/components/admin/nav-items"
 import CategoriesPage from "@/pages/admin/categories"
 import DashboardPage from "@/pages/admin/dashboard"
 import PlaceholderPage from "@/pages/admin/placeholder"
+import ProductCreatePage from "@/pages/admin/products/new"
+import ProductEditPage from "@/pages/admin/products/edit"
+import ProductsPage from "@/pages/admin/products"
 import UsersPage from "@/pages/admin/users"
 import NotFoundPage from "@/pages/not-found"
 import { AdminIndexRedirect } from "./admin-index-redirect"
@@ -27,7 +30,12 @@ export const adminRoutes = (
         <Route index element={<AdminIndexRedirect />} />
         <Route path="dashboard" element={guarded("/admin/dashboard", <DashboardPage />)} />
         <Route path="orders/*" element={guarded("/admin/orders", <PlaceholderPage />)} />
-        <Route path="products/*" element={guarded("/admin/products", <PlaceholderPage />)} />
+        <Route path="products" element={guarded("/admin/products", <Outlet />)}>
+          <Route index element={<ProductsPage />} />
+          <Route path="new" element={<ProductCreatePage />} />
+          <Route path=":id/edit" element={<ProductEditPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
         <Route path="categories/*" element={guarded("/admin/categories", <CategoriesPage />)} />
         <Route path="inventory/*" element={guarded("/admin/inventory", <PlaceholderPage />)} />
         <Route path="vouchers/*" element={guarded("/admin/vouchers", <PlaceholderPage />)} />

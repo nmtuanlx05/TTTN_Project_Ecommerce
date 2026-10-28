@@ -9,8 +9,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useCategoryOptions } from "@/hooks/use-category-options"
 import { buildParentOptions } from "../parent-options"
-import { useCategoryOptions } from "../queries"
 
 const ROOT = "root"
 
