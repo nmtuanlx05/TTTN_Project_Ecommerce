@@ -1,4 +1,4 @@
-import type { PublicCategory } from "./types"
+import type { PublicCategory } from "@/types/category"
 
 export interface ParentOption {
   value: number

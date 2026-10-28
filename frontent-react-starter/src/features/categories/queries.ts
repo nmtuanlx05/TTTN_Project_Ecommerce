@@ -8,7 +8,6 @@ import type { ApiError } from "@/lib/api-error"
 import {
   createCategory,
   deleteCategory,
-  listAllCategories,
   listCategories,
   updateCategory,
 } from "./api"
@@ -21,10 +20,12 @@ import type {
 } from "./types"
 
 export const categoryKeys = {
-  /** Tiền tố chung: làm mới cả danh sách phân trang lẫn danh sách chọn danh mục cha. */
+  /**
+   * Tiền tố chung: làm mới cả danh sách phân trang lẫn danh sách chọn danh mục
+   * (`hooks/use-category-options.ts`, key `['categories', 'options']`).
+   */
   all: ["categories"] as const,
   list: (params: CategoryListParams) => ["categories", params] as const,
-  options: ["categories", "options"] as const,
 }
 
 /** Danh sách admin. Giữ dữ liệu trang cũ trong lúc tải trang mới để bảng không giật. */
@@ -33,14 +34,6 @@ export function useCategories(params: CategoryListParams) {
     queryKey: categoryKeys.list(params),
     queryFn: ({ signal }) => listCategories(params, signal),
     placeholderData: keepPreviousData,
-  })
-}
-
-/** Toàn bộ danh mục (phẳng) để chọn danh mục cha trong form. */
-export function useCategoryOptions() {
-  return useQuery({
-    queryKey: categoryKeys.options,
-    queryFn: ({ signal }) => listAllCategories(signal),
   })
 }
 

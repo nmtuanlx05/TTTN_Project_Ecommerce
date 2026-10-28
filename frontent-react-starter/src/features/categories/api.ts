@@ -1,4 +1,4 @@
-import { apiGet, apiGetPage, apiSend } from "@/lib/api-client"
+import { apiGetPage, apiSend } from "@/lib/api-client"
 import type { Paginated } from "@/types/api"
 import type {
   Category,
@@ -6,7 +6,6 @@ import type {
   CategoryListParams,
   CreateCategoryInput,
   DeleteCategoryResult,
-  PublicCategory,
   UpdateCategoryInput,
 } from "./types"
 
@@ -17,11 +16,6 @@ export function listCategories(
   signal?: AbortSignal,
 ): Promise<Paginated<Category>> {
   return apiGetPage<Category>("/admin/categories", { params, signal })
-}
-
-/** Toàn bộ danh mục, không phân trang, dùng để chọn danh mục cha. Endpoint công khai. */
-export function listAllCategories(signal?: AbortSignal): Promise<PublicCategory[]> {
-  return apiGet<PublicCategory[]>("/categories", { signal })
 }
 
 export function createCategory(input: CreateCategoryInput): Promise<CategoryDetail> {

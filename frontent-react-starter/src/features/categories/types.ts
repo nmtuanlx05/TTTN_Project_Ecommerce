@@ -1,14 +1,7 @@
 import type { SortOrder } from "@/types/api"
+import type { PublicCategory } from "@/types/category"
 
 export type CategorySortBy = "id" | "name"
-
-/** Danh mục công khai (GET /categories): phẳng, frontend tự dựng cây theo `parentId`. */
-export interface PublicCategory {
-  id: number
-  name: string
-  slug: string
-  parentId: number | null
-}
 
 /** Danh mục trong danh sách admin (GET /admin/categories). Chưa có createdAt/isActive. */
 export interface Category extends PublicCategory {
