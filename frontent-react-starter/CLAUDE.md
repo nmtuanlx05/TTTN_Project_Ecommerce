@@ -373,11 +373,24 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
   validate backend); khóa/mở khóa luôn qua hộp xác nhận. Vì chỉ ADMIN vào được nên không có logic ẩn nút theo role.
 - `/admin/categories` — ADMIN + STAFF. Danh sách nối backend thật (`GET /admin/categories`): tìm kiếm `q`, sắp theo tên, phân trang phía
   server, trạng thái trên URL (`features/categories/use-categories-search-params.ts`). Thêm/sửa bằng `CategoryFormDialog`
-  (RHF + zod, `schemas.ts` phản chiếu `CreateCategoryDto`); chọn danh mục cha từ `GET /categories` (toàn bộ, phẳng), khi sửa thì loại chính nó và
-  con cháu (`parent-options.ts`). Trường tùy chọn bỏ trống thì **không gửi** (slug trống khi thêm → backend tự sinh); khi sửa slug không được
+  (RHF + zod, `schemas.ts` phản chiếu `CreateCategoryDto`); chọn danh mục cha từ `GET /categories` (toàn bộ, phẳng) qua `hooks/use-category-options.ts`
+  (dùng chung với products; kiểu `PublicCategory` ở `types/category.ts`), khi sửa thì loại chính nó và con cháu (`parent-options.ts`). Trường tùy chọn bỏ trống thì **không gửi** (slug trống khi thêm → backend tự sinh); khi sửa slug không được
   trống. Lỗi 400 theo ô vào đúng ô, 409/400 không theo ô hiện `Alert` nguyên văn đầu form. Xóa (cứng) qua `ConfirmDialog` có `error`: 409 còn
   sản phẩm/danh mục con thì hộp vẫn mở và hiện message của server. Chỉ ADMIN thấy nút Thêm và Xóa (`useCurrentRole()`); STAFF chỉ xem và sửa.
   `components/admin/search-input.tsx` là ô tìm kiếm debounce dùng chung (users và categories).
+- `/admin/products` — ADMIN + STAFF (cả hai làm được mọi thao tác, không ẩn nút theo role; không có xóa, "xóa" = ẩn). Nối backend thật
+  (`docs/api/products.md`). **Danh sách** `/admin/products`: tìm `q`, lọc danh mục (`categoryId`, khớp đúng danh mục, không gồm con) và trạng thái
+  (`isActive`), sắp theo tên/giá/ngày tạo, phân trang phía server, toàn bộ trạng thái trên URL (`use-products-search-params.ts`). Cột "Biến thể" hiện
+  "x/y đang bán" (API danh sách không trả tồn kho). Ẩn/hiện ngay trên dòng: ẩn qua `ConfirmDialog`, hiện lại làm luôn (`use-product-status-action.ts`).
+  **Tạo** `/admin/products/new` và **sửa** `/admin/products/:id/edit` là trang riêng, dùng chung `ProductForm` (RHF + zod, `schemas.ts` phản chiếu
+  `CreateProductDto`, chặn trùng SKU và cặp size-màu ngay trong form). Danh mục chọn dạng cây thụt lề (`category-select.tsx`). Trường tùy chọn
+  bỏ trống thì **không gửi** (slug trống khi tạo → backend tự sinh; `slug: ""` bị 400); khi sửa slug không được trống. PATCH chỉ gửi phần đổi
+  (`form-mapping.ts`): biến thể có `id` chỉ gửi trường đổi, hàng mới (chưa có `id`) gửi đủ, biến thể đã lưu **không xóa được** (chỉ sửa hoặc bỏ
+  tích "Đang bán"); `description`/`imageUrl` xóa trống thì gửi `null`. Lỗi 400 của biến thể (`variants.N.sku`) được đổi chỉ số về đúng hàng trong form
+  (`remapVariantErrors`) vì ta chỉ gửi các hàng có đổi; 409 (trùng slug/SKU/size-màu) hiện `Alert` nguyên văn đầu form. Tồn kho (`stock`, `reserved`)
+  chỉ đọc ở trang sửa, nhập kho thuộc module Kho. Ảnh chỉ là một URL (≤ 191 ký tự), chưa upload. Tạo xong về danh sách; sửa xong ở lại trang và
+  `reset` form theo response. Trạng thái hiện/ẩn không nằm trong form (API chỉ đổi qua `PATCH :id/status`): nút Ẩn/Hiện ở đầu trang sửa. Link từ
+  danh sách mang theo `location.state.listSearch` để "Quay lại" giữ bộ lọc và trang (`list-link.ts`).
 - Các mục menu còn lại hiện là `PlaceholderPage`. Route lạ trong `/admin` hiện 404 trong khung admin; ngoài `/admin` hiện 404 toàn trang.
 - Dùng chung: `components/shared/user-menu.tsx` (menu tài khoản của storefront và admin-topbar; nhận dữ liệu qua props, "Vào trang quản trị" chỉ hiện khi
   `canAccessAdmin`), `brand-logo.tsx` (logo chữ của header, `AuthShell`, màn hình chờ), `theme-toggle.tsx` (từ `md` nhóm 3 nút, dưới `md` một nút xoay vòng
@@ -395,5 +408,6 @@ một module, và cập nhật `/styleguide` nếu có thêm token hoặc compon
 - Trang đích của STAFF sau đăng nhập đang là `/admin/orders` (placeholder); đổi khi có trang Đơn hàng thật.
 - Trang chủ storefront (`/`) mới có header + hero + khối "sắp ra mắt"; chưa có điều hướng, giỏ hàng, tìm kiếm (thêm khi có chức năng).
 - `user-form-dialog.tsx` còn tự map lỗi API; chuyển sang `applyServerErrors` (`lib/form-errors.ts`) như login/register.
+- Sản phẩm: danh sách chưa có cột tồn kho (API không trả); chưa upload ảnh; chưa cảnh báo khi rời trang sửa lúc có thay đổi chưa lưu; hoán đổi size/màu giữa hai biến thể trong một lần lưu bị 409 (tách hai lần lưu).
 - Backend chưa gắn guard cho `/users`..., chưa thu hồi được refresh token, chưa giới hạn số lần đăng nhập sai (xem CLAUDE.md backend).
 - Cookie refresh `SameSite=Lax`: khi deploy, frontend và backend phải cùng site (cùng domain gốc) thì cookie mới được gửi.
