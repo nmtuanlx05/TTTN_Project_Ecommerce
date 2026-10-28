@@ -371,6 +371,13 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
 - `/admin/users` — chỉ ADMIN. Danh sách người dùng nối backend thật: tìm kiếm, lọc, sắp xếp, phân trang phía
   server; thêm/sửa bằng `UserFormDialog` (react-hook-form + zod, `features/users/schemas.ts` phản chiếu
   validate backend); khóa/mở khóa luôn qua hộp xác nhận. Vì chỉ ADMIN vào được nên không có logic ẩn nút theo role.
+- `/admin/categories` — ADMIN + STAFF. Danh sách nối backend thật (`GET /admin/categories`): tìm kiếm `q`, sắp theo tên, phân trang phía
+  server, trạng thái trên URL (`features/categories/use-categories-search-params.ts`). Thêm/sửa bằng `CategoryFormDialog`
+  (RHF + zod, `schemas.ts` phản chiếu `CreateCategoryDto`); chọn danh mục cha từ `GET /categories` (toàn bộ, phẳng), khi sửa thì loại chính nó và
+  con cháu (`parent-options.ts`). Trường tùy chọn bỏ trống thì **không gửi** (slug trống khi thêm → backend tự sinh); khi sửa slug không được
+  trống. Lỗi 400 theo ô vào đúng ô, 409/400 không theo ô hiện `Alert` nguyên văn đầu form. Xóa (cứng) qua `ConfirmDialog` có `error`: 409 còn
+  sản phẩm/danh mục con thì hộp vẫn mở và hiện message của server. Chỉ ADMIN thấy nút Thêm và Xóa (`useCurrentRole()`); STAFF chỉ xem và sửa.
+  `components/admin/search-input.tsx` là ô tìm kiếm debounce dùng chung (users và categories).
 - Các mục menu còn lại hiện là `PlaceholderPage`. Route lạ trong `/admin` hiện 404 trong khung admin; ngoài `/admin` hiện 404 toàn trang.
 - Dùng chung: `components/shared/user-menu.tsx` (menu tài khoản của storefront và admin-topbar; nhận dữ liệu qua props, "Vào trang quản trị" chỉ hiện khi
   `canAccessAdmin`), `brand-logo.tsx` (logo chữ của header, `AuthShell`, màn hình chờ), `theme-toggle.tsx` (từ `md` nhóm 3 nút, dưới `md` một nút xoay vòng
