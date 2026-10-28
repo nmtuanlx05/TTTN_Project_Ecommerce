@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { Test } from '@nestjs/testing';
@@ -121,6 +122,8 @@ describe('Auth API (e2e, Prisma giả)', () => {
         LocalAuthGuard,
         JwtAuthGuard,
         JwtRefreshGuard,
+        // Giống AppModule: JwtAuthGuard bật toàn cục, endpoint công khai đánh dấu @Public()
+        { provide: APP_GUARD, useClass: JwtAuthGuard },
         { provide: PrismaService, useValue: prisma },
         {
           provide: ConfigService,

@@ -28,15 +28,23 @@ function mapPrismaError(
 ): ErrorResult | null {
   switch (error.code) {
     case 'P2002': {
-      // Chỉ khẳng định "Email" khi lỗi thật sự nhắc tới email; ràng buộc unique khác dùng thông điệp chung.
-      const isEmail = JSON.stringify(error.meta ?? {})
-        .toLowerCase()
-        .includes('email');
+      // Chỉ khẳng định tên trường khi lỗi thật sự nhắc tới nó; ràng buộc unique khác dùng thông điệp chung.
+      const detail = JSON.stringify(error.meta ?? {}).toLowerCase();
+      const message = detail.includes('email')
+        ? 'Email đã được sử dụng'
+        : detail.includes('slug')
+          ? 'Slug đã được sử dụng'
+          : detail.includes('sku')
+            ? 'SKU đã được sử dụng'
+            : 'Dữ liệu đã tồn tại';
+      return { statusCode: HttpStatus.CONFLICT, message };
+    }
+    // Vi phạm khóa ngoại: tham chiếu tới bản ghi không tồn tại, hoặc xóa bản ghi đang được dùng
+    case 'P2003':
       return {
         statusCode: HttpStatus.CONFLICT,
-        message: isEmail ? 'Email đã được sử dụng' : 'Dữ liệu đã tồn tại',
+        message: 'Dữ liệu liên quan không hợp lệ hoặc đang được sử dụng',
       };
-    }
     case 'P2025':
       return {
         statusCode: HttpStatus.NOT_FOUND,

@@ -16,7 +16,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { RegisterDto } from './dto/register.dto';
 // import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
-// import { LocalAuthGuard } from './guards/local-auth.guard';
+import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Public } from './decorators/public.decorator';
 
 // Tùy chọn cookie dùng chung cho set và clear (clear phải trùng path/sameSite thì trình duyệt mới xóa)
@@ -50,7 +50,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  // @UseGuards(LocalAuthGuard)
+  @UseGuards(LocalAuthGuard)
   async login(
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) res: Response,

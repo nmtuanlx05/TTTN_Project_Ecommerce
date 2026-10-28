@@ -61,7 +61,6 @@ export class AuthService {
     if (!found.isActive) {
       throw new ForbiddenException(MSG_ACCOUNT_LOCKED);
     }
-
     // Bỏ password trước khi trả ra khỏi service
     return {
       id: found.id,
@@ -94,6 +93,7 @@ export class AuthService {
     ]);
 
     const decoded = this.jwtService.decode<{ exp: number }>(refreshToken);
+    console.log('>>>check user: ', user);
     return {
       accessToken,
       refreshToken,

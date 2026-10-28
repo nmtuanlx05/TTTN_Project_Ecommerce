@@ -6,5 +6,8 @@
   "transform": {
     "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": { "allowJs": true, "esModuleInterop": true, "module": "commonjs", "target": "ES2023", "experimentalDecorators": true, "emitDecoratorMetadata": true, "skipLibCheck": true } }]
   },
+  "moduleNameMapper": {
+    "^@nestjs/mapped-types$": "<rootDir>/shims/mapped-types.ts"
+  },
   "transformIgnorePatterns": ["/node_modules/(?!(@nestjs/(jwt|passport))/)"]
 }

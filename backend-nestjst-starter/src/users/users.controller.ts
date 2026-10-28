@@ -13,6 +13,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { parseIdPipe } from '../common/pipes/parse-id.pipe';
+// import { Public } from 'src/auth/decorators/public.decorator';
 
 @Controller('users')
 export class UsersController {
