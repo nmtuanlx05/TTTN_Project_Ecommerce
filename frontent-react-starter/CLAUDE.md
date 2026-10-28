@@ -6,6 +6,8 @@ viết bất kỳ component nào.
 Backend NestJS nằm ở thư mục song song `backend-nestjst-starter`, có CLAUDE.md
 riêng. Tài liệu nghiệp vụ và schema dữ liệu ở `backend-nestjst-starter/docs/`.
 
+Quy ước Git (commit, nhánh, merge) dùng chung với backend: xem mục "Git" trong `backend-nestjst-starter/CLAUDE.md` và `backend-nestjst-starter/docs/git-workflow.md`.
+
 ## Cấu trúc thư mục (bắt buộc)
 - Chi tiết: `docs/cau-truc-thu-muc.md`. ĐỌC khi tạo module hoặc trang mới, hoặc khi không chắc đặt file ở đâu. Sửa nhỏ thì không cần đọc.
 - Hai giao diện: storefront (khách) ở `/`, admin (ADMIN và STAFF dùng chung) ở `/admin`. Không làm trang staff riêng.
