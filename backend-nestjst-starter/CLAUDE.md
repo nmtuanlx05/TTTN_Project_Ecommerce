@@ -255,6 +255,25 @@ lấy user bằng `@CurrentUser()`. Endpoint không gắn `@Roles` chỉ yêu c�
 **Quy tắc `role`**: chỉ `ADMIN` được đặt hoặc đổi `role` (áp dụng cho `POST /users` và `PATCH /users/:id`); đăng ký công khai
 không bao giờ nhận `role`.
 
+## Git
+
+Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy trình 6 bước, điều không làm).
+
+- **KHÔNG tự** commit, push, tạo nhánh hay merge, trừ khi người dùng yêu cầu rõ trong phiên đó.
+- Khi được yêu cầu commit: theo Conventional Commits (`<type>(<scope>): <subject>`, tiếng Anh, thể mệnh lệnh), scope lấy
+  từ danh sách trong `docs/git-workflow.md` (không bắt buộc cứng). Mỗi commit một thay đổi logic. Footer `Co-Authored-By`
+  được phép.
+- Không dùng `git add -A` hay `git add .` một cách mù quáng: `git add` theo từng file, rồi kiểm tra `git diff --staged`
+  trước khi commit. Không bao giờ add file `.env*` (chỉ `.env.example` được commit).
+- Không force push, không sửa lịch sử đã push, không push lên `main` khi chưa được yêu cầu.
+- Trước khi commit phải chạy lint + build + test và báo kết quả cho người dùng (kể cả lỗi có sẵn):
+  - Lint kiểm tra bằng `npx eslint "{src,apps,libs,test}/**/*.ts"` (không `--fix`). `npm run lint` có `--fix` nên tự sửa
+    file; nếu chạy thì xem lại `git status` và `git diff` sau đó.
+  - `npm run build` và `npm test`; e2e chỉ chạy cho module đang sửa (có logic tiền/tồn kho).
+  - Lỗi có sẵn, không phải do thay đổi hiện tại: `test/app.e2e-spec.ts` fail (xem "Việc tồn đọng"); ESLint báo lỗi ở
+    `src/generated/**` (file Prisma sinh tự động, đã gitignore), `src/app.controller.ts` và `test/users.e2e-spec.ts`.
+    Chỉ cần đảm bảo không phát sinh thêm lỗi mới.
+
 ## Việc tồn đọng
 
 - **`POST /users` đang nhận `role`, nên ai cũng tạo được user `ADMIN`** vì các endpoint cũ chưa gắn guard. Khi gắn
