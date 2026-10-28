@@ -259,14 +259,18 @@ không bao giờ nhận `role`.
 
 Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy trình 6 bước, điều không làm).
 
-- **KHÔNG tự** commit, push, tạo nhánh hay merge, trừ khi người dùng yêu cầu rõ trong phiên đó.
-- Khi được yêu cầu commit: theo Conventional Commits (`<type>(<scope>): <subject>`, tiếng Anh, thể mệnh lệnh), scope lấy
-  từ danh sách trong `docs/git-workflow.md` (không bắt buộc cứng). Mỗi commit một thay đổi logic. Footer `Co-Authored-By`
+- **Người dùng tự commit.** Claude KHÔNG commit, push, tạo nhánh hay merge, kể cả khi vừa làm xong một công việc.
+  Làm xong chỉ để thay đổi ở working tree, không `git add`, không `git commit`.
+- Chỉ làm các thao tác Git ghi (add/commit/push/nhánh/merge) khi người dùng nói rõ ngay trong lượt đó; lời yêu cầu cũ
+  không có hiệu lực cho lần sau.
+- Khi làm xong một công việc: báo ngắn gọn các file đã đổi và **gợi ý** message commit theo Conventional Commits
+  (`<type>(<scope>): <subject>`, tiếng Anh, thể mệnh lệnh; scope lấy từ `docs/git-workflow.md`, không bắt buộc cứng) để
+  người dùng tự chạy. Mỗi commit một thay đổi logic nên nếu thay đổi gồm nhiều phần thì gợi ý tách.
+- Nếu được yêu cầu add/commit: không dùng `git add -A` hay `git add .` một cách mù quáng, `git add` theo từng file rồi
+  kiểm tra `git diff --staged`. Không bao giờ add file `.env*` (chỉ `.env.example` được commit). Footer `Co-Authored-By`
   được phép.
-- Không dùng `git add -A` hay `git add .` một cách mù quáng: `git add` theo từng file, rồi kiểm tra `git diff --staged`
-  trước khi commit. Không bao giờ add file `.env*` (chỉ `.env.example` được commit).
 - Không force push, không sửa lịch sử đã push, không push lên `main` khi chưa được yêu cầu.
-- Trước khi commit phải chạy lint + build + test và báo kết quả cho người dùng (kể cả lỗi có sẵn):
+- Trước khi người dùng commit, chạy lint + build + test và báo kết quả (kể cả lỗi có sẵn):
   - Lint kiểm tra bằng `npx eslint "{src,apps,libs,test}/**/*.ts"` (không `--fix`). `npm run lint` có `--fix` nên tự sửa
     file; nếu chạy thì xem lại `git status` và `git diff` sau đó.
   - `npm run build` và `npm test`; e2e chỉ chạy cho module đang sửa (có logic tiền/tồn kho).
