@@ -42,7 +42,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Sản phẩm",
     icon: Shirt,
     description: "Quản lý sản phẩm và các biến thể theo size, màu.",
-    ready: false,
+    ready: true,
     roles: ["ADMIN", "STAFF"],
   },
   {
