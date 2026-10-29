@@ -7,6 +7,11 @@ Backend NestJS nằm ở thư mục song song `backend-nestjst-starter`, có CLA
 riêng. Tài liệu nghiệp vụ và schema dữ liệu ở `backend-nestjst-starter/docs/`.
 
 Quy ước Git (commit, nhánh, merge) dùng chung với backend: xem mục "Git" trong `backend-nestjst-starter/CLAUDE.md` và `backend-nestjst-starter/docs/git-workflow.md`.
+Một tính năng = một nhánh `feat/<tên-tính-năng>` chứa cả backend và frontend (một push, một PR, merge commit); frontend đọc
+`backend-nestjst-starter/docs/api/` trực tiếp từ working tree, không chờ backend merge. Commit backend trước, frontend sau
+(docs → hạ tầng/component dùng chung → tính năng). Khi đề xuất commit: mỗi file đúng một commit, mỗi commit build được độc lập,
+không `git add -p`/`-N`, ghi rõ `cd` vào thư mục, nhiều tham số `-m`, cuối cùng `git status` phải sạch; chỉ đề xuất add file
+của phần mình và nhắc chạy `git restore --staged :/` nếu đang có file staged từ phần khác.
 
 ## Cấu trúc thư mục (bắt buộc)
 - Chi tiết: `docs/cau-truc-thu-muc.md`. ĐỌC khi tạo module hoặc trang mới, hoặc khi không chắc đặt file ở đâu. Sửa nhỏ thì không cần đọc.

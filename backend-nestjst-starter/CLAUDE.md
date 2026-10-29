@@ -257,7 +257,12 @@ không bao giờ nhận `role`.
 
 ## Git
 
-Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy trình 6 bước, điều không làm).
+Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy trình 6 bước, thứ tự commit, điều không làm).
+
+- **Một tính năng = một nhánh** `feat/<tên-tính-năng>` chứa cả backend và frontend: một lần push, một Pull Request, merge
+  bằng merge commit. Frontend đọc tài liệu API (`docs/api/<module>.md`) trực tiếp từ working tree, không chờ backend merge.
+- **Thứ tự commit trong nhánh:** backend trước (schema/migration → code → test → docs), frontend sau (docs → hạ tầng/component
+  dùng chung → tính năng).
 
 - **Người dùng tự commit.** Claude KHÔNG commit, push, tạo nhánh hay merge, kể cả khi vừa làm xong một công việc.
   Làm xong chỉ để thay đổi ở working tree, không `git add`, không `git commit`.
@@ -266,6 +271,15 @@ Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy tr�
 - Khi làm xong một công việc: báo ngắn gọn các file đã đổi và **gợi ý** message commit theo Conventional Commits
   (`<type>(<scope>): <subject>`, tiếng Anh, thể mệnh lệnh; scope lấy từ `docs/git-workflow.md`, không bắt buộc cứng) để
   người dùng tự chạy. Mỗi commit một thay đổi logic nên nếu thay đổi gồm nhiều phần thì gợi ý tách.
+- **Quy tắc khi đề xuất commit:**
+  - Mỗi file thuộc ĐÚNG MỘT commit; các commit xếp theo thứ tự phụ thuộc và mỗi commit phải build được độc lập.
+  - KHÔNG dùng `git add -p` hay `git add -N`; add cả file.
+  - Ghi rõ lệnh `cd` vào thư mục backend hoặc frontend trước mỗi nhóm lệnh (giả định đang ở thư mục gốc repo, nên nhóm
+    frontend sau nhóm backend dùng `cd ../frontent-react-starter`).
+  - Mỗi commit dùng nhiều tham số `-m` (tiêu đề, phần giải thích, dòng `Co-Authored-By`), không dùng chuỗi nhiều dòng.
+  - Cuối đề xuất có bước `git status`, kết quả phải sạch.
+  - Mỗi phiên chỉ đề xuất add các file của chính phần mình; nhắc người dùng chạy `git restore --staged :/` nếu working
+    tree đang có file staged từ phần khác.
 - Nếu được yêu cầu add/commit: không dùng `git add -A` hay `git add .` một cách mù quáng, `git add` theo từng file rồi
   kiểm tra `git diff --staged`. Không bao giờ add file `.env*` (chỉ `.env.example` được commit). Footer `Co-Authored-By`
   được phép.
