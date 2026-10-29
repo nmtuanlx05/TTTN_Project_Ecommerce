@@ -1,3 +1,4 @@
+import { validatePublicUrl } from '../uploads/upload.config';
 import { ENV_FILE } from './env-file';
 
 // Các biến bắt buộc cho Auth; thiếu biến nào thì app dừng ngay khi khởi động và nói rõ thiếu biến nào.
@@ -25,6 +26,15 @@ export function validateEnv(
   // Hai secret trùng nhau thì access token dùng được như refresh token, làm mất tác dụng tách secret.
   if (config.JWT_ACCESS_SECRET === config.JWT_REFRESH_SECRET) {
     throw new Error('JWT_ACCESS_SECRET và JWT_REFRESH_SECRET phải khác nhau.');
+  }
+
+  // UPLOAD_DIR và APP_PUBLIC_URL là tùy chọn (có giá trị mặc định); chỉ kiểm APP_PUBLIC_URL khi có giá trị.
+  const publicUrl = config.APP_PUBLIC_URL;
+  if (typeof publicUrl === 'string' && publicUrl.trim() !== '') {
+    const error = validatePublicUrl(publicUrl.trim());
+    if (error) {
+      throw new Error(error);
+    }
   }
 
   return config;
