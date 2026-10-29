@@ -6,10 +6,9 @@ chưa chạy thử trên server có database thật.
 - Base URL dev: `http://localhost:3000` (đọc `PORT` từ env, mặc định 3000)
 - Content-Type: `application/json`
 - CORS: chỉ cho origin `http://localhost:5173`
-- **Chưa bật guard cho nhóm `/users`**: Auth đã có (xem `docs/api/auth.md`) nhưng chưa gắn vào các endpoint này, nên vẫn
-  gọi được mà không cần token. Hệ quả: hiện ai cũng có thể tạo user với `role = ADMIN` qua `POST /users`. Cần đóng lại ở
-  bước phân quyền (chỉ Admin được đặt/đổi `role`).
-- Riêng `PATCH /users/me/avatar` **bắt buộc có token** (mọi role đã đăng nhập), xem mục bên dưới.
+- **Phân quyền**: mọi endpoint `/users/*` **bắt buộc có token** (`Authorization: Bearer`) và **chỉ ADMIN** được gọi
+  (STAFF, CUSTOMER nhận 403; không token nhận 401), trừ `PATCH /users/me/avatar` mở cho mọi role đã đăng nhập (xem mục bên dưới).
+  Chỉ ADMIN được đặt hoặc đổi `role`.
 - Email được chuẩn hóa (bỏ khoảng trắng, chữ thường) trước khi kiểm tra trùng và lưu.
 
 ## Dạng response chung
@@ -63,12 +62,12 @@ Lỗi:
 
 | Method | Đường dẫn | Mô tả | Quyền |
 |---|---|---|---|
-| POST | `/users` | Tạo user | Chưa có |
-| GET | `/users` | Danh sách: tìm kiếm, lọc, sắp xếp, phân trang | Chưa có |
-| GET | `/users/:id` | Chi tiết | Chưa có |
-| PATCH | `/users/:id` | Cập nhật `name`, `phone`, `role` | Chưa có |
-| PATCH | `/users/:id/status` | Khóa / mở khóa | Chưa có |
-| PATCH | `/users/me/avatar` | Tự đổi hoặc xóa ảnh đại diện của chính mình | Mọi user đã đăng nhập (token) |
+| POST | `/users` | Tạo user | ADMIN |
+| GET | `/users` | Danh sách: tìm kiếm, lọc, sắp xếp, phân trang | ADMIN |
+| GET | `/users/:id` | Chi tiết | ADMIN |
+| PATCH | `/users/:id` | Cập nhật `name`, `phone`, `role` | ADMIN |
+| PATCH | `/users/:id/status` | Khóa / mở khóa | ADMIN |
+| PATCH | `/users/me/avatar` | Tự đổi hoặc xóa ảnh đại diện của chính mình | Mọi role đã đăng nhập (ADMIN, STAFF, CUSTOMER) |
 
 **Không có `DELETE /users/:id`**: user không bị xóa cứng, chỉ khóa bằng `isActive = false`
 (`DELETE /users/1` trả 404 như mọi đường dẫn không tồn tại).
@@ -85,7 +84,7 @@ Body:
 
 - Thành công: **201**, `data` là object User.
 - `role` tùy chọn, mặc định `CUSTOMER`. `isActive` luôn `true` khi tạo.
-- Lỗi: 400 (validate, kể cả gửi trường lạ), 409 `Email này đã được sử dụng`.
+- Lỗi: 400 (validate, kể cả gửi trường lạ), 401, 403, 409 `Email này đã được sử dụng`.
 
 ### GET /users
 
@@ -119,7 +118,7 @@ Ví dụ `GET /users?q=nguyen&role=STAFF&isActive=true&sortBy=name&order=asc&pag
 ### GET /users/:id
 
 - Thành công: **200**, `data` là object User.
-- Lỗi: 400 (id sai), 404 `Không tìm thấy người dùng với ID #<id>`.
+- Lỗi: 400 (id sai), 401, 403, 404 `Không tìm thấy người dùng với ID #<id>`.
 
 ### PATCH /users/:id
 
@@ -127,7 +126,10 @@ Body (mọi trường tùy chọn): `{ "name": "Tên mới", "phone": "091111111
 
 - Thành công: **200**, `data` là User sau cập nhật.
 - **Chỉ `name`, `phone`, `role` được sửa.** Gửi `email` hoặc `password` → 400 (không bị bỏ qua âm thầm nữa).
-- Lỗi: 400, 404.
+- **Không được tự hạ vai trò**: ADMIN gọi với `id` là chính mình và `role` khác role hiện tại → **403**
+  `Bạn không thể tự thay đổi vai trò của chính mình`. Gửi lại đúng `role` hiện tại, hoặc chỉ sửa `name`/`phone` của chính mình thì vẫn được.
+  ADMIN vẫn hạ được role của ADMIN khác.
+- Lỗi: 400, 401, 403, 404.
 
 ### PATCH /users/me/avatar
 
@@ -182,7 +184,9 @@ Khóa / mở khóa tài khoản (xóa mềm).
 Body: `{ "isActive": false }` (khóa) hoặc `{ "isActive": true }` (mở khóa)
 
 - Thành công: **200**, `data` là User sau cập nhật.
-- Lỗi: 400 (`isActive` không phải boolean, id sai), 404.
+- **Không được tự khóa**: ADMIN gửi `isActive: false` cho chính mình → **403** `Bạn không thể tự khóa tài khoản của chính mình`.
+  ADMIN vẫn khóa được ADMIN khác; gửi `isActive: true` cho chính mình thì vô hại.
+- Lỗi: 400 (`isActive` không phải boolean, id sai), 401, 403, 404.
 - User bị khóa (`isActive=false`) không đăng nhập được (403) và token đang cầm bị từ chối ngay ở `/auth/*` (xem `auth.md`).
 
 ## Validate
@@ -238,7 +242,8 @@ Chỉ gồm `name`, `phone`, `role`, tất cả tùy chọn, giữ quy tắc nh�
 | Status | Khi nào |
 |---|---|
 | 400 | Validate sai; `ID không hợp lệ` |
-| 401 | Chỉ với `PATCH /users/me/avatar`: không token / token sai / hết hạn |
+| 401 | Không token / token sai / hết hạn / user bị khóa |
+| 403 | Không đủ quyền: STAFF, CUSTOMER gọi endpoint chỉ dành cho ADMIN (`Bạn không có quyền thực hiện thao tác này`); ADMIN tự hạ role hoặc tự khóa chính mình (xem `PATCH /users/:id`, `/status`) |
 | 404 | `Không tìm thấy người dùng với ID #<id>`; đường dẫn không tồn tại |
 | 409 | `Email này đã được sử dụng` (POST); hoặc lỗi unique của Prisma (P2002) |
 | 500 | Lỗi không lường trước: `Lỗi hệ thống, vui lòng thử lại sau` |

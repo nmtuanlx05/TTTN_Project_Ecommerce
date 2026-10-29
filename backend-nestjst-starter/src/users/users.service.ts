@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -128,11 +129,19 @@ export class UsersService {
     return user;
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
-    await this.findOne(id);
+  // actorId: người đang thực hiện (từ token). ADMIN không được tự hạ role của mình để tránh tự khóa quyền quản trị.
+  async update(id: number, updateUserDto: UpdateUserDto, actorId: number) {
+    const current = await this.findOne(id);
 
     // DTO chỉ chứa name, phone, role (đã whitelist); trường undefined bị Prisma bỏ qua
     const { name, phone, role } = updateUserDto;
+
+    // Gửi lại đúng role hiện tại vẫn được; chỉ chặn đổi sang role khác
+    if (id === actorId && role !== undefined && role !== current.role) {
+      throw new ForbiddenException(
+        'Bạn không thể tự thay đổi vai trò của chính mình',
+      );
+    }
 
     return this.prisma.user.update({
       where: { id },
@@ -141,8 +150,17 @@ export class UsersService {
     });
   }
 
-  // Khóa/mở khóa tài khoản (xóa mềm), không xóa cứng user
-  async updateStatus(id: number, { isActive }: UpdateUserStatusDto) {
+  // Khóa/mở khóa tài khoản (xóa mềm), không xóa cứng user. Không cho tự khóa chính mình.
+  async updateStatus(
+    id: number,
+    { isActive }: UpdateUserStatusDto,
+    actorId: number,
+  ) {
+    if (id === actorId && !isActive) {
+      throw new ForbiddenException(
+        'Bạn không thể tự khóa tài khoản của chính mình',
+      );
+    }
     await this.findOne(id);
 
     return this.prisma.user.update({

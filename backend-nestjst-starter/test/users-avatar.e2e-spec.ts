@@ -10,6 +10,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { configureApp } from '../src/app.setup';
 import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../src/auth/guards/roles.guard';
 import { JwtStrategy } from '../src/auth/strategies/jwt.strategy';
 import { UPLOAD_CONFIG } from '../src/uploads/upload.config';
 import { AvatarUrlPipe } from '../src/users/avatar-url.pipe';
@@ -54,6 +55,7 @@ describe('PATCH /users/me/avatar (e2e, service giả)', () => {
       controllers: [UsersController],
       providers: [
         JwtStrategy,
+        RolesGuard,
         AvatarUrlPipe,
         { provide: APP_GUARD, useClass: JwtAuthGuard },
         { provide: UsersService, useValue: usersService },

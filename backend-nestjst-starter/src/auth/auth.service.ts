@@ -94,7 +94,6 @@ export class AuthService {
     ]);
 
     const decoded = this.jwtService.decode<{ exp: number }>(refreshToken);
-    console.log('>>>check user: ', user);
     return {
       accessToken,
       refreshToken,

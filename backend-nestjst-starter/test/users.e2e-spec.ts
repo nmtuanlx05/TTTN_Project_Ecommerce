@@ -1,8 +1,9 @@
-import { INestApplication } from '@nestjs/common';
+import { ExecutionContext, INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { configureApp } from '../src/app.setup';
+import { RolesGuard } from '../src/auth/guards/roles.guard';
 import { Paginated } from '../src/common/paginated';
 import { UPLOAD_CONFIG } from '../src/uploads/upload.config';
 import { UsersController } from '../src/users/users.controller';
@@ -13,6 +14,8 @@ jest.mock('../src/prisma/prisma.service', () => ({ PrismaService: class {} }));
 jest.mock('../src/users/dto/update-user.dto', () => ({
   UpdateUserDto: class {},
 }));
+
+const ACTOR_ID = 99;
 
 // Dùng UsersService giả (không cần DB) để kiểm tra phần nối ở tầng toàn cục:
 // ValidationPipe, ParseIdPipe, ResponseInterceptor, AllExceptionsFilter.
@@ -37,7 +40,20 @@ describe('Users API (e2e, service giả)', () => {
           useValue: { publicUrl: 'http://localhost:3000' },
         },
       ],
-    }).compile();
+    })
+      // File này chỉ kiểm validation/format; phân quyền được kiểm ở users-roles.e2e-spec.ts.
+      // Guard giả gắn ADMIN vào req.user vì controller cần id người thực hiện.
+      .overrideGuard(RolesGuard)
+      .useValue({
+        canActivate: (context: ExecutionContext) => {
+          context.switchToHttp().getRequest<{ user?: unknown }>().user = {
+            id: ACTOR_ID,
+            role: 'ADMIN',
+          };
+          return true;
+        },
+      })
+      .compile();
 
     app = moduleRef.createNestApplication();
     configureApp(app);
@@ -187,9 +203,11 @@ describe('Users API (e2e, service giả)', () => {
       success: true,
       data: { id: 1, isActive: false },
     });
-    expect(usersService.updateStatus).toHaveBeenCalledWith(1, {
-      isActive: false,
-    });
+    expect(usersService.updateStatus).toHaveBeenCalledWith(
+      1,
+      { isActive: false },
+      ACTOR_ID,
+    );
   });
 
   it('DELETE /users/:id không còn tồn tại → 404', async () => {

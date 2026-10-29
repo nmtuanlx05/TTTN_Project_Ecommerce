@@ -249,11 +249,14 @@ Code ở `src/auth/`; chi tiết endpoint ở `docs/api/auth.md`. Passport: `Loc
 - Mật khẩu tối thiểu 6 ký tự ở `CreateUserDto` và `RegisterDto` (login không giới hạn).
 
 **Bảo vệ endpoint mới**: gắn `@UseGuards(JwtAuthGuard, RolesGuard)` (thứ tự này) rồi `@Roles('ADMIN', 'STAFF')`;
-lấy user bằng `@CurrentUser()`. Endpoint không gắn `@Roles` chỉ yêu cầu đã đăng nhập. `@Public()` chỉ có tác dụng khi
-`JwtAuthGuard` được đăng ký toàn cục (`APP_GUARD`) — hiện chưa bật. Phân quyền luôn kiểm tra ở server.
+lấy user bằng `@CurrentUser()`. Endpoint không gắn `@Roles` chỉ yêu cầu đã đăng nhập. `JwtAuthGuard` đã đăng ký toàn cục (`APP_GUARD`) nên endpoint công khai phải đánh dấu `@Public()`. Phân quyền luôn kiểm tra ở server.
 
 **Quy tắc `role`**: chỉ `ADMIN` được đặt hoặc đổi `role` (áp dụng cho `POST /users` và `PATCH /users/:id`); đăng ký công khai
 không bao giờ nhận `role`.
+Toàn bộ `/users/*` chỉ `ADMIN` (`@Roles('ADMIN')` ở cấp class; riêng `PATCH /users/me/avatar` mở cho cả 3 role). ADMIN không được tự hạ
+role của mình và không được tự khóa chính mình (403, kiểm ở `UsersService`); vẫn hạ/khóa được ADMIN khác. `test/route-permissions.e2e-spec.ts`
+quét mọi controller và báo lỗi nếu có route không `@Public`, không `@Roles` mà chưa được liệt kê ngoại lệ có lý do: khi thêm route mới
+chỉ cần đạt test này.
 
 ## Git
 
@@ -294,10 +297,6 @@ Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy tr�
 
 ## Việc tồn đọng
 
-- **`POST /users` đang nhận `role`, nên ai cũng tạo được user `ADMIN`** vì các endpoint cũ chưa gắn guard. Khi gắn
-  guard: chỉ `ADMIN` được đặt hoặc đổi `role` (áp dụng cho cả `POST /users` và `PATCH /users/:id`).
-- **Chưa bật guard toàn cục và chưa phân quyền endpoint cũ** (`/users`...): `JwtAuthGuard`, `RolesGuard`, `@Public()`,
-  `@Roles()` đã có nhưng chỉ `GET /auth/me` đang dùng. Làm ở bước sau, cùng lúc cập nhật frontend để gửi token.
 - **Chưa thu hồi được refresh token**: stateless nên logout chỉ xóa cookie; token bị lộ dùng được tới khi hết 7 ngày
   (chỉ chặn được bằng cách khóa user hoặc đổi `JWT_REFRESH_SECRET`). Cân nhắc lưu hash refresh token / `tokenVersion` ở V2.
 - **Chưa giới hạn số lần đăng nhập sai** (chưa có rate limit/lockout) cho `/auth/login`.

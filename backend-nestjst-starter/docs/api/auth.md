@@ -7,7 +7,7 @@ refresh, logout đã chạy thử tay trên server thật + MySQL và có e2e (`
 - Content-Type: `application/json`
 - CORS: origin `http://localhost:5173`, **bật `credentials`**
 - Dạng response thành công/lỗi chung: xem `docs/api/users.md` (mục "Dạng response chung").
-- **Chưa bật guard toàn cục**: các endpoint cũ (`/users`...) vẫn gọi được không cần token. Chỉ `GET /auth/me` yêu cầu token.
+- **`JwtAuthGuard` đã bật toàn cục**: mọi endpoint cần token, trừ endpoint đánh dấu `@Public()` (register, login, refresh, logout, API công khai của sản phẩm/danh mục). Nhóm `/users/*` chỉ ADMIN (xem `users.md`).
 
 ## Yêu cầu phía frontend
 
