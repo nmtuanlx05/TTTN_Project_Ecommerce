@@ -1,7 +1,7 @@
 import { useId } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm, type UseFormSetError } from "react-hook-form"
-import { FormDialogBody, FormDialogFooter } from "@/components/admin/form-dialog"
+import { FormDialogBody, FormDialogFooter } from "@/components/shared/form-dialog"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"

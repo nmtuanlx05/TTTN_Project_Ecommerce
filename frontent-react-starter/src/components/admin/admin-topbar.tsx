@@ -13,7 +13,7 @@ import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu, type UserMenuAccount } from "@/components/shared/user-menu";
 import { AdminNav } from "@/components/admin/admin-sidebar";
 import { NAV_ITEMS } from "@/components/admin/nav-items";
-import type { Role } from "@/types/user";
+import type { Role, User } from "@/types/user";
 
 function useBreadcrumb() {
   const { pathname } = useLocation();
@@ -29,11 +29,13 @@ function AdminTopbar({
   role,
   onLogout,
   loggingOut,
+  onAvatarSaved,
 }: {
   account: AdminAccount;
   role: Role;
   onLogout: () => void;
   loggingOut: boolean;
+  onAvatarSaved: (user: User) => void;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const current = useBreadcrumb();
@@ -90,6 +92,7 @@ function AdminTopbar({
         account={{ ...account, canAccessAdmin: false }}
         onLogout={onLogout}
         loggingOut={loggingOut}
+        onAvatarSaved={onAvatarSaved}
       />
     </header>
   );

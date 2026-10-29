@@ -6,6 +6,7 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ArrowUpDown, Lock, LockOpen, Pencil } from "lucide-react"
+import { UserAvatar } from "@/components/shared/user-avatar"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -54,8 +55,18 @@ function UsersTable({
     {
       id: "name",
       header: "Họ tên",
-      cell: ({ row }) =>
-        row.original.name ?? <span className="text-ink-muted">Chưa có tên</span>,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-inline">
+          {/* Tên đã hiện bằng chữ ngay cạnh nên ảnh chỉ để trang trí (alt rỗng). */}
+          <UserAvatar
+            avatarUrl={row.original.avatarUrl}
+            name={row.original.name}
+            email={row.original.email}
+            decorative
+          />
+          {row.original.name ?? <span className="text-ink-muted">Chưa có tên</span>}
+        </div>
+      ),
     },
     {
       id: "email",
@@ -213,7 +224,14 @@ function UsersTableSkeleton() {
           <TableRow key={row}>
             {widths.map((width, cell) => (
               <TableCell key={cell}>
-                <Skeleton className={`h-4 ${width}`} />
+                {cell === 0 ? (
+                  <div className="flex items-center gap-inline">
+                    <Skeleton className="size-8 shrink-0 rounded-full" />
+                    <Skeleton className={`h-4 ${width}`} />
+                  </div>
+                ) : (
+                  <Skeleton className={`h-4 ${width}`} />
+                )}
               </TableCell>
             ))}
           </TableRow>
