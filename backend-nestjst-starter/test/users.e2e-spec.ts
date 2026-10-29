@@ -4,6 +4,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { configureApp } from '../src/app.setup';
 import { Paginated } from '../src/common/paginated';
+import { UPLOAD_CONFIG } from '../src/uploads/upload.config';
 import { UsersController } from '../src/users/users.controller';
 import { UsersService } from '../src/users/users.service';
 
@@ -28,7 +29,14 @@ describe('Users API (e2e, service giả)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [UsersController],
-      providers: [{ provide: UsersService, useValue: usersService }],
+      providers: [
+        { provide: UsersService, useValue: usersService },
+        // AvatarUrlPipe (route PATCH /users/me/avatar) cần cấu hình upload
+        {
+          provide: UPLOAD_CONFIG,
+          useValue: { publicUrl: 'http://localhost:3000' },
+        },
+      ],
     }).compile();
 
     app = moduleRef.createNestApplication();
