@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { FormProvider, useForm, type UseFormReturn } from "react-hook-form"
 import { Alert } from "@/components/ui/alert"
@@ -43,6 +43,8 @@ function ProductForm({
     defaultValues: initialValues,
   })
   const alertRef = useRef<HTMLDivElement>(null)
+  // Ảnh đang tải lên thì chưa có URL cuối cùng: không cho gửi form để khỏi lưu thiếu ảnh.
+  const [imageUploading, setImageUploading] = useState(false)
 
   useEffect(() => {
     if (!formError) return
@@ -54,7 +56,10 @@ function ProductForm({
     <FormProvider {...form}>
       <form
         noValidate
-        onSubmit={form.handleSubmit((values) => onSubmit(values, form))}
+        onSubmit={form.handleSubmit((values) => {
+          if (imageUploading) return
+          onSubmit(values, form)
+        })}
         className="flex flex-col gap-section"
       >
         {formError ? (
@@ -66,7 +71,7 @@ function ProductForm({
         <ProductBasicFields mode={mode} idPrefix={`${idPrefix}-basic`} />
 
         <FormSection title="Ảnh">
-          <ProductImageField id={`${idPrefix}-image`} />
+          <ProductImageField id={`${idPrefix}-image`} onUploadingChange={setImageUploading} />
         </FormSection>
 
         <ProductVariantsField
@@ -75,11 +80,20 @@ function ProductForm({
           savedVariants={savedVariants}
         />
 
-        <div className="flex flex-col-reverse gap-inline sm:flex-row sm:justify-end">
+        <div className="flex flex-col-reverse gap-inline sm:flex-row sm:items-center sm:justify-end">
+          {imageUploading ? (
+            <p aria-live="polite" className="text-caption text-ink-muted sm:mr-auto">
+              Đang tải ảnh lên. Chờ xong rồi mới lưu được.
+            </p>
+          ) : null}
           <Button type="button" variant="secondary" disabled={busy} onClick={onCancel}>
             {mode === "create" ? "Hủy bỏ" : "Về danh sách"}
           </Button>
-          <Button type="submit" loading={busy} disabled={mode === "edit" && !form.formState.isDirty}>
+          <Button
+            type="submit"
+            loading={busy}
+            disabled={imageUploading || (mode === "edit" && !form.formState.isDirty)}
+          >
             {mode === "create" ? "Thêm sản phẩm" : "Lưu thay đổi"}
           </Button>
         </div>

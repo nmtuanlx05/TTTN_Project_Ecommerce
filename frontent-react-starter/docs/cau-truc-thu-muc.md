@@ -32,13 +32,18 @@ src/
 │   ├─ admin/       khung admin và thứ dùng chung nhiều tính năng ✓
 │   ├─ storefront/  ✓ khung khách: storefront-layout, storefront-header, storefront-footer, home-hero
 │   └─ shared/      ✓ chỉ khi cả admin và storefront (kể cả trang auth) cùng dùng: theme-toggle (+ theme-cycle-button,
-│                     theme-options), password-input, user-menu, brand-logo
+│                     theme-options), password-input, user-menu, brand-logo, image-upload-field (+ image-preview, image-upload-progress,
+│                     image-upload-message) — ô upload một ảnh, dùng cho sản phẩm và sau này ảnh đại diện; image-lightbox (+ -viewer,
+│                     -toolbar) — xem ảnh lớn có thu phóng, bật qua `zoomable` của image-preview
 ├─ hooks/         hook dùng chung (use-theme ✓, use-mobile ✓, use-dialog-target ✓, use-category-options ✓ — danh mục cho ô chọn của
-│                 categories và products, use-debounce)
+│                 categories và products, use-image-upload ✓ + use-file-drop ✓ — upload ảnh và kéo-thả cho image-upload-field, use-pan-zoom ✓ +
+│                 use-pan-zoom-gestures ✓ — thu phóng và kéo ảnh cho image-lightbox, use-debounce)
 ├─ lib/           hạ tầng: api-client ✓, api-error ✓, query-client ✓, format ✓, utils ✓, date-range ✓,
-│                 form-errors ✓, password-rules ✓ (nguồn duy nhất độ dài mật khẩu), vn-phone ✓, display-name ✓ (tên hiển thị của tài khoản)
+│                 form-errors ✓, password-rules ✓ (nguồn duy nhất độ dài mật khẩu), vn-phone ✓, display-name ✓ (tên hiển thị của tài khoản),
+│                 image-rules ✓ (giới hạn và kiểm tra file ảnh theo kind), upload-image ✓ (POST /uploads/<kind>),
+│                 pan-zoom ✓ (toán thu phóng và kéo ảnh, thuần túy)
 ├─ types/         kiểu dùng chung (api.ts ✓, user.ts ✓ — Role và User, dùng ở auth, users, components/admin; category.ts ✓ — PublicCategory,
-│                 dùng ở categories và products)
+│                 dùng ở categories và products; upload.ts ✓ — ImageUploadKind)
 └─ assets/        ảnh, font nội bộ
 ````
 
@@ -120,4 +125,5 @@ Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 4
 - Storefront dùng mật độ mặc định (không `.density-admin`), tông tối giản biên tập (Archivo cho logo/tiêu đề). Header chưa có điều hướng, giỏ hàng, tìm kiếm.
 - Backend Products đã tách `/admin/products` (thấy cả sản phẩm ẩn) và `/products` (khách, chỉ sản phẩm đang bán). Frontend mới dùng phía admin; phía khách làm cùng storefront.
 - Ẩn hoặc chặn `/styleguide` ở bản production.
-- `components/shared/` hiện chứa `theme-toggle`, `password-input`, `user-menu`, `brand-logo` (dùng từ hai khu trở lên).
+- `components/shared/` hiện chứa `theme-toggle`, `password-input`, `user-menu`, `brand-logo` (dùng từ hai khu trở lên) và bộ `image-*` (ô upload ảnh).
+- Upload ảnh là hạ tầng chung, không thuộc feature nào: `components/` không được import `features/`, nên hàm gọi API nằm ở `lib/upload-image.ts` (đi qua `apiUpload` của `api-client`, không import axios) và hook ở `hooks/`. Avatar sau này dùng lại bằng `kind="avatars"`, `shape="circle"`.

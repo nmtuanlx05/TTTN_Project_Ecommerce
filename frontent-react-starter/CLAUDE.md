@@ -293,7 +293,10 @@ origin `http://localhost:5173`, nên dev server phải chạy đúng cổng đó
 - **Cấm gọi axios trực tiếp trong component** (và mọi nơi ngoài `api-client.ts`,
   `api-error.ts`, `features/*/api.ts`). ESLint chặn bằng `no-restricted-imports`.
 - Hàm trong `api.ts` dùng `apiGet` (đối tượng), `apiGetPage` (danh sách, trả
-  `{ items, meta }`), `apiSend` (POST/PATCH/PUT). Không tự đọc `response.data.data`.
+  `{ items, meta }`), `apiSend` (POST/PATCH/PUT), `apiUpload` (một file multipart, trường `file`). Không tự đọc `response.data.data`.
+  **Upload file phải qua `apiUpload`**, không dùng `apiSend`: instance ép `Content-Type: application/json` nên axios sẽ đổi `FormData` thành chuỗi JSON.
+  `apiUpload` gỡ header đó (`Content-Type: false`) để trình duyệt tự thêm boundary, đặt timeout 60s và nhận `onProgress`/`signal`; gặp 401 thì interceptor
+  gửi lại được vì `FormData` còn nguyên file.
 - **Query key** là `['<module>', params]` (vd `['users', params]`); chi tiết là
   `['<module>', 'detail', id]`. Mutation thành công thì `invalidateQueries` theo
   tiền tố `['<module>']`.
@@ -388,10 +391,24 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
   (`form-mapping.ts`): biến thể có `id` chỉ gửi trường đổi, hàng mới (chưa có `id`) gửi đủ, biến thể đã lưu **không xóa được** (chỉ sửa hoặc bỏ
   tích "Đang bán"); `description`/`imageUrl` xóa trống thì gửi `null`. Lỗi 400 của biến thể (`variants.N.sku`) được đổi chỉ số về đúng hàng trong form
   (`remapVariantErrors`) vì ta chỉ gửi các hàng có đổi; 409 (trùng slug/SKU/size-màu) hiện `Alert` nguyên văn đầu form. Tồn kho (`stock`, `reserved`)
-  chỉ đọc ở trang sửa, nhập kho thuộc module Kho. Ảnh chỉ là một URL (≤ 191 ký tự), chưa upload. Tạo xong về danh sách; sửa xong ở lại trang và
+  chỉ đọc ở trang sửa, nhập kho thuộc module Kho. Ảnh upload bằng `ImageUploadField` (`components/shared/`, kind `products`, khung vuông `object-contain`; trong lúc tải thì khóa nút Lưu và chặn submit);
+  mục thu gọn "Nhập URL ảnh" vẫn dùng được cho ảnh ở nơi khác (≤ 191 ký tự). "Xóa ảnh" chỉ xóa giá trị trong form, không xóa file trên server. Tạo xong về danh sách; sửa xong ở lại trang và
   `reset` form theo response. Trạng thái hiện/ẩn không nằm trong form (API chỉ đổi qua `PATCH :id/status`): nút Ẩn/Hiện ở đầu trang sửa. Link từ
   danh sách mang theo `location.state.listSearch` để "Quay lại" giữ bộ lọc và trang (`list-link.ts`).
 - Các mục menu còn lại hiện là `PlaceholderPage`. Route lạ trong `/admin` hiện 404 trong khung admin; ngoài `/admin` hiện 404 toàn trang.
+- **Upload ảnh dùng chung**: `components/shared/image-upload-field.tsx` (props `value`, `onChange`, `kind` = `products`|`avatars`, `shape` = `square`|`circle`, `label`, `error`, `disabled`,
+  `onUploadingChange`). Chọn file hoặc kéo-thả (tự dùng sự kiện trình duyệt, `hooks/use-file-drop.ts`), tiến độ và nút Hủy (`hooks/use-image-upload.ts`). Giới hạn
+  (products 5 MB, avatars 2 MB; JPEG/PNG/WebP) ở `lib/image-rules.ts`, khớp backend; client chỉ kiểm loại file (`File.type`, rỗng cũng coi là sai), dung lượng, file rỗng
+  và nhiều file, còn server kiểm thật (kể cả chữ ký byte). Upload lỗi thì giữ nguyên ảnh hiện tại. Chưa nối avatar. `ImagePreview` hiển thị mọi URL http(s), dùng cả
+  trong bảng sản phẩm.
+- **Xem ảnh lớn (lightbox)**: `ImagePreview` có prop `zoomable`; khi bật và ảnh hợp lệ, khung ảnh là nút (`type="button"`) mở `components/shared/image-lightbox.tsx`
+  (`src`, `alt`, `open`, `onOpenChange`, `title?` — điều khiển từ ngoài nên dùng lại được cho avatar, storefront). Đang bật ở ô upload ảnh (khi không đang tải lên) và
+  ảnh nhỏ trong bảng sản phẩm. Dựng thẳng trên `@base-ui/react/dialog` (như `ConfirmDialog`/`FormDialog`, vì `ui/dialog.tsx` trái token), nền tối bằng lớp `dark` đặt lên
+  Popup (token dark khai báo trong `.dark` và Tailwind dùng `@theme inline` nên mọi token trong Popup tự đổi, không cần token riêng). 100% = vừa khung (ảnh nhỏ giãn
+  tối đa 2× kích thước gốc), giới hạn 100–400%. Bánh xe zoom quanh con trỏ, bấm đúp chuyển 100%/200%, kéo khi đã phóng to (giới hạn để ảnh luôn phủ kín khung), hai ngón
+  chụm để zoom, phím `+ − 0` và mũi tên, bấm vùng trống đóng. Logic ở `hooks/use-pan-zoom.ts` (state, bánh xe, phím) + `use-pan-zoom-gestures.ts` (pointer events; bấm vùng trống
+  nhận diện bằng pointer chứ không dùng `click` để không đóng nhầm sau khi kéo) + `lib/pan-zoom.ts` (toán thuần). Lint React Compiler (`react-hooks/refs`) coi object hook
+  trả về là "chứa ref" nếu có ref trong đó, nên hai hook tách riêng và khung ảnh được giữ bằng `useState` + `ref={setStageEl}` ở nơi gọi.
 - Dùng chung: `components/shared/user-menu.tsx` (menu tài khoản của storefront và admin-topbar; nhận dữ liệu qua props, "Vào trang quản trị" chỉ hiện khi
   `canAccessAdmin`), `brand-logo.tsx` (logo chữ của header, `AuthShell`, màn hình chờ), `theme-toggle.tsx` (từ `md` nhóm 3 nút, dưới `md` một nút xoay vòng
   44px — `theme-cycle-button.tsx`, `theme-options.ts`). Tên hiển thị: `lib/display-name.ts` (`name` đã trim, trống thì phần trước `@` của email); chỗ cần phân biệt
@@ -408,6 +425,6 @@ một module, và cập nhật `/styleguide` nếu có thêm token hoặc compon
 - Trang đích của STAFF sau đăng nhập đang là `/admin/orders` (placeholder); đổi khi có trang Đơn hàng thật.
 - Trang chủ storefront (`/`) mới có header + hero + khối "sắp ra mắt"; chưa có điều hướng, giỏ hàng, tìm kiếm (thêm khi có chức năng).
 - `user-form-dialog.tsx` còn tự map lỗi API; chuyển sang `applyServerErrors` (`lib/form-errors.ts`) như login/register.
-- Sản phẩm: danh sách chưa có cột tồn kho (API không trả); chưa upload ảnh; chưa cảnh báo khi rời trang sửa lúc có thay đổi chưa lưu; hoán đổi size/màu giữa hai biến thể trong một lần lưu bị 409 (tách hai lần lưu).
+- Sản phẩm: danh sách chưa có cột tồn kho (API không trả); ảnh upload xong mà không lưu (hoặc bị thay) vẫn nằm trên server, chưa có cách dọn; chưa cảnh báo khi rời trang sửa lúc có thay đổi chưa lưu; hoán đổi size/màu giữa hai biến thể trong một lần lưu bị 409 (tách hai lần lưu).
 - Backend chưa gắn guard cho `/users`..., chưa thu hồi được refresh token, chưa giới hạn số lần đăng nhập sai (xem CLAUDE.md backend).
 - Cookie refresh `SameSite=Lax`: khi deploy, frontend và backend phải cùng site (cùng domain gốc) thì cookie mới được gửi.

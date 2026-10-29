@@ -13,13 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { ImagePreview } from "@/components/shared/image-preview"
 import { formatDateTime, formatVnd } from "@/lib/format"
 import type { SortOrder } from "@/types/api"
 import type { ProductListItem, ProductSortBy } from "../types"
 import { ProductRowActions } from "./product-row-actions"
 import { ProductNameCell } from "./product-name-cell"
 import { ProductSortHeader } from "./product-sort-header"
-import { ProductThumb } from "./product-thumb"
 import { ProductVariantsCell } from "./product-variants-cell"
 import { ProductVisibility } from "./product-visibility"
 
@@ -56,7 +56,13 @@ function ProductsTable({
       header: () => <span className="sr-only">Ảnh</span>,
       enableSorting: false,
       cell: ({ row }) => (
-        <ProductThumb src={row.original.imageUrl} alt={row.original.name} className="w-9" />
+        <ImagePreview
+          src={row.original.imageUrl}
+          alt={row.original.name}
+          shape="portrait"
+          zoomable
+          className="w-9"
+        />
       ),
     },
     {
