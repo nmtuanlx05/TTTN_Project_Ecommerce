@@ -15,7 +15,7 @@ src/
 ├─ main.tsx, App.tsx, global.css, vite-env.d.ts   ✓
 ├─ routes/        ✓ admin-routes, auth-routes, storefront-routes, admin-layout-container,
 │                 storefront-layout-container, admin-index-redirect, can-access-path, guards/ (require-auth, require-role,
-│                 redirect-if-authenticated)
+│                 redirect-if-authenticated), use-avatar-saved ✓ (cập nhật phiên + cache sau khi đổi ảnh đại diện)
 ├─ pages/         MỎNG: chỉ ghép
 │   ├─ auth/        login ✓, register ✓
 │   ├─ admin/       dashboard ✓, users ✓, categories ✓, products ✓ (index, new, edit), orders,
@@ -32,15 +32,17 @@ src/
 │   ├─ admin/       khung admin và thứ dùng chung nhiều tính năng ✓
 │   ├─ storefront/  ✓ khung khách: storefront-layout, storefront-header, storefront-footer, home-hero
 │   └─ shared/      ✓ chỉ khi cả admin và storefront (kể cả trang auth) cùng dùng: theme-toggle (+ theme-cycle-button,
-│                     theme-options), password-input, user-menu, brand-logo, image-upload-field (+ image-preview, image-upload-progress,
-│                     image-upload-message) — ô upload một ảnh, dùng cho sản phẩm và sau này ảnh đại diện; image-lightbox (+ -viewer,
+│                     theme-options), password-input, user-menu, brand-logo, form-dialog (vỏ hộp thoại có form: dùng cả ở admin lẫn hộp
+│                     thoại trong user-menu), image-upload-field (+ image-preview, image-upload-progress,
+│                     image-upload-message) — ô upload một ảnh, dùng cho sản phẩm và ảnh đại diện; user-avatar (+ avatar-initials) — avatar tròn có chữ cái
+│                     đầu khi chưa có ảnh; avatar-dialog (+ avatar-form) — hộp thoại đổi ảnh đại diện, mở từ user-menu; image-lightbox (+ -viewer,
 │                     -toolbar) — xem ảnh lớn có thu phóng, bật qua `zoomable` của image-preview
 ├─ hooks/         hook dùng chung (use-theme ✓, use-mobile ✓, use-dialog-target ✓, use-category-options ✓ — danh mục cho ô chọn của
-│                 categories và products, use-image-upload ✓ + use-file-drop ✓ — upload ảnh và kéo-thả cho image-upload-field, use-pan-zoom ✓ +
+│                 categories và products, use-image-upload ✓ + use-file-drop ✓ — upload ảnh và kéo-thả cho image-upload-field, use-update-avatar ✓ — lưu ảnh đại diện, use-pan-zoom ✓ +
 │                 use-pan-zoom-gestures ✓ — thu phóng và kéo ảnh cho image-lightbox, use-debounce)
 ├─ lib/           hạ tầng: api-client ✓, api-error ✓, query-client ✓, format ✓, utils ✓, date-range ✓,
 │                 form-errors ✓, password-rules ✓ (nguồn duy nhất độ dài mật khẩu), vn-phone ✓, display-name ✓ (tên hiển thị của tài khoản),
-│                 image-rules ✓ (giới hạn và kiểm tra file ảnh theo kind), upload-image ✓ (POST /uploads/<kind>),
+│                 image-rules ✓ (giới hạn và kiểm tra file ảnh theo kind), upload-image ✓ (POST /uploads/<kind>), update-avatar ✓ (PATCH /users/me/avatar),
 │                 pan-zoom ✓ (toán thu phóng và kéo ảnh, thuần túy)
 ├─ types/         kiểu dùng chung (api.ts ✓, user.ts ✓ — Role và User, dùng ở auth, users, components/admin; category.ts ✓ — PublicCategory,
 │                 dùng ở categories và products; upload.ts ✓ — ImageUploadKind)
@@ -125,5 +127,5 @@ Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 4
 - Storefront dùng mật độ mặc định (không `.density-admin`), tông tối giản biên tập (Archivo cho logo/tiêu đề). Header chưa có điều hướng, giỏ hàng, tìm kiếm.
 - Backend Products đã tách `/admin/products` (thấy cả sản phẩm ẩn) và `/products` (khách, chỉ sản phẩm đang bán). Frontend mới dùng phía admin; phía khách làm cùng storefront.
 - Ẩn hoặc chặn `/styleguide` ở bản production.
-- `components/shared/` hiện chứa `theme-toggle`, `password-input`, `user-menu`, `brand-logo` (dùng từ hai khu trở lên) và bộ `image-*` (ô upload ảnh).
-- Upload ảnh là hạ tầng chung, không thuộc feature nào: `components/` không được import `features/`, nên hàm gọi API nằm ở `lib/upload-image.ts` (đi qua `apiUpload` của `api-client`, không import axios) và hook ở `hooks/`. Avatar sau này dùng lại bằng `kind="avatars"`, `shape="circle"`.
+- `components/shared/` hiện chứa `theme-toggle`, `password-input`, `user-menu`, `brand-logo`, `form-dialog` (dùng từ hai khu trở lên) và bộ `image-*` (ô upload ảnh). `form-dialog` trước đây nằm ở `components/admin/`; đã chuyển sang `shared/` vì hộp thoại trong `user-menu` (storefront cũng dùng) cần nó, và `shared/` không được phụ thuộc ngược vào `admin/`. `confirm-dialog` vẫn ở `components/admin/` (chỉ admin dùng).
+- Upload ảnh là hạ tầng chung, không thuộc feature nào: `components/` không được import `features/`, nên hàm gọi API nằm ở `lib/upload-image.ts` (đi qua `apiUpload` của `api-client`, không import axios) và hook ở `hooks/`. Avatar dùng lại bằng `kind="avatars"`, `shape="circle"` (hộp thoại `avatar-dialog`); hàm lưu `lib/update-avatar.ts` và hook `hooks/use-update-avatar.ts` cũng ở tầng chung vì `shared/` không import `features/`. Phần cập nhật phiên và cache sau khi lưu nằm ở `routes/use-avatar-saved.ts`.

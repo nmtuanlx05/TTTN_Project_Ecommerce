@@ -397,12 +397,20 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
   danh sách mang theo `location.state.listSearch` để "Quay lại" giữ bộ lọc và trang (`list-link.ts`).
 - Các mục menu còn lại hiện là `PlaceholderPage`. Route lạ trong `/admin` hiện 404 trong khung admin; ngoài `/admin` hiện 404 toàn trang.
 - **Upload ảnh dùng chung**: `components/shared/image-upload-field.tsx` (props `value`, `onChange`, `kind` = `products`|`avatars`, `shape` = `square`|`circle`, `label`, `error`, `disabled`,
-  `onUploadingChange`). Chọn file hoặc kéo-thả (tự dùng sự kiện trình duyệt, `hooks/use-file-drop.ts`), tiến độ và nút Hủy (`hooks/use-image-upload.ts`). Giới hạn
+  `zoomable` (mặc định bật), `fallback`, `onUploadingChange`). Chọn file hoặc kéo-thả (tự dùng sự kiện trình duyệt, `hooks/use-file-drop.ts`), tiến độ và nút Hủy (`hooks/use-image-upload.ts`). Giới hạn
   (products 5 MB, avatars 2 MB; JPEG/PNG/WebP) ở `lib/image-rules.ts`, khớp backend; client chỉ kiểm loại file (`File.type`, rỗng cũng coi là sai), dung lượng, file rỗng
-  và nhiều file, còn server kiểm thật (kể cả chữ ký byte). Upload lỗi thì giữ nguyên ảnh hiện tại. Chưa nối avatar. `ImagePreview` hiển thị mọi URL http(s), dùng cả
-  trong bảng sản phẩm.
+  và nhiều file, còn server kiểm thật (kể cả chữ ký byte). Upload lỗi thì giữ nguyên ảnh hiện tại. `ImagePreview` hiển thị mọi URL http(s), dùng cả
+  trong bảng sản phẩm; prop `fallback` thay ô trống mặc định (avatar hiện chữ cái đầu).
+- **Ảnh đại diện (avatar)**: mọi role chỉ sửa avatar của CHÍNH MÌNH (`PATCH /users/me/avatar`, `lib/update-avatar.ts` + `hooks/use-update-avatar.ts`); ADMIN chỉ xem avatar người khác
+  trong bảng người dùng, form sửa người dùng không có ô avatar. Lối vào là mục "Ảnh đại diện" trong `components/shared/user-menu.tsx` (dùng chung admin và storefront), mở
+  `avatar-dialog.tsx` (vỏ `FormDialog`) + `avatar-form.tsx`. Hộp thoại đặt NGOÀI `DropdownMenuContent` và điều khiển bằng state (bấm mục menu đóng menu ngay, hộp thoại nằm trong
+  sẽ bị hủy theo); `finalFocus` trả focus về nút mở menu vì mục menu đã bị gỡ. Ảnh tải lên ngay khi chọn nhưng chỉ gắn vào tài khoản khi bấm Lưu (nút Lưu chỉ bật khi có thay đổi và
+  không đang tải/đang lưu); lưu lỗi thì giữ nguyên bản nháp, hộp thoại và avatar hiện tại. Lưu xong, `routes/use-avatar-saved.ts` cập nhật `useAuthStore.updateUser` và invalidate
+  `userKeys.all`. `UserAvatar` (`components/shared/user-avatar.tsx`, cỡ `sm`/`md`) là lớp mỏng trên `ImagePreview` `shape="circle"`; không có ảnh hoặc ảnh lỗi thì hiện chữ cái đầu
+  (`avatar-initials.tsx`, quy tắc ở `initialsOf` trong `lib/display-name.ts`: chữ cái đầu của hai từ cuối, "Nguyễn Mạnh Tuấn" → "MT"). `decorative` (alt rỗng) khi tên đã hiện bằng chữ ngay cạnh.
+  Ảnh tải lên rồi bị bỏ (Hủy, hoặc chọn ảnh khác) vẫn nằm trên server: hạn chế đã biết của backend, không có endpoint xóa file.
 - **Xem ảnh lớn (lightbox)**: `ImagePreview` có prop `zoomable`; khi bật và ảnh hợp lệ, khung ảnh là nút (`type="button"`) mở `components/shared/image-lightbox.tsx`
-  (`src`, `alt`, `open`, `onOpenChange`, `title?` — điều khiển từ ngoài nên dùng lại được cho avatar, storefront). Đang bật ở ô upload ảnh (khi không đang tải lên) và
+  (`src`, `alt`, `open`, `onOpenChange`, `title?` — điều khiển từ ngoài nên dùng lại được ở storefront). Đang bật ở ô upload ảnh (khi không đang tải lên) và
   ảnh nhỏ trong bảng sản phẩm. Dựng thẳng trên `@base-ui/react/dialog` (như `ConfirmDialog`/`FormDialog`, vì `ui/dialog.tsx` trái token), nền tối bằng lớp `dark` đặt lên
   Popup (token dark khai báo trong `.dark` và Tailwind dùng `@theme inline` nên mọi token trong Popup tự đổi, không cần token riêng). 100% = vừa khung (ảnh nhỏ giãn
   tối đa 2× kích thước gốc), giới hạn 100–400%. Bánh xe zoom quanh con trỏ, bấm đúp chuyển 100%/200%, kéo khi đã phóng to (giới hạn để ảnh luôn phủ kín khung), hai ngón
