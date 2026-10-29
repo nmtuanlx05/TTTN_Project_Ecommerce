@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from "react"
+import { useEffect, useId, useRef, type ReactNode } from "react"
 import { ImagePlus, LoaderCircle, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useFileDrop } from "@/hooks/use-file-drop"
@@ -23,6 +23,8 @@ import { ImageUploadProgress } from "./image-upload-progress"
  * - Upload lỗi thì `value` giữ nguyên, lỗi hiện ngay dưới khung.
  * - `error` là lỗi từ bên ngoài (vd. form báo URL không hợp lệ); lỗi của chính lần upload được ưu tiên.
  * - `onUploadingChange` để form khóa nút gửi trong lúc đang tải.
+ * - `fallback` thay ô trống mặc định của khung xem trước (avatar hiện chữ cái đầu).
+ * - `zoomable` (mặc định bật) cho bấm vào ảnh để xem lớn; tắt khi ô nằm trong hộp thoại để khỏi lồng hai hộp thoại.
  */
 function ImageUploadField({
   value,
@@ -32,6 +34,8 @@ function ImageUploadField({
   label,
   error,
   disabled = false,
+  zoomable = true,
+  fallback,
   onUploadingChange,
 }: {
   value: string | null
@@ -41,6 +45,8 @@ function ImageUploadField({
   label: string
   error?: string
   disabled?: boolean
+  zoomable?: boolean
+  fallback?: ReactNode
   onUploadingChange?: (uploading: boolean) => void
 }) {
   const id = useId()
@@ -80,7 +86,8 @@ function ImageUploadField({
           shape={shape}
           showFallbackText
           // Đang tải thì ảnh trong khung là bản xem trước tạm: chưa xem lớn được.
-          zoomable={!upload.isUploading}
+          zoomable={zoomable && !upload.isUploading}
+          fallback={fallback}
           className={shape === "circle" ? "size-32" : "size-40"}
         >
           {upload.isUploading ? (

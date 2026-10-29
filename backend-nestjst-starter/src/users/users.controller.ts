@@ -12,7 +12,11 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
+import { UpdateAvatarDto } from './dto/update-avatar.dto';
+import { AvatarUrlPipe } from './avatar-url.pipe';
 import { parseIdPipe } from '../common/pipes/parse-id.pipe';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthUser } from '../auth/auth.types';
 // import { Public } from 'src/auth/decorators/public.decorator';
 
 @Controller('users')
@@ -27,6 +31,15 @@ export class UsersController {
   @Get()
   findAll(@Query() query: QueryUsersDto) {
     return this.usersService.findAll(query);
+  }
+
+  // Phải khai báo trước các route ':id'. Mọi user đã đăng nhập đều dùng được (không gắn @Roles), chỉ sửa chính mình.
+  @Patch('me/avatar')
+  updateMyAvatar(
+    @CurrentUser() user: AuthUser,
+    @Body(AvatarUrlPipe) updateAvatarDto: UpdateAvatarDto,
+  ) {
+    return this.usersService.updateAvatar(user.id, updateAvatarDto);
   }
 
   @Get(':id')

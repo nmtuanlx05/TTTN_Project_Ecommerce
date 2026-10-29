@@ -11,6 +11,8 @@ interface AuthState {
   sessionExpired: boolean;
   setAccessToken: (token: string) => void;
   startSession: (accessToken: string, user: User) => void;
+  /** Thay user trong phiên đang mở bằng bản mới từ server (vd. sau khi đổi ảnh đại diện). Không có phiên thì bỏ qua. */
+  updateUser: (user: User) => void;
   /** Không có phiên (chưa đăng nhập, hoặc vừa đăng xuất). */
   clearSession: () => void;
   /** Phiên bị máy chủ từ chối: như `clearSession` nhưng báo cho trang đăng nhập. */
@@ -27,6 +29,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   // Đăng nhập thành công: bỏ cờ hết hạn để thông báo cũ không hiện lại.
   startSession: (accessToken, user) =>
     set({ accessToken, user, status: "authenticated", sessionExpired: false }),
+  updateUser: (user) => {
+    // Request đang bay mà người dùng đã đăng xuất hoặc đổi tài khoản: không được dựng lại phiên cũ.
+    const current = get().user;
+    if (get().status !== "authenticated" || current?.id !== user.id) return;
+    set({ user });
+  },
   clearSession: () =>
     set({ accessToken: null, user: null, status: "anonymous" }),
   expireSession: () => {

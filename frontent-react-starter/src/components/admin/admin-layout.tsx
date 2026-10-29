@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminTopbar, type AdminAccount } from "@/components/admin/admin-topbar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import type { Role } from "@/types/user"
+import type { Role, User } from "@/types/user"
 
 /**
  * Vỏ của khu quản trị. `.density-admin` đặt ở đây một lần — mọi component bên
@@ -13,11 +13,13 @@ function AdminLayout({
   role,
   onLogout,
   loggingOut,
+  onAvatarSaved,
 }: {
   account: AdminAccount
   role: Role
   onLogout: () => void
   loggingOut: boolean
+  onAvatarSaved: (user: User) => void
 }) {
   return (
     <TooltipProvider>
@@ -29,6 +31,7 @@ function AdminLayout({
             role={role}
             onLogout={onLogout}
             loggingOut={loggingOut}
+            onAvatarSaved={onAvatarSaved}
           />
           <main className="flex-1 px-gutter py-section">
             <Outlet />

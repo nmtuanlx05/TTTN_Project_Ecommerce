@@ -4,12 +4,19 @@ import { BrandLogo } from "@/components/shared/brand-logo"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { UserMenu, type UserMenuAccount } from "@/components/shared/user-menu"
 import { cn } from "@/lib/utils"
+import type { User } from "@/types/user"
 
 /** Phiên đăng nhập nhìn từ header. Truyền từ ngoài vào vì components/ không được đọc phiên. */
 type HeaderSession =
   | { status: "loading" }
   | { status: "anonymous" }
-  | { status: "authenticated"; account: UserMenuAccount; onLogout: () => void; loggingOut: boolean }
+  | {
+      status: "authenticated"
+      account: UserMenuAccount
+      onLogout: () => void
+      loggingOut: boolean
+      onAvatarSaved: (user: User) => void
+    }
 
 /**
  * Header cửa hàng: logo bên trái; bên phải là đổi sáng/tối và một mục tài khoản.
@@ -28,6 +35,7 @@ function StorefrontHeader({ session }: { session: HeaderSession }) {
               account={session.account}
               onLogout={session.onLogout}
               loggingOut={session.loggingOut}
+              onAvatarSaved={session.onAvatarSaved}
             />
           ) : session.status === "anonymous" ? (
             <Link to="/login" className={cn(buttonVariants(), "max-sm:px-3")}>

@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,6 +9,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
+import { UpdateAvatarDto } from './dto/update-avatar.dto';
+import { UploadService } from '../uploads/upload.service';
 import { Paginated } from '../common/paginated';
 import { Prisma } from '../generated/prisma/client';
 import { normalizeEmail } from '../common/transforms/normalize-email';
@@ -18,6 +21,7 @@ const userSelectFields = {
   email: true,
   name: true,
   phone: true,
+  avatarUrl: true,
   role: true,
   isActive: true,
   createdAt: true,
@@ -26,7 +30,12 @@ const userSelectFields = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(UsersService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   async create(createUserDto: CreateUserDto) {
     // Chuẩn hóa lại ở service để các nơi gọi nội bộ (vd Auth) cũng nhất quán, không chỉ qua DTO
@@ -141,5 +150,48 @@ export class UsersService {
       data: { isActive },
       select: userSelectFields,
     });
+  }
+
+  // Người dùng tự đổi ảnh đại diện của chính mình (id lấy từ token). URL đã được AvatarUrlPipe kiểm tra.
+  async updateAvatar(userId: number, { avatarUrl }: UpdateAvatarDto) {
+    const current = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatarUrl: true },
+    });
+    if (!current) {
+      throw new NotFoundException(
+        `Không tìm thấy người dùng với ID #${userId}`,
+      );
+    }
+    const oldUrl = current.avatarUrl;
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
+      select: userSelectFields,
+    });
+
+    // Chỉ dọn file cũ sau khi cập nhật DB thành công và ảnh thật sự đổi
+    if (oldUrl && oldUrl !== avatarUrl) {
+      await this.removeOldAvatar(userId, oldUrl);
+    }
+    return updated;
+  }
+
+  // Xóa file avatar cũ, cố gắng hết sức: lỗi chỉ ghi log, không làm hỏng request đổi avatar.
+  // Không xóa nếu user khác đang dùng cùng URL (hệ thống chưa ghi nhận ai sở hữu file upload).
+  private async removeOldAvatar(userId: number, oldUrl: string) {
+    try {
+      const usedByOthers = await this.prisma.user.count({
+        where: { avatarUrl: oldUrl, id: { not: userId } },
+      });
+      if (usedByOthers === 0) {
+        await this.uploadService.deleteByUrl(oldUrl);
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Không dọn được avatar cũ ${oldUrl}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 }

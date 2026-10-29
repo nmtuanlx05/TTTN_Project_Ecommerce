@@ -1,6 +1,6 @@
 import { useState } from "react"
 import type { UseFormSetError } from "react-hook-form"
-import { FormDialog } from "@/components/admin/form-dialog"
+import { FormDialog } from "@/components/shared/form-dialog"
 import { useToast } from "@/components/ui/toast"
 import type { ApiError } from "@/lib/api-error"
 import { applyServerErrors } from "@/lib/form-errors"

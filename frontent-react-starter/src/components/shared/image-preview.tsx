@@ -26,7 +26,7 @@ const LOADABLE_SRC = /^(https?:\/\/|blob:)/i
  * Khung hiển thị ảnh từ một URL bất kỳ (ảnh upload hoặc URL ngoài). Không có ảnh hoặc ảnh không tải
  * được thì hiện ô trống có icon. `failedSrc` nhớ đúng URL đã lỗi (không phải cờ chung) nên đổi URL là
  * thử tải lại ngay. Kích thước do nơi gọi đặt qua `className` (chiều rộng hoặc `size-*`).
- * `children` là lớp phủ lên ảnh (đang tải, đang kéo-thả...).
+ * `children` là lớp phủ lên ảnh (đang tải, đang kéo-thả...). `fallback` thay ô trống mặc định nếu cần hiện thứ khác.
  *
  * `zoomable`: khi bật và có ảnh hợp lệ, khung ảnh là một nút bấm để xem ảnh lớn (`ImageLightbox`). Nút là
  * `type="button"` vì thường nằm trong form. Lightbox chỉ được dựng sau lần mở đầu tiên của từng ảnh để bảng
@@ -39,6 +39,7 @@ function ImagePreview({
   fit = shape === "square" ? "contain" : "cover",
   showFallbackText = false,
   zoomable = false,
+  fallback,
   className,
   children,
 }: {
@@ -50,6 +51,8 @@ function ImagePreview({
   showFallbackText?: boolean
   /** Bấm vào ảnh để xem ảnh lớn. Chỉ có tác dụng khi ảnh hiển thị được. */
   zoomable?: boolean
+  /** Thay icon và chữ mặc định khi không có ảnh hoặc ảnh không tải được (vd. chữ cái đầu của avatar). */
+  fallback?: ReactNode
   className?: string
   children?: ReactNode
 }) {
@@ -88,6 +91,8 @@ function ImagePreview({
         </button>
       ) : showImage ? (
         image
+      ) : fallback ? (
+        fallback
       ) : (
         <div className="flex flex-col items-center gap-1 px-1 text-center text-ink-muted">
           <ImageOff

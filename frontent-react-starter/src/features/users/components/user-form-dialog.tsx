@@ -10,7 +10,7 @@ import {
   FormDialog,
   FormDialogBody,
   FormDialogFooter,
-} from "@/components/admin/form-dialog";
+} from "@/components/shared/form-dialog";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
