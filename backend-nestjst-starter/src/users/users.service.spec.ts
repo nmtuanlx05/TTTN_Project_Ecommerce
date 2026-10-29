@@ -1,4 +1,4 @@
-import { Logger, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Logger, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { UploadService } from '../uploads/upload.service';
 import { UsersService } from './users.service';
@@ -129,5 +129,101 @@ describe('UsersService.updateAvatar', () => {
       service.updateAvatar(7, { avatarUrl: NEW }),
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
+// Chống tự khóa: ADMIN không tự hạ role hoặc tự khóa chính mình, nhưng vẫn thao tác được với ADMIN khác.
+describe('UsersService.update / updateStatus: chống tự khóa', () => {
+  const ME = 1;
+  const OTHER = 2;
+  const prisma = {
+    user: { findUnique: jest.fn(), update: jest.fn() },
+  };
+  let service: UsersService;
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    // Cả hai user đều là ADMIN đang hoạt động
+    prisma.user.findUnique.mockImplementation(
+      ({ where }: { where: { id: number } }) =>
+        Promise.resolve({ id: where.id, role: 'ADMIN', isActive: true }),
+    );
+    prisma.user.update.mockImplementation(
+      ({ where }: { where: { id: number } }) =>
+        Promise.resolve({ id: where.id }),
+    );
+    service = new UsersService(
+      prisma as unknown as PrismaService,
+      {} as unknown as UploadService,
+    );
+  });
+
+  describe('update', () => {
+    it('ADMIN tự hạ role của mình: 403, không cập nhật', async () => {
+      await expect(service.update(ME, { role: 'STAFF' }, ME)).rejects.toThrow(
+        new ForbiddenException(
+          'Bạn không thể tự thay đổi vai trò của chính mình',
+        ),
+      );
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('ADMIN hạ role của ADMIN khác: được phép', async () => {
+      await service.update(OTHER, { role: 'STAFF' }, ME);
+
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: OTHER },
+          data: { name: undefined, phone: undefined, role: 'STAFF' },
+        }),
+      );
+    });
+
+    it('ADMIN sửa name/phone của chính mình: được phép', async () => {
+      await service.update(ME, { name: 'Tên mới', phone: '0912345678' }, ME);
+
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: ME },
+          data: { name: 'Tên mới', phone: '0912345678', role: undefined },
+        }),
+      );
+    });
+
+    it('ADMIN gửi lại đúng role ADMIN của mình: được phép (không đổi gì)', async () => {
+      await service.update(ME, { name: 'A', role: 'ADMIN' }, ME);
+
+      expect(prisma.user.update).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('updateStatus', () => {
+    it('ADMIN tự khóa chính mình: 403, không cập nhật', async () => {
+      await expect(
+        service.updateStatus(ME, { isActive: false }, ME),
+      ).rejects.toThrow(
+        new ForbiddenException(
+          'Bạn không thể tự khóa tài khoản của chính mình',
+        ),
+      );
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('ADMIN khóa ADMIN khác: được phép', async () => {
+      await service.updateStatus(OTHER, { isActive: false }, ME);
+
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: OTHER },
+          data: { isActive: false },
+        }),
+      );
+    });
+
+    it('ADMIN gửi isActive=true cho chính mình: được phép', async () => {
+      await service.updateStatus(ME, { isActive: true }, ME);
+
+      expect(prisma.user.update).toHaveBeenCalledTimes(1);
+    });
   });
 });
