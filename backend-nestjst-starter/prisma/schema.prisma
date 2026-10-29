@@ -50,6 +50,7 @@ model User {
   password      String
   name          String?
   phone         String?
+  avatarUrl     String?  @db.VarChar(191) // URL ảnh đại diện do /uploads/avatars cấp; null = chưa có
   role          Role     @default(CUSTOMER)
   isActive      Boolean  @default(true)
   cart          Cart?

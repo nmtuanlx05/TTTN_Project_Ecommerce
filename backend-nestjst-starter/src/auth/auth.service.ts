@@ -67,6 +67,7 @@ export class AuthService {
       email: found.email,
       name: found.name,
       phone: found.phone,
+      avatarUrl: found.avatarUrl,
       role: found.role,
       isActive: found.isActive,
       createdAt: found.createdAt,
