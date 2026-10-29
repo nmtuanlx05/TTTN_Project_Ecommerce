@@ -163,4 +163,52 @@ async function apiSend<T>(
   return unwrap(response.data).data
 }
 
-export { apiClient, apiGet, apiGetPage, apiSend, configureAuth, refreshSession }
+/** Tùy chọn của `apiUpload`. */
+interface UploadOptions {
+  /** Hủy request đang gửi (người dùng bấm Hủy, hoặc component bị gỡ). */
+  signal?: AbortSignal
+  /** Phần trăm đã gửi (0–100). Chỉ được gọi khi trình duyệt tính được tổng dung lượng. */
+  onProgress?: (percent: number) => void
+}
+
+/** Backend chỉ nhận đúng một trường multipart tên `file` và không nhận trường text nào (docs/api/uploads.md). */
+const UPLOAD_FIELD = "file"
+
+/** Dài hơn timeout mặc định (15s): ảnh vài MB trên mạng chậm cần nhiều thời gian hơn. */
+const UPLOAD_TIMEOUT_MS = 60_000
+
+/**
+ * POST một file dạng multipart, trả thẳng `data`.
+ *
+ * Instance ép sẵn `Content-Type: application/json`; nếu giữ nguyên, axios sẽ đổi `FormData` thành chuỗi JSON
+ * và backend báo thiếu file. `Content-Type: false` gỡ header đó để trình duyệt tự thêm
+ * `multipart/form-data; boundary=...`. Gặp 401, interceptor gửi lại đúng request này (`FormData` còn nguyên file).
+ */
+async function apiUpload<T>(
+  url: string,
+  file: File,
+  { signal, onProgress }: UploadOptions = {},
+): Promise<T> {
+  const body = new FormData()
+  body.append(UPLOAD_FIELD, file)
+  const response = await apiClient.post<Envelope<T>>(url, body, {
+    headers: { "Content-Type": false },
+    timeout: UPLOAD_TIMEOUT_MS,
+    signal,
+    onUploadProgress: (event) => {
+      if (event.progress !== undefined) onProgress?.(Math.round(event.progress * 100))
+    },
+  })
+  return unwrap(response.data).data
+}
+
+export {
+  apiClient,
+  apiGet,
+  apiGetPage,
+  apiSend,
+  apiUpload,
+  configureAuth,
+  refreshSession,
+}
+export type { UploadOptions }
