@@ -590,6 +590,49 @@ describe('Products API (e2e, service giả)', () => {
       }
     });
 
+    // URL do module upload trả về ở dev là http://localhost:3000/..., không có TLD nên không được bị @IsUrl từ chối
+    it('imageUrl chấp nhận localhost và IP (không cần TLD) → 201', async () => {
+      for (const imageUrl of [
+        'http://localhost:3000/uploads/products/x.webp',
+        'http://127.0.0.1:3000/uploads/products/x.webp',
+        'https://domain-that.com/a.jpg',
+      ]) {
+        await post({ ...validCreate, imageUrl }).expect(201);
+        expect(productsService.create).toHaveBeenLastCalledWith(
+          expect.objectContaining({ imageUrl }),
+        );
+      }
+    });
+
+    it('imageUrl không hợp lệ (abc, ftp, javascript:, quá 191 ký tự) vẫn bị từ chối dù cho phép localhost → 400', async () => {
+      const longLocalhost = `http://localhost:3000/uploads/products/${'a'.repeat(160)}.webp`;
+      expect(longLocalhost.length).toBeGreaterThan(191);
+      const cases: [string, string][] = [
+        [
+          'abc',
+          'Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://',
+        ],
+        [
+          'ftp://localhost/a.jpg',
+          'Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://',
+        ],
+        [
+          'javascript:alert(1)',
+          'Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://',
+        ],
+        [
+          'localhost:3000/a.jpg',
+          'Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://',
+        ],
+        [longLocalhost, 'Đường dẫn ảnh không được vượt quá 191 ký tự'],
+      ];
+      for (const [imageUrl, message] of cases) {
+        const res = await post({ ...validCreate, imageUrl }).expect(400);
+        expect(errorsOf(res)).toContainEqual({ field: 'imageUrl', message });
+      }
+      expect(productsService.create).not.toHaveBeenCalled();
+    });
+
     it('name rỗng/toàn khoảng trắng, quá 191 ký tự, không phải chuỗi → 400', async () => {
       const blank = await post({ ...validCreate, name: '   ' }).expect(400);
       expect(errorsOf(blank)).toContainEqual({
@@ -687,6 +730,25 @@ describe('Products API (e2e, service giả)', () => {
         description: null,
         imageUrl: null,
       });
+    });
+
+    it('PATCH imageUrl: chấp nhận localhost/IP, từ chối URL sai', async () => {
+      for (const imageUrl of [
+        'http://localhost:3000/uploads/products/x.webp',
+        'http://127.0.0.1:3000/uploads/products/x.webp',
+      ]) {
+        await patch({ imageUrl }).expect(200);
+        expect(productsService.update).toHaveBeenLastCalledWith(4, {
+          imageUrl,
+        });
+      }
+      for (const imageUrl of [
+        'abc',
+        'ftp://localhost/a.jpg',
+        'javascript:alert(1)',
+      ]) {
+        await patch({ imageUrl }).expect(400);
+      }
     });
 
     it('body rỗng {} hợp lệ (không đổi gì)', async () => {

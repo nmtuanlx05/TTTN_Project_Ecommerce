@@ -59,8 +59,13 @@ export class CreateProductDto {
   @MaxLength(191, {
     message: 'Đường dẫn ảnh không được vượt quá 191 ký tự',
   })
+  // require_tld: false để nhận URL không có tên miền chuẩn, vd http://localhost:3000/uploads/... (URL ảnh upload ở dev)
   @IsUrl(
-    { protocols: ['http', 'https'], require_protocol: true },
+    {
+      protocols: ['http', 'https'],
+      require_protocol: true,
+      require_tld: false,
+    },
     {
       message:
         'Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://',

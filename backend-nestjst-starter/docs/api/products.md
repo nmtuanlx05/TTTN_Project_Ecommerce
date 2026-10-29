@@ -290,7 +290,7 @@ Mọi message bằng tiếng Việt. Lỗi trả theo từng trường trong `er
 | `slug` | Không | Chuỗi, tối đa 191 ký tự, đúng dạng `^[a-z0-9]+(-[a-z0-9]+)*$` | `Slug phải là chuỗi`, `Slug không được vượt quá 191 ký tự`, `Slug chỉ gồm chữ thường không dấu, số và dấu gạch ngang` |
 | `description` | Không | Chuỗi tối đa 10000 ký tự; `""` hoặc `null` = không có mô tả | `Mô tả phải là chuỗi`, `Mô tả không được vượt quá 10000 ký tự` |
 | `price` | Có | Số nguyên 0 – 2147483647 (VND, JSON number, không nhận chuỗi `"199000"`) | `Giá phải là số nguyên (VND)`, `Giá không được âm`, `Giá không được vượt quá 2147483647` |
-| `imageUrl` | Không | Chỉ lưu URL (chưa có upload file). `http://` hoặc `https://`, **tối đa 191 ký tự** (giới hạn cột VARCHAR(191) hiện tại); `""` hoặc `null` = không có ảnh | `Đường dẫn ảnh phải là chuỗi`, `Đường dẫn ảnh không được vượt quá 191 ký tự`, `Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://` |
+| `imageUrl` | Không | Chỉ lưu URL (chưa có upload file). `http://` hoặc `https://`, **kể cả `localhost` hoặc IP có cổng** (vd `http://localhost:3000/uploads/products/x.webp`, URL do `POST /uploads/products` trả về ở dev, xem `docs/api/uploads.md`), **tối đa 191 ký tự** (giới hạn cột VARCHAR(191) hiện tại); `""` hoặc `null` = không có ảnh | `Đường dẫn ảnh phải là chuỗi`, `Đường dẫn ảnh không được vượt quá 191 ký tự`, `Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://` |
 | `categoryId` | Có | Số nguyên ≥ 1 và danh mục phải tồn tại | `categoryId phải là số nguyên`, `categoryId phải lớn hơn hoặc bằng 1` (tồn tại: kiểm ở service, xem mục lỗi) |
 | `variants` | Có | Mảng 1–100 phần tử | `variants phải là một mảng`, `Sản phẩm phải có ít nhất 1 biến thể`, `Sản phẩm không được vượt quá 100 biến thể` |
 
