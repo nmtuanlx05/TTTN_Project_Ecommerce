@@ -9,6 +9,7 @@ chưa chạy thử trên server có database thật.
 - **Chưa bật guard cho nhóm `/users`**: Auth đã có (xem `docs/api/auth.md`) nhưng chưa gắn vào các endpoint này, nên vẫn
   gọi được mà không cần token. Hệ quả: hiện ai cũng có thể tạo user với `role = ADMIN` qua `POST /users`. Cần đóng lại ở
   bước phân quyền (chỉ Admin được đặt/đổi `role`).
+- Riêng `PATCH /users/me/avatar` **bắt buộc có token** (mọi role đã đăng nhập), xem mục bên dưới.
 - Email được chuẩn hóa (bỏ khoảng trắng, chữ thường) trước khi kiểm tra trùng và lưu.
 
 ## Dạng response chung
@@ -43,6 +44,7 @@ Lỗi:
   "email": "manhtuan@gmail.com",
   "name": "Nguyen Manh Tuan",
   "phone": "0912345678",
+  "avatarUrl": "http://localhost:3000/uploads/avatars/3f2b8c1e-5d7a-4c0e-9b1a-2e6f4a7d8c90.webp",
   "role": "CUSTOMER",
   "isActive": true,
   "createdAt": "2026-10-06T17:08:50.335Z",
@@ -50,9 +52,11 @@ Lỗi:
 }
 ```
 
+- `avatarUrl`: `string | null`, URL đầy đủ của ảnh đại diện (dùng thẳng trong `<img src>`); `null` = chưa có ảnh. Đặt/đổi/xóa qua
+  `PATCH /users/me/avatar`.
 - `phone`: `string | null`. `name`: `string | null` với dữ liệu cũ; user mới luôn có `name`.
 - `role`: `"ADMIN" | "STAFF" | "CUSTOMER"`.
-- **`password` không bao giờ có trong response**: service chỉ `select` 8 trường trên, và interceptor toàn cục xóa
+- **`password` không bao giờ có trong response**: service chỉ `select` 9 trường trên, và interceptor toàn cục xóa
   mọi key `password` ở bất kỳ độ sâu nào.
 
 ## Endpoint
@@ -64,6 +68,7 @@ Lỗi:
 | GET | `/users/:id` | Chi tiết | Chưa có |
 | PATCH | `/users/:id` | Cập nhật `name`, `phone`, `role` | Chưa có |
 | PATCH | `/users/:id/status` | Khóa / mở khóa | Chưa có |
+| PATCH | `/users/me/avatar` | Tự đổi hoặc xóa ảnh đại diện của chính mình | Mọi user đã đăng nhập (token) |
 
 **Không có `DELETE /users/:id`**: user không bị xóa cứng, chỉ khóa bằng `isActive = false`
 (`DELETE /users/1` trả 404 như mọi đường dẫn không tồn tại).
@@ -106,7 +111,7 @@ Ví dụ `GET /users?q=nguyen&role=STAFF&isActive=true&sortBy=name&order=asc&pag
 ```json
 {
   "success": true,
-  "data": [ { "id": 7, "email": "nguyen@gmail.com", "name": "Nguyen A", "phone": null, "role": "STAFF", "isActive": true, "createdAt": "2026-10-07T02:22:11.906Z", "updatedAt": "2026-10-07T02:22:11.906Z" } ],
+  "data": [ { "id": 7, "email": "nguyen@gmail.com", "name": "Nguyen A", "phone": null, "avatarUrl": null, "role": "STAFF", "isActive": true, "createdAt": "2026-10-07T02:22:11.906Z", "updatedAt": "2026-10-07T02:22:11.906Z" } ],
   "meta": { "page": 1, "limit": 10, "total": 1, "totalPages": 1 }
 }
 ```
@@ -123,6 +128,52 @@ Body (mọi trường tùy chọn): `{ "name": "Tên mới", "phone": "091111111
 - Thành công: **200**, `data` là User sau cập nhật.
 - **Chỉ `name`, `phone`, `role` được sửa.** Gửi `email` hoặc `password` → 400 (không bị bỏ qua âm thầm nữa).
 - Lỗi: 400, 404.
+
+### PATCH /users/me/avatar
+
+Người dùng tự đổi hoặc xóa ảnh đại diện **của chính mình**. Header `Authorization: Bearer <accessToken>`.
+Mọi role (ADMIN, STAFF, CUSTOMER) đều dùng được. `id` lấy từ token: **không có id trong đường dẫn hay body**, ADMIN cũng không
+sửa được avatar của người khác bằng endpoint này.
+
+Luồng: (1) `POST /uploads/avatars` (xem `uploads.md`) → nhận `data.url`; (2) gửi đúng `url` đó vào endpoint này.
+
+Body (bắt buộc đúng một trường):
+
+```json
+{ "avatarUrl": "http://localhost:3000/uploads/avatars/3f2b8c1e-5d7a-4c0e-9b1a-2e6f4a7d8c90.webp" }
+```
+
+hoặc `{ "avatarUrl": null }` để xóa ảnh đại diện.
+
+- Thành công: **200**, `data` là object User sau cập nhật, **cùng hình dạng với `GET /auth/me`** (có `avatarUrl` mới).
+- `avatarUrl` phải là `null` hoặc URL **do chính hệ thống cấp**, khớp toàn chuỗi
+  `<APP_PUBLIC_URL>/uploads/avatars/<uuid>.<jpg|png|webp>` (uuid chữ thường, `APP_PUBLIC_URL` xem `uploads.md`). Bị từ chối (400):
+  URL ngoài hệ thống, URL thuộc `/uploads/products/`, có `../` hoặc `%2e%2e`, có `?query`/`#hash`/khoảng trắng, chuỗi rỗng `""`,
+  dài hơn 191 ký tự, không phải chuỗi, hoặc **thiếu** trường `avatarUrl` (thiếu không được hiểu là xóa; muốn xóa phải gửi `null`).
+- **Server chỉ kiểm định dạng URL, không kiểm file có tồn tại**: URL đúng định dạng nhưng chưa từng được upload vẫn được lưu và
+  ảnh sẽ hiển thị lỗi (404). Frontend chỉ nên gửi URL vừa nhận từ `POST /uploads/avatars`.
+- **Dọn file cũ**: sau khi cập nhật thành công, nếu avatar cũ khác avatar mới (hoặc bị xóa bằng `null`) thì server xóa file cũ trong
+  `<UPLOAD_DIR>/avatars/`. Việc này làm hết sức: lỗi khi xóa file chỉ ghi log, **không** làm request thất bại. Không xóa nếu URL
+  mới trùng URL cũ, hoặc nếu một user khác đang dùng đúng URL đó.
+- Lỗi:
+
+| Status | Khi nào | `message` |
+|---|---|---|
+| 400 | `avatarUrl` sai (xem trên), trường lạ (vd `id`) | `Dữ liệu không hợp lệ`, kèm `errors: [{ "field": "avatarUrl", "message": "…" }]` |
+| 401 | Không token, token sai/hết hạn, user bị khóa | Thông điệp của `JwtAuthGuard` (xem `auth.md`) |
+
+Ví dụ 400 (URL ngoài hệ thống):
+
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "message": "Dữ liệu không hợp lệ",
+  "errors": [
+    { "field": "avatarUrl", "message": "Đường dẫn ảnh đại diện không hợp lệ, vui lòng tải ảnh lên qua /uploads/avatars rồi dùng URL nhận được" }
+  ]
+}
+```
 
 ### PATCH /users/:id/status
 
@@ -159,6 +210,12 @@ Chỉ gồm `name`, `phone`, `role`, tất cả tùy chọn, giữ quy tắc nh�
 |---|---|---|
 | `isActive` | Có | `isActive phải là true hoặc false` |
 
+### UpdateAvatarDto (`PATCH /users/me/avatar`)
+
+| Trường | Bắt buộc | Quy tắc | Message khi sai |
+|---|---|---|---|
+| `avatarUrl` | Có (có thể là `null`) | `null`, hoặc chuỗi không rỗng ≤ 191 ký tự, đúng định dạng URL avatar của hệ thống | `avatarUrl là bắt buộc, gửi chuỗi URL ảnh hoặc null để xóa ảnh`, `avatarUrl không được để trống, gửi null để xóa ảnh`, `Đường dẫn ảnh đại diện không được vượt quá 191 ký tự`, `Đường dẫn ảnh đại diện không hợp lệ, vui lòng tải ảnh lên qua /uploads/avatars rồi dùng URL nhận được` |
+
 ### Query GET /users
 
 | Trường | Message khi sai |
@@ -181,6 +238,7 @@ Chỉ gồm `name`, `phone`, `role`, tất cả tùy chọn, giữ quy tắc nh�
 | Status | Khi nào |
 |---|---|
 | 400 | Validate sai; `ID không hợp lệ` |
+| 401 | Chỉ với `PATCH /users/me/avatar`: không token / token sai / hết hạn |
 | 404 | `Không tìm thấy người dùng với ID #<id>`; đường dẫn không tồn tại |
 | 409 | `Email này đã được sử dụng` (POST); hoặc lỗi unique của Prisma (P2002) |
 | 500 | Lỗi không lường trước: `Lỗi hệ thống, vui lòng thử lại sau` |

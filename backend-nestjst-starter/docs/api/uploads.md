@@ -5,8 +5,11 @@ Multer, ServeStatic và ổ đĩa thật (thư mục tạm, không DB): `test/up
 và cấu hình env có unit test (`src/uploads/*.spec.ts`, `src/config/env.validation.spec.ts`).
 
 Module này **chỉ nhận và lưu file, trả về URL**. Việc gắn URL vào dữ liệu (ví dụ `imageUrl` của sản phẩm) do endpoint khác làm:
-frontend upload trước, lấy `url`, rồi gửi `url` đó khi tạo/sửa sản phẩm. Hiện **chưa có endpoint cập nhật avatar** và bảng `User`
-chưa có cột lưu ảnh đại diện (bước sau).
+frontend upload trước, lấy `url`, rồi gửi `url` đó khi tạo/sửa sản phẩm.
+
+**Luồng đổi avatar**: (1) `POST /uploads/avatars` với file → nhận `data.url`; (2) `PATCH /users/me/avatar` với body
+`{ "avatarUrl": "<url vừa nhận>" }` (xem `users.md`) → server lưu vào `User.avatarUrl` và xóa file avatar cũ. Bước 1 một mình
+**chưa** đổi avatar: file chỉ nằm trên đĩa cho tới khi bước 2 gắn nó vào user. Muốn xóa ảnh: `PATCH /users/me/avatar` với `{ "avatarUrl": null }`.
 
 - Base URL dev: `http://localhost:3000` (đọc `PORT` từ env, mặc định 3000)
 - Content-Type: `multipart/form-data`
@@ -102,9 +105,10 @@ Cả hai biến đều **tùy chọn**: không khai báo thì dùng mặc địn
 - Nếu đổi `PORT` thì nhớ đặt `APP_PUBLIC_URL` tương ứng, nếu không URL trả về sẽ trỏ sai cổng.
 - Thư mục upload nằm trong `.gitignore` (`/uploads/*`, chỉ giữ `uploads/.gitkeep`).
 
-## Xóa file (cho bước sau)
+## Xóa file
 
-`UploadService.deleteByUrl(url)` xóa file theo URL do module này tạo ra. **Chưa nối vào module nào.** Chỉ xóa khi file nằm trong
+`UploadService.deleteByUrl(url)` xóa file theo URL do module này tạo ra. Hiện được `PATCH /users/me/avatar` dùng để xóa avatar cũ
+(ảnh sản phẩm **chưa** nối vào). Chỉ xóa khi file nằm trong
 `<UPLOAD_DIR>/<products|avatars>/`; bỏ qua (không ném lỗi) với URL ngoài hệ thống, URL có `../` hoặc ký tự lạ, và file không tồn tại.
 Lỗi khác (ví dụ không đủ quyền ghi) chỉ ghi log cảnh báo.
 
@@ -112,16 +116,17 @@ Lỗi khác (ví dụ không đủ quyền ghi) chỉ ghi log cảnh báo.
 
 - **File lưu trên ổ đĩa của server**: không sao lưu, **không dùng được khi triển khai nhiều máy** (mỗi máy một thư mục riêng), và mất
   khi container bị tạo lại nếu không mount volume vào `UPLOAD_DIR`. Cần chuyển sang object storage (S3...) nếu mở rộng.
-- **File cũ không tự bị xóa**: ảnh upload xong mà không được lưu vào sản phẩm (hoặc bị thay bằng ảnh mới) vẫn nằm trên ổ đĩa, trừ khi
-  gọi `deleteByUrl`. Chưa có job dọn file mồ côi.
+- **File mồ côi không tự bị xóa**: avatar cũ chỉ được xóa khi đổi/xóa qua `PATCH /users/me/avatar`. Ảnh sản phẩm bị thay, hoặc ảnh
+  upload xong mà không bao giờ được gắn vào user/sản phẩm, vẫn nằm trên ổ đĩa. Chưa có job dọn file mồ côi. Nếu đổi
+  `APP_PUBLIC_URL`, URL avatar cũ không còn khớp tiền tố nên file của chúng cũng không còn được xóa tự động.
 - **`POST /uploads/avatars` mở cho mọi người đã đăng nhập và dự án chưa có giới hạn tần suất (rate limit)**: một tài khoản (kể cả
   CUSTOMER đăng ký mới) có thể upload liên tục, mỗi file tới 2 MB, làm đầy ổ đĩa. Hạn chế đã biết; cần thêm rate limit và/hoặc
   hạn mức dung lượng theo người dùng trước khi chạy thật.
 - Chỉ kiểm chữ ký phần đầu file (JPEG `FFD8FF`, PNG `89504E470D0A1A0A`, WebP `RIFF....WEBP`), không giải mã toàn bộ ảnh nên không
   phát hiện ảnh hỏng/cắt cụt. Không có SVG nên không có rủi ro script trong ảnh.
 - Không resize/nén, không tạo ảnh thu nhỏ, không upload nhiều ảnh một lần.
-- `User` chưa có cột ảnh đại diện; `/uploads/avatars` đã dùng được nhưng URL chưa có chỗ lưu cho tới khi có bước riêng
-  (cần sửa schema và tạo migration).
+- Hệ thống không ghi nhận ai sở hữu file upload: `PATCH /users/me/avatar` chỉ kiểm định dạng URL, không kiểm file có tồn tại hay do
+  chính user đó upload. Để tránh xóa nhầm, file cũ không bị xóa nếu user khác đang dùng cùng URL.
 
 ## Ví dụ curl
 

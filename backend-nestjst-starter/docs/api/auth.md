@@ -72,7 +72,7 @@ Thành công **200** và set cookie `refresh_token`:
   "success": true,
   "data": {
     "accessToken": "eyJhbGciOi...",
-    "user": { "id": 1, "email": "a@gmail.com", "name": "Nguyen A", "phone": null, "role": "CUSTOMER", "isActive": true, "createdAt": "...", "updatedAt": "..." }
+    "user": { "id": 1, "email": "a@gmail.com", "name": "Nguyen A", "phone": null, "avatarUrl": null, "role": "CUSTOMER", "isActive": true, "createdAt": "...", "updatedAt": "..." }
   }
 }
 ```
@@ -105,7 +105,8 @@ xóa, nhưng bản sao nếu bị lộ vẫn dùng được tới khi hết hạ
 
 Header `Authorization: Bearer <accessToken>`.
 
-- Thành công: **200**, `data` là object User hiện tại (không có `password`).
+- Thành công: **200**, `data` là object User hiện tại (không có `password`), gồm `avatarUrl` (`string | null`).
+  Đổi ảnh đại diện bằng `PATCH /users/me/avatar` (xem `users.md`), rồi gọi lại `/auth/me` sẽ thấy `avatarUrl` mới.
 - 401 `Bạn chưa đăng nhập hoặc phiên đăng nhập không hợp lệ` (thiếu/sai token, user bị khóa/xóa) hoặc
   401 `Phiên đăng nhập đã hết hạn` (access token quá 15 phút → gọi `/auth/refresh`).
 
