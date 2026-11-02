@@ -43,7 +43,7 @@ function ActiveFilterChips({
                 chip.remove()
                 onRemoved()
               }}
-              className="press inline-flex min-h-control items-center gap-2 rounded-4xl border border-border-control px-4 text-body-sm text-ink transition-colors duration-(--motion-fast) ease-smooth hover:bg-surface-hover md:min-h-10"
+              className="press inline-flex min-h-control items-center gap-2 rounded-4xl border border-border-control px-4 text-body-sm text-ink transition-colors duration-(--motion-fast) ease-smooth hover:bg-surface-hover"
             >
               {chip.label}
               <X className="size-4" aria-hidden="true" />
