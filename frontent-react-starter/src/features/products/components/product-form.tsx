@@ -8,7 +8,7 @@ import {
   updateProductSchema,
   type ProductFormValues,
 } from "../schemas"
-import type { ProductVariant } from "../types"
+import type { ProductDetail, ProductVariant } from "../types"
 import { ProductBasicFields } from "./product-basic-fields"
 import { ProductImageField } from "./product-image-field"
 import { FormSection } from "./form-section"
@@ -23,6 +23,7 @@ function ProductForm({
   mode,
   initialValues,
   savedVariants,
+  liveProduct,
   busy,
   formError,
   onCancel,
@@ -32,6 +33,11 @@ function ProductForm({
   initialValues: ProductFormValues
   /** Biến thể đã lưu (chỉ khi sửa), để hiện tồn kho chỉ đọc. */
   savedVariants: ProductVariant[]
+  /**
+   * Bản mới nhất từ query (chỉ khi sửa), nguồn của tồn kho chỉ đọc và liên kết sang Kho. Tách khỏi
+   * `savedVariants` (baseline của form) để làm mới tồn kho không động tới state form hay chỉnh sửa đang dở.
+   */
+  liveProduct?: Pick<ProductDetail, "isActive" | "variants">
   busy: boolean
   formError: string | null
   onCancel: () => void
@@ -78,6 +84,7 @@ function ProductForm({
           mode={mode}
           idPrefix={`${idPrefix}-variant`}
           savedVariants={savedVariants}
+          liveProduct={liveProduct}
         />
 
         <div className="flex flex-col-reverse gap-inline sm:flex-row sm:items-center sm:justify-end">

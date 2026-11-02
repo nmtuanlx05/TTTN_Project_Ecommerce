@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { EMPTY_VARIANT } from "../form-mapping"
 import { MAX_VARIANTS } from "../constants"
 import type { ProductFormValues } from "../schemas"
-import type { ProductVariant } from "../types"
+import type { ProductDetail, ProductVariant } from "../types"
 import { FormSection } from "./form-section"
 import { ProductVariantRow } from "./product-variant-row"
 
@@ -14,10 +14,12 @@ function ProductVariantsField({
   mode,
   idPrefix,
   savedVariants,
+  liveProduct,
 }: {
   mode: "create" | "edit"
   idPrefix: string
   savedVariants: ProductVariant[]
+  liveProduct?: Pick<ProductDetail, "isActive" | "variants">
 }) {
   const {
     control,
@@ -27,6 +29,7 @@ function ProductVariantsField({
   const { fields, append, remove } = useFieldArray({ control, name: "variants", keyName: "fieldKey" })
   const addButton = useRef<HTMLButtonElement>(null)
   const savedById = new Map(savedVariants.map((variant) => [variant.id, variant]))
+  const liveById = new Map((liveProduct?.variants ?? []).map((variant) => [variant.id, variant]))
   const listError = errors.variants?.root?.message ?? errors.variants?.message
 
   return (
@@ -35,7 +38,7 @@ function ProductVariantsField({
       description={
         mode === "create"
           ? "Mỗi biến thể là một cặp size và màu có SKU riêng. Cần ít nhất 1 biến thể. Tồn kho bắt đầu từ 0, nhập kho ở module Kho."
-          : "Biến thể đã lưu không xóa được, chỉ sửa hoặc ngừng bán. Tồn kho chỉ xem ở đây, nhập kho ở module Kho."
+          : "Biến thể đã lưu không xóa được, chỉ sửa hoặc ngừng bán. Tồn kho chỉ xem ở đây, nhập kho và điều chỉnh ở trang Kho."
       }
     >
       {listError ? (
@@ -47,12 +50,16 @@ function ProductVariantsField({
       <ul className="flex flex-col gap-stack">
         {fields.map((field, index) => {
           const saved = field.id === undefined ? undefined : savedById.get(field.id)
+          // Khớp theo id: biến thể mới thêm trong form (chưa lưu) không có id nên không có tồn kho và liên kết kho.
+          const live = field.id === undefined ? undefined : liveById.get(field.id)
           return (
             <ProductVariantRow
               key={field.fieldKey}
               index={index}
               idPrefix={idPrefix}
               saved={saved}
+              live={live}
+              productIsActive={liveProduct?.isActive ?? true}
               canRemove={mode === "edit" || fields.length > 1}
               onRemove={() => {
                 remove(index)
