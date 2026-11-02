@@ -1,6 +1,8 @@
+import { Suspense } from "react"
 import { Outlet } from "react-router-dom"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminTopbar, type AdminAccount } from "@/components/admin/admin-topbar"
+import { RouteFallback } from "@/components/shared/route-fallback"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { Role, User } from "@/types/user"
 
@@ -34,7 +36,9 @@ function AdminLayout({
             onAvatarSaved={onAvatarSaved}
           />
           <main className="flex-1 px-gutter py-section">
-            <Outlet />
+            <Suspense fallback={<RouteFallback />}>
+              <Outlet />
+            </Suspense>
           </main>
         </div>
       </div>
