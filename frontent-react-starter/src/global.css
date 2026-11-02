@@ -176,6 +176,39 @@
   --stroke-hairline: 1px;
   --stroke-focus: 2px;
   --focus-offset: 2px;
+
+  /* ========================================================================
+     4b. CHUYỂN ĐỘNG — một chỗ duy nhất. Tắt toàn bộ khi prefers-reduced-motion
+     (xem cuối file). Chỉ CSS/Tailwind, không thư viện animation.
+     ======================================================================== */
+
+  --motion-fast: 150ms; /* phản hồi nhấn, đổi màu */
+  --motion-base: 250ms; /* vào trang, khung tìm kiếm */
+  --motion-slow: 400ms; /* ngăn kéo, hiện dần khi cuộn */
+  --motion-image: 500ms; /* ảnh sản phẩm phóng nhẹ, fade ảnh */
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ========================================================================
+     4c. KHOẢNG CÁCH RIÊNG CỦA STOREFRONT
+     --sp-block: giữa các khối lớn của trang (di động 56, từ lg 96). Không đổi
+     --sp-section (80) vì trang đăng nhập và trang chủ hiện tại đang dùng.
+     --header-h: chiều cao header dính, dùng cho scroll-margin và vị trí dính.
+     ======================================================================== */
+
+  --sp-block: 56px;
+  --header-h: 64px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --header-h: 80px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --sp-block: 96px;
+  }
 }
 
 .dark {
@@ -451,6 +484,12 @@
   --spacing-inline: var(--sp-inline);
   --spacing-control: var(--sp-control-h);
   --spacing-control-px: var(--sp-control-px);
+  --spacing-block: var(--sp-block);
+  --spacing-header: var(--header-h);
+
+  /* Chuyển động: ease-smooth, animate-page-enter */
+  --ease-smooth: var(--motion-ease);
+  --animate-page-enter: page-enter var(--motion-base) var(--motion-ease) both;
 
   /* Bo góc — ghi đè thang mặc định của shadcn cho khớp tham chiếu */
   --radius-xs: var(--radius-control);
@@ -461,6 +500,55 @@
   --radius-2xl: 6px;
   --radius-3xl: 8px;
   --radius-4xl: var(--radius-pill);
+}
+
+/* ==========================================================================
+   6b. HIỆU ỨNG DÙNG CHUNG CỦA STOREFRONT
+   ========================================================================== */
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Skeleton có vệt sáng lướt nhẹ. Màu lấy từ token; reduced-motion dừng ở cuối keyframe (vệt nằm ngoài khung). */
+@utility shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--skeleton);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, transparent, var(--surface-hover), transparent);
+    animation: shimmer 1.6s var(--motion-ease) infinite;
+  }
+}
+
+/* Phản hồi khi nhấn: thu nhỏ nhẹ. Không áp dụng khi nút bị vô hiệu hóa hoặc người dùng giảm chuyển động. */
+@utility press {
+  @media (prefers-reduced-motion: no-preference) {
+    &:active:not(:disabled, [aria-disabled="true"]) {
+      transform: scale(0.98);
+    }
+  }
 }
 
 /* ==========================================================================
