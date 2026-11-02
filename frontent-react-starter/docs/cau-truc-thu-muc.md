@@ -22,7 +22,7 @@ src/
 │   │               inventory ✓, vouchers, placeholder ✓
 │   ├─ styleguide/  ✓ trang nội bộ cho dev (route /styleguide), không thuộc admin
 │   ├─ forbidden.tsx ✓ (403), not-found.tsx ✓ (404)
-│   ├─ storefront/  home ✓ (hero + khối "sắp ra mắt"), catalog ✓ (/products), product-detail ✓ (/products/:slug),
+│   ├─ storefront/  home ✓ (hero, danh mục, sản phẩm mới, tuyên bố), catalog ✓ (/products), product-detail ✓ (/products/:slug), not-found ✓ (404 trong khung khách),
 │   │               cart, checkout, order-success, my-orders, account
 ├─ features/      mỗi thực thể một thư mục theo khuôn mục 3
 │   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/ ✓ catalog/ ✓ (dữ liệu công khai của storefront: danh sách và chi tiết sản phẩm)
@@ -34,7 +34,7 @@ src/
 │   │                 (+ header-session, header-account, header-nav (+ header-nav-panel: bảng thả xuống danh mục từ `lg`), mobile-nav-drawer, mobile-category-list, mobile-account, search-panel,
 │   │                 cart-button), storefront-footer, storefront-drawer (ngăn kéo/khung trượt dựng trên Base UI Dialog), skip-link,
 │   │                 breadcrumbs, pagination (số trang, dạng liên kết), product-image (khung 3:4, shimmer, fade, ảnh dự phòng),
-│   │                 reveal (hiện dần khi cuộn), state-message (rỗng/lỗi/404), home-hero
+│   │                 reveal (hiện dần khi cuộn), state-message (rỗng/lỗi/404), section-heading, category-tiles (ô chữ danh mục trang chủ), brand-statement
 │   └─ shared/      ✓ chỉ khi cả admin và storefront (kể cả trang auth) cùng dùng: theme-toggle (+ theme-cycle-button,
 │                     theme-options), password-input, user-menu, brand-logo, route-fallback ✓ (vòng quay khi tải trang lazy), form-dialog (vỏ hộp thoại có form: dùng cả ở admin lẫn hộp
 │                     thoại trong user-menu), image-upload-field (+ image-preview, image-upload-progress,
@@ -67,6 +67,7 @@ features/catalog/
                  price-filter, filter-link, filter-drawer, sort-select, active-filter-chips, product-grid(+skeleton), product-card
                  chi tiết: product-detail-content (+skeleton, not-found), product-gallery, purchase-panel, variant-picker,
                  option-chip-group, quantity-stepper, sticky-buy-bar, related-products
+                 trang chủ: home-hero (+ home-hero-images), home-new-arrivals (dùng chung một request `limit=8` với hero)
 ````
 Cổng đăng nhập cho hành động mua nằm ở `features/auth/use-require-login.ts`; trang (`pages/`) và `routes/storefront-layout-container.tsx`
 lấy hook rồi truyền xuống bằng props, vì features không import lẫn nhau.
