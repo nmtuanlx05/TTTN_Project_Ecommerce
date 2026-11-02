@@ -69,6 +69,12 @@ Danh mục admin (danh sách và chi tiết):
 ### GET /categories
 
 - **200**, `data` là mảng danh mục public, sắp theo `name` tăng dần. Không phân trang, không có `meta`.
+- Dùng làm cây danh mục cho storefront: danh sách **phẳng**, frontend dựng cây theo `parentId` (gốc có `parentId: null`) và
+  tra slug sang `id` để gọi `GET /products?categoryId=<id>` (`GET /products` không có tham số slug). Đây cũng là endpoint trang
+  admin dùng cho form chọn danh mục nên hình dạng không đổi. Không kèm số sản phẩm mỗi danh mục.
+- **Giới hạn:** `Category` chưa có `isActive` nên **không có khái niệm danh mục ẩn**: mọi danh mục đang tồn tại đều được trả về, kể cả
+  danh mục chưa có sản phẩm hoặc chỉ có sản phẩm đang ẩn (danh mục chỉ bị xóa cứng khi rỗng). Frontend xử lý bằng trạng thái rỗng
+  khi `GET /products?categoryId=<id>` trả `data: []`.
 
 ### GET /admin/categories
 
