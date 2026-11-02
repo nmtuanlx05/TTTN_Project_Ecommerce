@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 const INDENT = ["", "pl-4", "pl-8"] as const
 
 const ITEM =
-  "flex min-h-control items-center rounded-xs px-3 text-body-sm transition-colors duration-(--motion-fast) hover:bg-surface-hover"
+  "flex min-h-control items-center rounded-xs px-3 text-body-sm transition-colors duration-(--motion-fast) ease-smooth hover:bg-surface-hover"
 
 function CategoryLinks({
   nodes,

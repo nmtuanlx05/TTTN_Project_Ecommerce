@@ -75,7 +75,7 @@ function ProductImage({
       ) : (
         <div
           aria-hidden="true"
-          className="grid size-full place-items-center font-display text-display text-ink-subtle"
+          className="grid size-full place-items-center font-display text-display text-ink-muted"
         >
           {STORE.name.charAt(0)}
         </div>

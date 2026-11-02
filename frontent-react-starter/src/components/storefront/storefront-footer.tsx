@@ -4,7 +4,7 @@ import type { CategoryNode } from "@/lib/category-tree"
 import { STORE } from "@/lib/store-info"
 
 const LINK =
-  "inline-flex min-h-control min-w-control items-center text-body-sm text-ink-muted underline decoration-transparent decoration-1 underline-offset-4 transition-colors duration-(--motion-fast) hover:text-ink hover:decoration-ink"
+  "inline-flex min-h-control min-w-control items-center text-body-sm text-ink-muted underline decoration-transparent decoration-1 underline-offset-4 transition-colors duration-(--motion-fast) ease-smooth hover:text-ink hover:decoration-ink"
 
 /**
  * Chân trang: tên + khẩu hiệu, liên kết danh mục (gốc), vùng liên hệ. Thông tin liên hệ chưa có thì hiện
