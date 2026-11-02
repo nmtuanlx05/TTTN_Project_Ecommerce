@@ -76,7 +76,7 @@ function ProductDetailContent({
       query.error.statusCode === 404 ? (
         <ProductNotFound />
       ) : (
-        <CatalogError onRetry={() => void query.refetch()} />
+        <CatalogError asPage onRetry={() => void query.refetch()} />
       )
   } else {
     body = <ProductDetailSkeleton />

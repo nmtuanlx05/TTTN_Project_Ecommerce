@@ -53,7 +53,7 @@ function CatalogContent() {
   if (categoryUnresolved && treeError) {
     return (
       <div className="mx-auto w-full max-w-7xl px-gutter pt-8 pb-block lg:pt-12">
-        <CatalogError onRetry={refetch} />
+        <CatalogError asPage onRetry={refetch} />
       </div>
     )
   }

@@ -3,11 +3,12 @@ import { CircleAlert, PackageOpen, SearchX } from "lucide-react"
 import { StateMessage } from "@/components/storefront/state-message"
 import { Button, buttonVariants } from "@/components/ui/button"
 
-/** Slug trên URL không khớp danh mục nào. Không gọi API sản phẩm. */
+/** Slug trên URL không khớp danh mục nào. Không gọi API sản phẩm. Chiếm cả trang nên tiêu đề là `h1`. */
 function CategoryNotFound() {
   return (
     <StateMessage
       icon={SearchX}
+      titleAs="h1"
       title="Không tìm thấy danh mục"
       description="Danh mục này không tồn tại hoặc đã được đổi tên. Quay lại cửa hàng để chọn danh mục khác."
       action={<Link to="/products" className={buttonVariants({ variant: "secondary" })}>Về cửa hàng</Link>}
@@ -15,10 +16,12 @@ function CategoryNotFound() {
   )
 }
 
-function CatalogError({ onRetry }: { onRetry: () => void }) {
+/** `asPage`: lỗi chiếm cả trang (chưa có `h1` nào khác) thì tiêu đề là `h1`. */
+function CatalogError({ onRetry, asPage = false }: { onRetry: () => void; asPage?: boolean }) {
   return (
     <StateMessage
       icon={CircleAlert}
+      titleAs={asPage ? "h1" : "p"}
       title="Không tải được sản phẩm"
       description="Kết nối bị gián đoạn hoặc máy chủ đang bận. Thử lại sau giây lát."
       action={<Button variant="secondary" onClick={onRetry}>Thử lại</Button>}

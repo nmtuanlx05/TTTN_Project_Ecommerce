@@ -3,7 +3,6 @@ import { BrowserRouter, Route, Routes } from "react-router-dom"
 import { RouteFallback } from "@/components/shared/route-fallback"
 import { ToastProvider, ToastViewport } from "@/components/ui/toast"
 import { AuthBootstrap } from "@/features/auth/auth-bootstrap"
-import NotFoundPage from "@/pages/not-found"
 import { adminRoutes } from "@/routes/admin-routes"
 import { authRoutes } from "@/routes/auth-routes"
 import { storefrontRoutes } from "@/routes/storefront-routes"
@@ -29,7 +28,6 @@ function App() {
                 </Suspense>
               }
             />
-            <Route path="*" element={<NotFoundPage fullPage />} />
           </Routes>
           <ToastViewport />
         </ToastProvider>

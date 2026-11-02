@@ -2,17 +2,11 @@ import { Link } from "react-router-dom"
 import { SearchX } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { EmptyState } from "@/components/ui/empty-state"
-import { cn } from "@/lib/utils"
 
-/** Trang 404. `fullPage` khi đứng một mình, bỏ khi nằm trong khung admin. */
-function NotFoundPage({ fullPage = false }: { fullPage?: boolean }) {
+/** Trang 404 trong khung admin. 404 của khu khách nằm ở `pages/storefront/not-found`. */
+function NotFoundPage() {
   return (
-    <div
-      className={cn(
-        "grid place-items-center",
-        fullPage ? "min-h-dvh bg-canvas px-gutter" : "py-section",
-      )}
-    >
+    <div className="grid place-items-center py-section">
       <EmptyState
         icon={SearchX}
         title="Không tìm thấy trang"
