@@ -1,52 +1,63 @@
-import { Link } from "react-router-dom"
-import { buttonVariants } from "@/components/ui/button"
 import { BrandLogo } from "@/components/shared/brand-logo"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
-import { UserMenu, type UserMenuAccount } from "@/components/shared/user-menu"
+import { useInView } from "@/hooks/use-in-view"
+import type { CategoryNode } from "@/lib/category-tree"
 import { cn } from "@/lib/utils"
-import type { User } from "@/types/user"
-
-/** Phiên đăng nhập nhìn từ header. Truyền từ ngoài vào vì components/ không được đọc phiên. */
-type HeaderSession =
-  | { status: "loading" }
-  | { status: "anonymous" }
-  | {
-      status: "authenticated"
-      account: UserMenuAccount
-      onLogout: () => void
-      loggingOut: boolean
-      onAvatarSaved: (user: User) => void
-    }
+import { CartButton } from "./cart-button"
+import { HeaderAccount } from "./header-account"
+import { HeaderNav } from "./header-nav"
+import type { HeaderSession } from "./header-session"
+import { MobileNavDrawer } from "./mobile-nav-drawer"
+import { SearchPanel } from "./search-panel"
 
 /**
- * Header cửa hàng: logo bên trái; bên phải là đổi sáng/tối và một mục tài khoản.
- * Đang tải phiên thì giữ đúng chỗ của mục đó (không nháy); chưa đăng nhập chỉ có một nút
- * "Đăng nhập" (trang /login đã có liên kết sang /register).
+ * Header cửa hàng, dính khi cuộn. Ở đầu trang nền liền với trang; cuộn quá vài px thì nền mờ nhẹ và hiện đường kẻ mảnh
+ * (phát hiện bằng một phần tử mốc cao 8px ở đầu tài liệu, không dùng scroll listener).
+ *
+ * Từ `lg`: logo, menu danh mục, tìm kiếm, đổi sáng/tối, giỏ hàng, tài khoản. Dưới `lg`: nút menu, logo, tìm kiếm, giỏ hàng;
+ * danh mục, tài khoản và đổi sáng/tối nằm trong ngăn kéo (không đủ chỗ ở 360px).
  */
-function StorefrontHeader({ session }: { session: HeaderSession }) {
+function StorefrontHeader({
+  session,
+  categories = [],
+  onCartClick,
+}: {
+  session: HeaderSession
+  /** Danh mục gốc (đã dựng cây). Chưa có thì menu chỉ còn "Tất cả sản phẩm". */
+  categories?: CategoryNode[]
+  onCartClick?: () => void
+}) {
+  const { ref, inView } = useInView<HTMLDivElement>({ initialInView: true })
+  const scrolled = !inView
+
   return (
-    <header className="sticky top-0 z-30 border-b border-border-subtle bg-canvas">
-      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-2 px-gutter sm:gap-inline md:h-20">
-        <BrandLogo to="/" />
-        <div className="flex items-center gap-2 sm:gap-inline">
-          <ThemeToggle />
-          {session.status === "authenticated" ? (
-            <UserMenu
-              account={session.account}
-              onLogout={session.onLogout}
-              loggingOut={session.loggingOut}
-              onAvatarSaved={session.onAvatarSaved}
-            />
-          ) : session.status === "anonymous" ? (
-            <Link to="/login" className={cn(buttonVariants(), "max-sm:px-3")}>
-              Đăng nhập
-            </Link>
-          ) : (
-            <div aria-hidden="true" className="h-control w-control sm:w-28" />
-          )}
+    <>
+      <div ref={ref} aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-2" />
+      <header
+        className={cn(
+          "sticky top-0 z-30 border-b transition-[background-color,border-color] duration-(--motion-base) ease-smooth",
+          scrolled
+            ? "border-border-subtle bg-canvas/80 backdrop-blur-md"
+            : "border-transparent bg-canvas",
+        )}
+      >
+        <div className="mx-auto flex h-header w-full max-w-7xl items-center gap-2 px-gutter lg:gap-8">
+          <MobileNavDrawer categories={categories} session={session} />
+          <BrandLogo to="/" />
+          <HeaderNav categories={categories} />
+          <div className="ml-auto flex items-center gap-1 lg:gap-inline">
+            <SearchPanel />
+            <div className="max-lg:hidden">
+              <ThemeToggle />
+            </div>
+            <CartButton onClick={onCartClick} />
+            <div className="max-lg:hidden">
+              <HeaderAccount session={session} />
+            </div>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   )
 }
 
