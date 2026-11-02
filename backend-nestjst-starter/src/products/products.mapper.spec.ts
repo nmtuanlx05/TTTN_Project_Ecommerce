@@ -7,6 +7,8 @@ import {
   toPublicListItem,
 } from './products.mapper';
 
+type PublicDetailInput = Parameters<typeof toPublicDetail>[0];
+
 // Trường nội bộ không bao giờ được xuất hiện ở API public
 const INTERNAL_FIELDS = [
   'stock',
@@ -29,30 +31,51 @@ describe('products.mapper', () => {
       imageUrl: null,
       category,
     };
+    const inStockOf = (variants: { stock: number; reserved: number }[]) =>
+      toPublicListItem({ ...base, variants }).inStock;
 
     it('inStock = true khi có biến thể còn tồn khả dụng (stock - reserved > 0)', () => {
-      const item = toPublicListItem({
-        ...base,
-        variants: [
+      expect(
+        inStockOf([
           { stock: 5, reserved: 5 },
           { stock: 5, reserved: 2 },
-        ],
-      });
-      expect(item.inStock).toBe(true);
+        ]),
+      ).toBe(true);
+    });
+
+    it('biên: available = 1 → còn hàng, available = 0 → hết hàng', () => {
+      expect(inStockOf([{ stock: 1, reserved: 0 }])).toBe(true);
+      expect(inStockOf([{ stock: 5, reserved: 4 }])).toBe(true);
+      expect(inStockOf([{ stock: 0, reserved: 0 }])).toBe(false);
+      expect(inStockOf([{ stock: 5, reserved: 5 }])).toBe(false);
+    });
+
+    it('biên: available âm (dữ liệu lệch reserved > stock) → hết hàng, không bị coi là còn', () => {
+      expect(inStockOf([{ stock: 2, reserved: 3 }])).toBe(false);
+      // Biến thể âm không được "bù" cho biến thể khác: chỉ cần một biến thể còn hàng là đủ
+      expect(
+        inStockOf([
+          { stock: 2, reserved: 9 },
+          { stock: 1, reserved: 0 },
+        ]),
+      ).toBe(true);
     });
 
     it('inStock = false khi mọi biến thể đã hết (kể cả đang được giữ hết)', () => {
-      const item = toPublicListItem({
-        ...base,
-        variants: [
+      expect(
+        inStockOf([
           { stock: 0, reserved: 0 },
           { stock: 3, reserved: 3 },
-        ],
-      });
-      expect(item.inStock).toBe(false);
+          { stock: 1, reserved: 4 },
+        ]),
+      ).toBe(false);
     });
 
-    it('không lộ số liệu tồn kho hay trường nội bộ', () => {
+    it('không có biến thể nào → inStock = false', () => {
+      expect(inStockOf([])).toBe(false);
+    });
+
+    it('chỉ có đúng các khóa được phép, không lộ stock, reserved, minStock, isActive', () => {
       const item = toPublicListItem({
         ...base,
         variants: [{ stock: 9, reserved: 1 }],
@@ -68,11 +91,13 @@ describe('products.mapper', () => {
           'slug',
         ].sort(),
       );
+      expect(Object.keys(item.category).sort()).toEqual(['id', 'name', 'slug']);
+      expect(item).not.toHaveProperty('variants');
     });
   });
 
   describe('toPublicDetail', () => {
-    const detail = toPublicDetail({
+    const product = {
       id: 1,
       name: 'Áo thun basic',
       slug: 'ao-thun-basic',
@@ -80,24 +105,22 @@ describe('products.mapper', () => {
       price: 199000,
       imageUrl: null,
       category,
-      variants: [
-        {
-          id: 10,
-          sku: 'ATB-M-DEN',
-          size: 'M',
-          color: 'Đen',
-          stock: 4,
-          reserved: 4,
-        },
-        {
-          id: 11,
-          sku: 'ATB-L-DEN',
-          size: 'L',
-          color: 'Đen',
-          stock: 4,
-          reserved: 1,
-        },
-      ],
+    };
+    const variant = (
+      id: number,
+      stock: number,
+      reserved: number,
+    ): PublicDetailInput['variants'][number] => ({
+      id,
+      sku: `ATB-${id}`,
+      size: 'M',
+      color: 'Đen',
+      stock,
+      reserved,
+    });
+    const detail = toPublicDetail({
+      ...product,
+      variants: [variant(10, 4, 4), variant(11, 4, 1)],
     });
 
     it('inStock theo từng biến thể và cả sản phẩm', () => {
@@ -105,9 +128,54 @@ describe('products.mapper', () => {
       expect(detail.inStock).toBe(true);
     });
 
-    it('biến thể chỉ có id, sku, size, color, inStock', () => {
-      for (const variant of detail.variants) {
-        expect(Object.keys(variant).sort()).toEqual(
+    it('biên từng biến thể: available = 1 → true, 0 → false, âm → false', () => {
+      const d = toPublicDetail({
+        ...product,
+        variants: [variant(1, 1, 0), variant(2, 3, 3), variant(3, 2, 5)],
+      });
+      expect(d.variants.map((v) => v.inStock)).toEqual([true, false, false]);
+      expect(d.inStock).toBe(true);
+    });
+
+    it('mọi biến thể hết hàng → inStock sản phẩm = false', () => {
+      const d = toPublicDetail({
+        ...product,
+        variants: [variant(1, 0, 0), variant(2, 3, 3), variant(3, 2, 5)],
+      });
+      expect(d.inStock).toBe(false);
+      expect(d.variants.every((v) => !v.inStock)).toBe(true);
+    });
+
+    it('không có biến thể nào → inStock = false, variants rỗng', () => {
+      const d = toPublicDetail({ ...product, variants: [] });
+      expect(d.inStock).toBe(false);
+      expect(d.variants).toEqual([]);
+    });
+
+    it('chỉ có đúng các khóa được phép ở sản phẩm', () => {
+      expect(Object.keys(detail).sort()).toEqual(
+        [
+          'category',
+          'description',
+          'id',
+          'imageUrl',
+          'inStock',
+          'name',
+          'price',
+          'slug',
+          'variants',
+        ].sort(),
+      );
+      expect(Object.keys(detail.category).sort()).toEqual([
+        'id',
+        'name',
+        'slug',
+      ]);
+    });
+
+    it('biến thể chỉ có đúng id, sku, size, color, inStock', () => {
+      for (const v of detail.variants) {
+        expect(Object.keys(v).sort()).toEqual(
           ['color', 'id', 'inStock', 'size', 'sku'].sort(),
         );
       }
@@ -120,6 +188,13 @@ describe('products.mapper', () => {
       ];
       for (const field of INTERNAL_FIELDS) {
         expect(keys).not.toContain(field);
+      }
+    });
+
+    it('số liệu tồn không lọt ra dù nằm lẫn trong JSON', () => {
+      const json = JSON.stringify(detail);
+      for (const field of ['stock', 'reserved', 'minStock', 'isActive']) {
+        expect(json).not.toContain(`"${field}"`);
       }
     });
   });
@@ -141,6 +216,39 @@ describe('products.mapper', () => {
       expect(
         Object.keys(publicProductDetailSelect.variants.select),
       ).not.toContain('minStock');
+    });
+
+    // Thêm trường vào select là lộ ra API: test này buộc phải sửa có chủ đích
+    it('tập trường được select khớp chính xác', () => {
+      expect(Object.keys(publicProductListSelect).sort()).toEqual(
+        [
+          'category',
+          'id',
+          'imageUrl',
+          'name',
+          'price',
+          'slug',
+          'variants',
+        ].sort(),
+      );
+      expect(
+        Object.keys(publicProductListSelect.variants.select).sort(),
+      ).toEqual(['reserved', 'stock']);
+      expect(Object.keys(publicProductDetailSelect).sort()).toEqual(
+        [
+          'category',
+          'description',
+          'id',
+          'imageUrl',
+          'name',
+          'price',
+          'slug',
+          'variants',
+        ].sort(),
+      );
+      expect(
+        Object.keys(publicProductDetailSelect.variants.select).sort(),
+      ).toEqual(['color', 'id', 'reserved', 'size', 'sku', 'stock']);
     });
   });
 
