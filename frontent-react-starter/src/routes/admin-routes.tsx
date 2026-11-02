@@ -3,6 +3,7 @@ import { Outlet, Route } from "react-router-dom"
 import { navRoles } from "@/components/admin/nav-items"
 import CategoriesPage from "@/pages/admin/categories"
 import DashboardPage from "@/pages/admin/dashboard"
+import InventoryPage from "@/pages/admin/inventory"
 import PlaceholderPage from "@/pages/admin/placeholder"
 import ProductCreatePage from "@/pages/admin/products/new"
 import ProductEditPage from "@/pages/admin/products/edit"
@@ -37,7 +38,7 @@ export const adminRoutes = (
           <Route path="*" element={<NotFoundPage />} />
         </Route>
         <Route path="categories/*" element={guarded("/admin/categories", <CategoriesPage />)} />
-        <Route path="inventory/*" element={guarded("/admin/inventory", <PlaceholderPage />)} />
+        <Route path="inventory" element={guarded("/admin/inventory", <InventoryPage />)} />
         <Route path="vouchers/*" element={guarded("/admin/vouchers", <PlaceholderPage />)} />
         <Route path="users/*" element={guarded("/admin/users", <UsersPage />)} />
         <Route path="*" element={<NotFoundPage />} />

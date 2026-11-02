@@ -58,7 +58,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Kho",
     icon: Boxes,
     description: "Nhập kho và theo dõi tồn khả dụng của từng biến thể.",
-    ready: false,
+    ready: true,
     roles: ["ADMIN", "STAFF"],
   },
   {

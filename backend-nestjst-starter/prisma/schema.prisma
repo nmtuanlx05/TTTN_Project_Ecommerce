@@ -45,19 +45,20 @@ enum DiscountType {
 // ============ User ============
 
 model User {
-  id            Int      @id @default(autoincrement())
-  email         String   @unique
-  password      String
-  name          String?
-  phone         String?
-  avatarUrl     String?  @db.VarChar(191) // URL ảnh đại diện do /uploads/avatars cấp; null = chưa có
-  role          Role     @default(CUSTOMER)
-  isActive      Boolean  @default(true)
-  cart          Cart?
-  orders        Order[]  @relation("OrderCustomer") // đơn do user này đặt
-  handledOrders Order[]  @relation("OrderHandler") // đơn user này (Staff) phụ trách
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             Int             @id @default(autoincrement())
+  email          String          @unique
+  password       String
+  name           String?
+  phone          String?
+  avatarUrl      String?         @db.VarChar(191) // URL ảnh đại diện do /uploads/avatars cấp; null = chưa có
+  role           Role            @default(CUSTOMER)
+  isActive       Boolean         @default(true)
+  cart           Cart?
+  orders         Order[]         @relation("OrderCustomer") // đơn do user này đặt
+  handledOrders  Order[]         @relation("OrderHandler") // đơn user này (Staff) phụ trách
+  stockMovements StockMovement[] // các lần đổi tồn kho do user này thực hiện
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@map("users")
 }
@@ -95,21 +96,48 @@ model Product {
 }
 
 model ProductVariant {
-  id         Int         @id @default(autoincrement())
-  productId  Int
-  product    Product     @relation(fields: [productId], references: [id])
-  sku        String      @unique
-  size       String
-  color      String
-  stock      Int         @default(0) // tồn thực tế trong kho
-  reserved   Int         @default(0) // đang giữ cho đơn chưa xuất kho
-  minStock   Int         @default(0) // ngưỡng cảnh báo sắp hết
-  isActive   Boolean     @default(true)
-  cartItems  CartItem[]
-  orderItems OrderItem[]
+  id             Int             @id @default(autoincrement())
+  productId      Int
+  product        Product         @relation(fields: [productId], references: [id])
+  sku            String          @unique
+  size           String
+  color          String
+  stock          Int             @default(0) // tồn thực tế trong kho
+  reserved       Int             @default(0) // đang giữ cho đơn chưa xuất kho
+  minStock       Int             @default(0) // ngưỡng cảnh báo sắp hết
+  isActive       Boolean         @default(true)
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  stockMovements StockMovement[]
 
   @@unique([productId, size, color])
   @@map("product_variants")
+}
+
+// Lịch sử thay đổi tồn thực tế (stock). Chỉ ghi khi stock đổi; giữ/nhả chỗ (reserved) không ghi.
+// Thêm giá trị enum mới (SALE, RETURN...) chỉ được thêm vào CUỐI, không đổi thứ tự hay xóa.
+enum StockMovementType {
+  IMPORT // nhập kho
+  EXPORT // xuất kho thủ công (hỏng, mất, khác)
+  ADJUST // điều chỉnh theo số đếm thực tế
+}
+
+model StockMovement {
+  id          Int               @id @default(autoincrement())
+  variantId   Int
+  variant     ProductVariant    @relation(fields: [variantId], references: [id])
+  type        StockMovementType
+  quantity    Int // delta có dấu: nhập +n, xuất -n, điều chỉnh = số đếm - tồn cũ
+  stockBefore Int
+  stockAfter  Int
+  reason      String? // EXPORT: mã DAMAGED/LOST/OTHER; ADJUST: lý do tự do; IMPORT: null
+  note        String?           @db.VarChar(500)
+  createdById Int
+  createdBy   User              @relation(fields: [createdById], references: [id])
+  createdAt   DateTime          @default(now())
+
+  @@index([variantId, createdAt])
+  @@map("stock_movements")
 }
 
 // ============ Giỏ hàng ============

@@ -391,15 +391,30 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
   (`isActive`), sắp theo tên/giá/ngày tạo, phân trang phía server, toàn bộ trạng thái trên URL (`use-products-search-params.ts`). Cột "Biến thể" hiện
   "x/y đang bán" (API danh sách không trả tồn kho). Ẩn/hiện ngay trên dòng: ẩn qua `ConfirmDialog`, hiện lại làm luôn (`use-product-status-action.ts`).
   **Tạo** `/admin/products/new` và **sửa** `/admin/products/:id/edit` là trang riêng, dùng chung `ProductForm` (RHF + zod, `schemas.ts` phản chiếu
-  `CreateProductDto`, chặn trùng SKU và cặp size-màu ngay trong form). Danh mục chọn dạng cây thụt lề (`category-select.tsx`). Trường tùy chọn
+  `CreateProductDto`, chặn trùng SKU và cặp size-màu ngay trong form). Danh mục chọn dạng cây thụt lề (`components/admin/category-select.tsx`, dùng chung với Kho). Trường tùy chọn
   bỏ trống thì **không gửi** (slug trống khi tạo → backend tự sinh; `slug: ""` bị 400); khi sửa slug không được trống. PATCH chỉ gửi phần đổi
   (`form-mapping.ts`): biến thể có `id` chỉ gửi trường đổi, hàng mới (chưa có `id`) gửi đủ, biến thể đã lưu **không xóa được** (chỉ sửa hoặc bỏ
   tích "Đang bán"); `description`/`imageUrl` xóa trống thì gửi `null`. Lỗi 400 của biến thể (`variants.N.sku`) được đổi chỉ số về đúng hàng trong form
   (`remapVariantErrors`) vì ta chỉ gửi các hàng có đổi; 409 (trùng slug/SKU/size-màu) hiện `Alert` nguyên văn đầu form. Tồn kho (`stock`, `reserved`)
-  chỉ đọc ở trang sửa, nhập kho thuộc module Kho. Ảnh upload bằng `ImageUploadField` (`components/shared/`, kind `products`, khung vuông `object-contain`; trong lúc tải thì khóa nút Lưu và chặn submit);
+  chỉ đọc ở trang sửa và lấy từ `product.variants` của query MỚI NHẤT khớp theo id (không từ `baseline` của form, nên đổi tồn ở Kho rồi quay lại vẫn thấy số mới mà không động tới
+  chỉnh sửa đang dở); biến thể đã lưu có liên kết "Quản lý tồn kho" sang `/admin/inventory?q=<SKU>` (thêm `includeHidden=true` khi sản phẩm ẩn hoặc biến thể ngừng bán,
+  `inventory-link.ts`); hàng mới thêm trong form chưa lưu thì không hiện tồn và không có liên kết. Ảnh upload bằng `ImageUploadField` (`components/shared/`, kind `products`, khung vuông `object-contain`; trong lúc tải thì khóa nút Lưu và chặn submit);
   mục thu gọn "Nhập URL ảnh" vẫn dùng được cho ảnh ở nơi khác (≤ 191 ký tự). "Xóa ảnh" chỉ xóa giá trị trong form, không xóa file trên server. Tạo xong về danh sách; sửa xong ở lại trang và
   `reset` form theo response. Trạng thái hiện/ẩn không nằm trong form (API chỉ đổi qua `PATCH :id/status`): nút Ẩn/Hiện ở đầu trang sửa. Link từ
   danh sách mang theo `location.state.listSearch` để "Quay lại" giữ bộ lọc và trang (`list-link.ts`).
+- `/admin/inventory` — ADMIN + STAFF (cả hai làm được mọi thao tác). Nối backend thật (`docs/api/inventory.md`). Trang `pages/admin/inventory`: **dải 4 thẻ số liệu** (Tổng, Còn hàng, Sắp hết,
+  Hết hàng; `GET /admin/inventory/summary`, chỉ nhận `categoryId` + `includeHidden` nên không theo ô tìm kiếm) là nút bật/tắt lọc `stockStatus`; **thanh công cụ**: tìm `q` (tên sản phẩm hoặc SKU),
+  danh mục dạng cây (`CategorySelect`, gồm cả danh mục con), trạng thái tồn, ô "Hiện cả hàng đã ẩn" (`includeHidden`), "Xóa bộ lọc"; sắp xếp phía server chỉ theo tên, tồn kho, khả dụng; 20 dòng/trang
+  (`PAGE_SIZE`, gửi `limit` tường minh); toàn bộ trạng thái trên URL (`use-inventory-search-params.ts`, whitelist, giá trị mặc định không ghi URL). Ngưỡng cảnh báo 0 hiện "Chưa đặt" kèm tooltip.
+  Mỗi dòng có Nhập kho, Điều chỉnh và menu "⋯" (Xuất kho, Đặt ngưỡng, Xem lịch sử). **Hộp thoại dựng một lần** ở `inventory-dialogs.tsx`, ngoài bảng và ngoài `DropdownMenuContent`, điều khiển bằng state
+  (`use-inventory-dialog.ts`, giữ cả nút đã mở để trả focus), nằm ngoài nhánh skeleton/lỗi/rỗng của `InventoryContent` nên danh sách tải lại không gỡ hộp thoại. Số trong hộp luôn lấy từ dòng MỚI NHẤT
+  trong danh sách (khớp id), không từ lúc mở. Form RHF + zod (`schemas.ts` phản chiếu DTO; số trong form là chuỗi chỉ chứa chữ số, `IntegerField`): nhập (xem trước tồn sau; chặn nếu vượt INT), điều chỉnh
+  (nhập SỐ ĐẾM thực tế; nút gửi khóa khi chênh lệch = 0), xuất (lý do DAMAGED/LOST/OTHER, "Khác" bắt buộc ghi chú), đặt ngưỡng (xem trước trạng thái). Vượt khả dụng khi xuất và dưới số đang giữ khi điều chỉnh
+  chỉ cảnh báo, vẫn cho gửi, server quyết định. Lỗi theo mã (`use-stock-mutation-errors.ts`): 400 vào đúng ô, 404 toast + đóng + làm mới, 403 toast, 409 và còn lại hiện `Alert` nguyên văn trong hộp; **mất mạng
+  (statusCode 0) khi nhập/xuất/điều chỉnh** hiện "Chưa rõ thao tác đã được ghi hay chưa…" và làm mới danh sách, KHÔNG tự thử lại (API không có khóa chống gửi trùng); đặt ngưỡng chỉ báo lỗi mạng thường.
+  Lịch sử (`movements-list.tsx`): `useInfiniteQuery`, "Tải thêm" dựa vào `meta.totalPages`; loại EXPORT ánh xạ mã sang nhãn, ADJUST hiện nguyên văn, loại lạ hiện nguyên giá trị. Khóa truy vấn dưới `["inventory"]`;
+  sau mỗi thao tác làm mới cả `["inventory"]` và `["products"]` (khóa chữ trong `queries.ts`, khớp `productKeys.all`, không import vì features không import lẫn nhau — đổi một nơi phải đổi nơi kia).
+  Tên sản phẩm là liên kết sang trang sửa; nút "Quay lại" ở đó về danh sách sản phẩm chứ không về Kho (hạn chế đã biết: `list-link.ts` của products cố định đường dẫn).
 - Các mục menu còn lại hiện là `PlaceholderPage`. Route lạ trong `/admin` hiện 404 trong khung admin; ngoài `/admin` hiện 404 toàn trang.
 - **Upload ảnh dùng chung**: `components/shared/image-upload-field.tsx` (props `value`, `onChange`, `kind` = `products`|`avatars`, `shape` = `square`|`circle`, `label`, `error`, `disabled`,
   `zoomable` (mặc định bật), `fallback`, `onUploadingChange`). Chọn file hoặc kéo-thả (tự dùng sự kiện trình duyệt, `hooks/use-file-drop.ts`), tiến độ và nút Hủy (`hooks/use-image-upload.ts`). Giới hạn
@@ -438,6 +453,7 @@ một module, và cập nhật `/styleguide` nếu có thêm token hoặc compon
 - Trang đích của STAFF sau đăng nhập đang là `/admin/orders` (placeholder); đổi khi có trang Đơn hàng thật.
 - Trang chủ storefront (`/`) mới có header + hero + khối "sắp ra mắt"; chưa có điều hướng, giỏ hàng, tìm kiếm (thêm khi có chức năng).
 - `user-form-dialog.tsx` còn tự map lỗi API; chuyển sang `applyServerErrors` (`lib/form-errors.ts`) như login/register.
+- Kho: nút "Quay lại" từ trang sửa sản phẩm về danh sách sản phẩm (không về Kho); liên kết "Quản lý tồn kho" mở trong cùng tab nên chỉnh sửa chưa lưu ở trang sửa sản phẩm bị mất; còn trùng lặp với products (hook tham số URL, skeleton bảng, tiêu đề sắp xếp, khung trạng thái danh sách) chưa gom lại.
 - Sản phẩm: danh sách chưa có cột tồn kho (API không trả); ảnh upload xong mà không lưu (hoặc bị thay) vẫn nằm trên server, chưa có cách dọn; chưa cảnh báo khi rời trang sửa lúc có thay đổi chưa lưu; hoán đổi size/màu giữa hai biến thể trong một lần lưu bị 409 (tách hai lần lưu).
 - Backend chưa gắn guard cho `/users`..., chưa thu hồi được refresh token, chưa giới hạn số lần đăng nhập sai (xem CLAUDE.md backend).
 - Cookie refresh `SameSite=Lax`: khi deploy, frontend và backend phải cùng site (cùng domain gốc) thì cookie mới được gửi.

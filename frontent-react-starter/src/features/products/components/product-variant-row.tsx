@@ -1,27 +1,35 @@
 import { Trash2 } from "lucide-react"
 import { Controller, useFormContext } from "react-hook-form"
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { formatNumber } from "@/lib/format"
+import { inventoryLinkOf } from "../inventory-link"
 import type { ProductFormValues } from "../schemas"
 import type { ProductVariant } from "../types"
 
 /**
- * Một hàng biến thể. `saved` có = biến thể đã lưu: không xóa được (chỉ sửa hoặc ngừng bán) và hiện
- * tồn kho chỉ đọc. Không có = hàng mới thêm, bỏ được trước khi lưu.
+ * Một hàng biến thể. `saved` có = biến thể đã lưu: không xóa được (chỉ sửa hoặc ngừng bán). Không có = hàng
+ * mới thêm, bỏ được trước khi lưu. Tồn kho chỉ đọc và liên kết sang Kho lấy từ `live` (bản mới nhất từ
+ * query, khớp theo id); hàng chưa lưu không có `live` nên không hiện tồn và không có liên kết.
  */
 function ProductVariantRow({
   index,
   idPrefix,
   saved,
+  live,
+  productIsActive,
   canRemove,
   onRemove,
 }: {
   index: number
   idPrefix: string
   saved: ProductVariant | undefined
+  live: ProductVariant | undefined
+  /** Cờ hiện/ẩn của sản phẩm trên server, để quyết định bật `includeHidden` trong liên kết kho. */
+  productIsActive: boolean
   canRemove: boolean
   onRemove: () => void
 }) {
@@ -93,12 +101,17 @@ function ProductVariantRow({
         </p>
       ) : null}
 
-      {saved ? (
+      {live ? (
         <p className="text-caption text-ink-muted">
-          Tồn kho <span data-numeric>{formatNumber(saved.stock)}</span> · Đang giữ{" "}
-          <span data-numeric>{formatNumber(saved.reserved)}</span> · Khả dụng{" "}
-          <span data-numeric>{formatNumber(saved.stock - saved.reserved)}</span>. Chỉ xem ở đây, nhập
-          kho ở module Kho.
+          Tồn kho <span data-numeric>{formatNumber(live.stock)}</span> · Đang giữ{" "}
+          <span data-numeric>{formatNumber(live.reserved)}</span> · Khả dụng{" "}
+          <span data-numeric>{formatNumber(live.stock - live.reserved)}</span>. Chỉ xem ở đây.{" "}
+          <Link
+            to={inventoryLinkOf(live, productIsActive)}
+            className="rounded-xs text-ink underline underline-offset-4 outline-none hover:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            Quản lý tồn kho
+          </Link>
         </p>
       ) : null}
     </li>

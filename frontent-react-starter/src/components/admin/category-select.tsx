@@ -11,7 +11,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCategoryOptions } from "@/hooks/use-category-options"
 import { cn } from "@/lib/utils"
-import { buildCategoryTreeOptions } from "../category-tree-options"
+import { buildCategoryTreeOptions } from "@/lib/category-tree-options"
 
 const NONE = "none"
 

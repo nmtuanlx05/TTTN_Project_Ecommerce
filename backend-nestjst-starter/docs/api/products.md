@@ -74,7 +74,7 @@ Tiền là VND, số nguyên (JSON number). Thời gian là chuỗi ISO 8601.
 ```
 
 - `variants` gồm cả biến thể đang ẩn, sắp theo `id` tăng dần. `stock`, `reserved`, `minStock` **chỉ đọc** ở đây
-  (do module Kho quản lý sau); API sản phẩm không cho ghi các trường này.
+  (do module Kho quản lý, xem `docs/api/inventory.md`); API sản phẩm không cho ghi các trường này.
 - `description`: `string | null`.
 
 ### Public: item trong danh sách (`GET /products`)
@@ -207,7 +207,7 @@ Body:
 - Bắt buộc: `name`, `price`, `categoryId`, `variants` (ít nhất 1, tối đa 100). Mỗi biến thể bắt buộc `sku`, `size`, `color`.
 - Sản phẩm mới luôn `isActive = true` (không nhận `isActive`; ẩn bằng `PATCH :id/status`).
 - **Tồn kho:** không nhận `stock`, `reserved`, `minStock`; biến thể mới có `stock = 0`, `reserved = 0`, `minStock = 0`
-  (nên `inStock = false` cho tới khi module Kho nhập hàng).
+  (nên `inStock = false` cho tới khi nhập kho qua `POST /admin/inventory/:variantId/import`).
 - **Slug:** bỏ trống (hoặc `null`) thì tự sinh từ tên (bỏ dấu tiếng Việt, `đ` → `d`, kebab-case: `Áo Thun Nam` → `ao-thun-nam`).
   Slug tự sinh bị trùng thì thêm hậu tố `-2`, `-3`... Client **tự gửi** `slug` mà trùng → 409.
   **`"slug": ""` bị từ chối 400** (giống categories) - muốn tự sinh thì bỏ hẳn trường `slug`. Tên chỉ có ký hiệu và không gửi `slug`

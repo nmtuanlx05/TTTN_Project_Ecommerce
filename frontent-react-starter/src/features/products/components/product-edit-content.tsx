@@ -90,6 +90,7 @@ function ProductEditContent({ product }: { product: ProductDetail }) {
         mode="edit"
         initialValues={initialValues}
         savedVariants={baseline.variants}
+        liveProduct={product}
         busy={update.isPending}
         formError={errors.formError}
         onCancel={() => navigate(listPath)}

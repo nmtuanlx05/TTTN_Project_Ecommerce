@@ -57,7 +57,7 @@ Yêu cầu chia theo ba phía: người dùng, Admin, Staff. Ưu tiên **MVP** l
 | BR-S-05 | Xuất kho tự động theo đơn khi đơn chuyển sang SHIPPING | MVP |
 | BR-S-06 | Điều chỉnh tồn thủ công (kiểm kê) | MVP |
 | BR-S-07 | Xem tồn kho theo biến thể, lọc biến thể sắp hết hàng | MVP |
-| BR-S-08 | Xem lịch sử nhập, xuất, điều chỉnh | V2 |
+| BR-S-08 | Xem lịch sử nhập, xuất, điều chỉnh | MVP |
 | BR-S-09 | Nhập kho theo phiếu, nhà cung cấp | V2 |
 
 ### 3.3 Đơn hàng
