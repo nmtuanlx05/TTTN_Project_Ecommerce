@@ -2,7 +2,7 @@ import { useState } from "react"
 import { createPortal } from "react-dom"
 import { Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useInView } from "@/hooks/use-in-view"
+import { ABOVE_ONLY_MARGIN, useInView } from "@/hooks/use-in-view"
 import type { CatalogProductDetail } from "../types"
 import { defaultChoice, findVariant, type VariantChoice } from "../variant-options"
 import { QuantityStepper } from "./quantity-stepper"
@@ -10,13 +10,6 @@ import { StickyBuyBar } from "./sticky-buy-bar"
 import { VariantPicker } from "./variant-picker"
 
 type AddToCartInput = { variantId: number; quantity: number }
-
-/**
- * Mở rộng vùng quan sát xuống dưới rất xa: phần tử chỉ "không giao cắt" khi đã nằm hoàn toàn PHÍA TRÊN màn hình. Nhờ chỉ có
- * một biên (mép trên), cuộn nhảy một phát (Home, cuộn nhanh) vẫn đổi trạng thái; với vùng quan sát thường thì nhảy từ "đã qua"
- * xuống "chưa tới" mà không đi qua màn hình sẽ không có thông báo nào và thanh mua kẹt trạng thái cũ.
- */
-const ABOVE_ONLY_MARGIN = "0px 0px 100000px 0px"
 
 /**
  * Chọn màu/size, số lượng, trạng thái còn/hết hàng của biến thể đang chọn và nút "Thêm vào giỏ". Mặc định chọn biến thể còn

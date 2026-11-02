@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react"
 
+/**
+ * `rootMargin` mở rộng vùng quan sát xuống dưới rất xa: phần tử chỉ "không giao cắt" khi đã nằm hoàn toàn PHÍA TRÊN màn hình. Nhờ chỉ có
+ * một biên (mép trên), cuộn nhảy một phát (Home/End, cuộn nhanh) vẫn đổi trạng thái; với vùng quan sát thường, nhảy từ "chưa tới" qua
+ * "đã qua" mà không đi vào màn hình thì `IntersectionObserver` không báo gì và trạng thái bị kẹt.
+ */
+export const ABOVE_ONLY_MARGIN = "0px 0px 100000px 0px"
+
 interface InViewState {
   /** Đang nằm trong khung nhìn. */
   inView: boolean
