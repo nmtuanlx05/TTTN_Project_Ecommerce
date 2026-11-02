@@ -1,4 +1,5 @@
 import { X } from "lucide-react"
+import { CategorySelect } from "@/components/admin/category-select"
 import { SearchInput } from "@/components/admin/search-input"
 import { Button } from "@/components/ui/button"
 import {
@@ -9,7 +10,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { VISIBILITY_LABEL } from "../constants"
-import { CategorySelect } from "./category-select"
 
 const ALL = "all"
 

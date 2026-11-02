@@ -1,9 +1,9 @@
 import { Controller, useFormContext } from "react-hook-form"
+import { CategorySelect } from "@/components/admin/category-select"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { ProductFormValues } from "../schemas"
-import { CategorySelect } from "./category-select"
 import { FormSection } from "./form-section"
 import { ProductPriceField } from "./product-price-field"
 

@@ -19,17 +19,17 @@ src/
 ├─ pages/         MỎNG: chỉ ghép
 │   ├─ auth/        login ✓, register ✓
 │   ├─ admin/       dashboard ✓, users ✓, categories ✓, products ✓ (index, new, edit), orders,
-│   │               inventory, vouchers, placeholder ✓
+│   │               inventory ✓, vouchers, placeholder ✓
 │   ├─ styleguide/  ✓ trang nội bộ cho dev (route /styleguide), không thuộc admin
 │   ├─ forbidden.tsx ✓ (403), not-found.tsx ✓ (404)
 │   ├─ storefront/  home ✓ (hero + khối "sắp ra mắt"), catalog, product-detail, cart, checkout,
 │   │               order-success, my-orders, account
 ├─ features/      mỗi thực thể một thư mục theo khuôn mục 3
-│   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/
+│   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/ ✓
 │   └─ cart/ checkout/ orders/ vouchers/ payments/ account/
 ├─ components/
 │   ├─ ui/          shadcn, KHÔNG sửa ✓
-│   ├─ admin/       khung admin và thứ dùng chung nhiều tính năng ✓
+│   ├─ admin/       khung admin và thứ dùng chung nhiều tính năng ✓ (category-select ✓ — ô chọn danh mục dạng cây thụt lề, dùng ở products và inventory)
 │   ├─ storefront/  ✓ khung khách: storefront-layout, storefront-header, storefront-footer, home-hero
 │   └─ shared/      ✓ chỉ khi cả admin và storefront (kể cả trang auth) cùng dùng: theme-toggle (+ theme-cycle-button,
 │                     theme-options), password-input, user-menu, brand-logo, form-dialog (vỏ hộp thoại có form: dùng cả ở admin lẫn hộp
@@ -40,7 +40,7 @@ src/
 ├─ hooks/         hook dùng chung (use-theme ✓, use-mobile ✓, use-dialog-target ✓, use-category-options ✓ — danh mục cho ô chọn của
 │                 categories và products, use-image-upload ✓ + use-file-drop ✓ — upload ảnh và kéo-thả cho image-upload-field, use-update-avatar ✓ — lưu ảnh đại diện, use-pan-zoom ✓ +
 │                 use-pan-zoom-gestures ✓ — thu phóng và kéo ảnh cho image-lightbox, use-debounce)
-├─ lib/           hạ tầng: api-client ✓, api-error ✓, query-client ✓, format ✓, utils ✓, date-range ✓,
+├─ lib/           hạ tầng: api-client ✓, api-error ✓, query-client ✓, format ✓, utils ✓, date-range ✓, category-tree-options ✓ (danh mục phẳng → danh sách theo cây, thuần túy),
 │                 form-errors ✓, password-rules ✓ (nguồn duy nhất độ dài mật khẩu), vn-phone ✓, display-name ✓ (tên hiển thị của tài khoản),
 │                 image-rules ✓ (giới hạn và kiểm tra file ảnh theo kind), upload-image ✓ (POST /uploads/<kind>), update-avatar ✓ (PATCH /users/me/avatar),
 │                 pan-zoom ✓ (toán thu phóng và kéo ảnh, thuần túy)
@@ -63,7 +63,7 @@ Tính năng chỉ có một phía (users, dashboard, cart) để phẳng `compon
 ## 4. Luật
 1. Chiều phụ thuộc: pages → features → components → lib/hooks/types. Không đi ngược. ESLint kiểm tra.
 2. features không import lẫn nhau. Thứ hai feature cùng cần thì đưa lên components/, hooks/, types/ hoặc lib/
-   (ví dụ `PublicCategory` ở `types/category.ts` và `useCategoryOptions` ở `hooks/use-category-options.ts`, vì cả categories lẫn products cần chọn danh mục).
+   (ví dụ `PublicCategory` ở `types/category.ts` và `useCategoryOptions` ở `hooks/use-category-options.ts`, vì cả categories lẫn products cần chọn danh mục; `CategorySelect` ở `components/admin/category-select.tsx` và `buildCategoryTreeOptions` ở `lib/category-tree-options.ts` vì cả products lẫn inventory cần lọc theo danh mục).
 3. pages/ chỉ ghép: không gọi API, không có logic nghiệp vụ, thường dưới 60 dòng.
 4. Mỗi file một component, dưới khoảng 150 dòng.
 5. Chỉ features/<tên>/api.ts và lib/api-client.ts được import axios.
@@ -117,7 +117,7 @@ Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 4
 |---|---|
 | Auth ✓ | features/auth/, routes/, pages/auth/ |
 | Danh mục ✓, sản phẩm ✓ | features/categories/ ✓, features/products/ ✓ |
-| Kho | features/inventory/ |
+| Kho ✓ | features/inventory/ ✓ |
 | Giỏ hàng, đơn hàng, voucher | features/cart/, orders/, vouchers/ |
 | Storefront | pages/storefront/, components/storefront/, features/checkout/, account/ |
 | Thanh toán online | features/payments/ |
