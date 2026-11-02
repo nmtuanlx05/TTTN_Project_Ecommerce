@@ -1,6 +1,6 @@
 # Thiết kế Database
 
-Database gồm 9 bảng với 11 quan hệ khóa ngoại, dành cho MySQL 8 (InnoDB). Quy tắc chung: không xóa cứng dữ liệu tài chính (đơn hàng, voucher); hủy đơn bằng `status = CANCELLED`, vô hiệu voucher bằng `isActive = false`.
+Database gồm 10 bảng với 13 quan hệ khóa ngoại, dành cho MySQL 8 (InnoDB). Quy tắc chung: không xóa cứng dữ liệu tài chính (đơn hàng, voucher); hủy đơn bằng `status = CANCELLED`, vô hiệu voucher bằng `isActive = false`.
 
 ## 1. Quan hệ giữa các bảng
 
@@ -17,6 +17,8 @@ Database gồm 9 bảng với 11 quan hệ khóa ngoại, dành cho MySQL 8 (Inn
 | Voucher → Order | 1-N | `voucherId` | Không (đơn không dùng voucher) |
 | Order → OrderItem | 1-N | `orderId` | Có |
 | ProductVariant → OrderItem | 1-N | `variantId` | Có |
+| ProductVariant → StockMovement | 1-N | `variantId` | Có |
+| User → StockMovement (người thực hiện) | 1-N | `createdById` | Có |
 
 Quan hệ nhiều-nhiều giữa Order và ProductVariant được tách thành bảng trung gian `OrderItem` (thêm số lượng, giá), tương tự `CartItem` giữa Cart và ProductVariant.
 
@@ -33,6 +35,7 @@ Quan hệ nhiều-nhiều giữa Order và ProductVariant được tách thành 
 | Voucher | `code` | — |
 | Order | `code` | (`status`, `createdAt`); `customerPhone` |
 | OrderItem | — | — |
+| StockMovement | — | (`variantId`, `createdAt`) |
 
 InnoDB tự tạo index cho mọi cột khóa ngoại, nên các cột như `userId`, `handledById`, `voucherId`, `orderId` hay `variantId` không cần khai báo thêm và không được liệt kê ở bảng trên. Các index còn lại, ví dụ (`status`, `createdAt`) hay `customerPhone`, cần khai báo bằng `@@index`.
 
@@ -103,7 +106,7 @@ MySQL chỉ thực thi CHECK từ bản 8.0.16 trở lên. Các CHECK này là l
 
 ## 3. Đặt tên bảng
 
-Prisma mặc định tạo bảng theo tên model (`ProductVariant`). MySQL trên Linux phân biệt hoa thường ở tên bảng, nên `ProductVariant` và `productvariant` là hai tên khác nhau. Schema đặt tên bảng snake_case số nhiều bằng `@@map`, để SQL viết tay gọn và không lỗi vì hoa thường: `users`, `categories`, `products`, `product_variants`, `carts`, `cart_items`, `vouchers`, `orders`, `order_items`. Tên cột giữ nguyên camelCase như tên field (không dùng `@map` cho cột), nên SQL viết tay phải dùng đúng tên đó, ví dụ `totalAmount`.
+Prisma mặc định tạo bảng theo tên model (`ProductVariant`). MySQL trên Linux phân biệt hoa thường ở tên bảng, nên `ProductVariant` và `productvariant` là hai tên khác nhau. Schema đặt tên bảng snake_case số nhiều bằng `@@map`, để SQL viết tay gọn và không lỗi vì hoa thường: `users`, `categories`, `products`, `product_variants`, `carts`, `cart_items`, `vouchers`, `orders`, `order_items`, `stock_movements`. Tên cột giữ nguyên camelCase như tên field (không dùng `@map` cho cột), nên SQL viết tay phải dùng đúng tên đó, ví dụ `totalAmount`.
 
 ## 4. Kiểu dữ liệu
 
@@ -131,7 +134,7 @@ Schema không khai báo `onDelete` và `onUpdate`, nên Prisma dùng mặc đị
 
 | Loại FK | Cột | Hành vi |
 | --- | --- | --- |
-| Bắt buộc | `Product.categoryId`, `ProductVariant.productId`, `Cart.userId`, `CartItem.cartId`, `CartItem.variantId`, `OrderItem.orderId`, `OrderItem.variantId` | `ON DELETE RESTRICT`: không xóa được bản ghi đang được tham chiếu |
+| Bắt buộc | `Product.categoryId`, `ProductVariant.productId`, `Cart.userId`, `CartItem.cartId`, `CartItem.variantId`, `OrderItem.orderId`, `OrderItem.variantId`, `StockMovement.variantId`, `StockMovement.createdById` | `ON DELETE RESTRICT`: không xóa được bản ghi đang được tham chiếu |
 | Tùy chọn | `Category.parentId`, `Order.userId`, `Order.handledById`, `Order.voucherId` | `ON DELETE SET NULL`: xóa bản ghi cha thì cột FK của bản ghi con thành NULL |
 | Tất cả | mọi FK | `ON UPDATE CASCADE` |
 

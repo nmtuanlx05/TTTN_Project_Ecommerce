@@ -7,8 +7,8 @@ File này cung cấp hướng dẫn cho Claude Code (claude.ai/code) khi làm vi
 Đây là một NestJS starter cho backend e-commerce thời trang. Cây thư mục `src/` hiện tại chỉ là
 scaffold mặc định của Nest (`AppModule`/`AppController`/`AppService` trả về "Hello World") — các module
 nghiệp vụ chưa được xây dựng. Đã có `docker-compose.yml` (service MySQL 8), `.env.development`/`.env.production` và `prisma.config.ts`
-(Prisma 7: URL kết nối khai báo ở đây, không nằm trong schema). `prisma/schema.prisma` (9 model) đã khớp
-`docs/05` và `docs/06`; migration `init_ecommerce` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
+(Prisma 7: URL kết nối khai báo ở đây, không nằm trong schema). `prisma/schema.prisma` (10 model) đã khớp
+`docs/05` và `docs/06`; migration `init_ecommerce` và `add_stock_movements` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
 xây dựng dựa trên đó; coi nó là nguồn thông tin chính khi triển khai tính năng, không phải code `src/`
 hiện tại. Nếu `docs/05` lệch với `prisma/schema.prisma` thì schema là bản chuẩn.
 
@@ -48,7 +48,7 @@ website e-commerce thời trang gồm khu vực mua sắm cho khách và khu v�
 - `03-yeu-cau-nghiep-vu.md` — yêu cầu nghiệp vụ, mã hóa `BR-U-*` (user), `BR-A-*` (admin),
   `BR-S-*` (staff), mỗi mục gắn nhãn MVP hoặc V2
 - `04-yeu-cau-he-thong.md` — yêu cầu chức năng (`FR-*`) và phi chức năng (`NFR-*`)
-- `05-data-models.md` — mô tả schema Prisma (9 model, khớp `prisma/schema.prisma`) và quy tắc tồn kho, voucher
+- `05-data-models.md` — mô tả schema Prisma (10 model, khớp `prisma/schema.prisma`) và quy tắc tồn kho, voucher
 - `06-thiet-ke-database.md` — các vấn đề riêng của MySQL: đặt tên bảng (`@@map` sang snake_case),
   index, và các ràng buộc CHECK mà Prisma không hỗ trợ trực tiếp (thêm bằng cách sửa tay migration
   tạo từ `prisma migrate dev --create-only`)
@@ -58,8 +58,8 @@ website e-commerce thời trang gồm khu vực mua sắm cho khách và khu v�
 Ba role (`ADMIN`, `STAFF`, `CUSTOMER`) cộng với guest checkout (mua không cần đăng ký). Sơ đồ thực
 thể cốt lõi: `Category → Product → ProductVariant` (tồn kho được tính theo từng biến thể — size ×
 màu — không tính theo sản phẩm), `Cart/CartItem`, `Order/OrderItem`, `Voucher`. Staff nhập kho bằng
-cách cộng trực tiếp vào `ProductVariant.stock`; không có bảng lịch sử nhập/xuất kho hay lịch sử đổi
-trạng thái đơn (để V2). `Order` có hai quan hệ tới `User`: `userId` (`"OrderCustomer"`, khách đặt đơn)
+cách cộng trực tiếp vào `ProductVariant.stock` và mỗi lần đổi `stock` ghi một dòng `StockMovement` (module Kho);
+không có lịch sử đổi trạng thái đơn (để V2). `Order` có hai quan hệ tới `User`: `userId` (`"OrderCustomer"`, khách đặt đơn)
 và `handledById` (`"OrderHandler"`, người phụ trách: Staff hoặc Admin).
 
 Các quy tắc mà bất kỳ triển khai nào cũng phải giữ nguyên:
@@ -115,13 +115,13 @@ Quyết định nghiệp vụ quan trọng (không tự ý thay đổi):
 - Đơn online quá 30 phút chưa thanh toán thì tự hủy và nhả `reserved`.
 - Đơn đã thanh toán: Staff chỉ tạo yêu cầu hủy, Admin duyệt.
 - Không xóa cứng Order, OrderItem, Voucher.
-- Staff nhập kho cộng trực tiếp vào `stock`, không lưu lịch sử kho (để V2).
+- Staff nhập kho cộng trực tiếp vào `stock`; mỗi lần đổi `stock` ghi một dòng `StockMovement` (giữ/nhả `reserved` không ghi).
 - Voucher: mỗi đơn tối đa một mã, giảm trên `subtotal`, hủy đơn thì hoàn lượt (`usedCount - 1`).
 - Tiền là VND, kiểu Int.
 
-Phạm vi MVP: 9 model (User, Category, Product, ProductVariant, Cart, CartItem,
-Order, OrderItem, Voucher).
-Để V2: Address, Review, Supplier, AuditLog, InventoryTransaction (lịch sử kho).
+Phạm vi MVP: 10 model (User, Category, Product, ProductVariant, Cart, CartItem,
+Order, OrderItem, Voucher, StockMovement).
+Để V2: Address, Review, Supplier, AuditLog.
 
 ## Tài liệu dự án (đọc khi cần)
 

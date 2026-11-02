@@ -1,6 +1,6 @@
 # Data Models
 
-Schema chốt cho MVP gồm 9 model và 5 enum, viết bằng Prisma. Bốn quyết định lớn: tách `ProductVariant` khỏi `Product`; giữ hàng bằng `reserved`; `OrderItem` lưu snapshot; voucher giảm trên `subtotal` và số tiền giảm được lưu vào `Order.discountAmount`. Staff nhập kho bằng cách cộng trực tiếp vào `ProductVariant.stock`, không lưu lịch sử nhập/xuất kho (để V2).
+Schema chốt cho MVP gồm 10 model và 6 enum, viết bằng Prisma. Bốn quyết định lớn: tách `ProductVariant` khỏi `Product`; giữ hàng bằng `reserved`; `OrderItem` lưu snapshot; voucher giảm trên `subtotal` và số tiền giảm được lưu vào `Order.discountAmount`. Staff nhập kho bằng cách cộng trực tiếp vào `ProductVariant.stock`; mỗi lần đổi `stock` ghi một dòng `StockMovement`.
 
 > Các khối schema dưới đây khớp với `prisma/schema.prisma`. Nếu hai bên lệch nhau, `prisma/schema.prisma` là bản chuẩn.
 
@@ -17,7 +17,7 @@ Schema chốt cho MVP gồm 9 model và 5 enum, viết bằng Prisma. Bốn quy�
 | `Order` | Thông tin giao hàng, tổng tiền, trạng thái | Thêm mã đơn, phí ship, giảm giá (`voucherId`, `discountAmount`), phương thức và trạng thái thanh toán, mã giao dịch, hạn thanh toán, lý do hủy, `handledById` | Thanh toán online, voucher và xử lý đơn |
 | `OrderItem` | Trỏ tới `Product`, snapshot giá | Trỏ tới `ProductVariant`, snapshot thêm tên, SKU, size, màu | Đơn cũ không đổi khi sản phẩm bị sửa |
 | `OrderStatusHistory` | Chưa có | Không đưa vào MVP | Không lưu lịch sử đổi trạng thái; `Order.handledById` ghi người phụ trách (Staff hoặc Admin) |
-| `InventoryTransaction` | Chưa có | Không đưa vào MVP | Staff nhập kho cộng trực tiếp vào `ProductVariant.stock`; lịch sử kho để V2 |
+| `StockMovement` | Chưa có | Thêm (thay cho `InventoryTransaction` dự kiến ở V2) | Lịch sử nhập/xuất/điều chỉnh `stock`; `reserved` không ghi; loại `SALE`/`RETURN` thêm ở bước đơn hàng |
 | Giảm giá | | Thêm `Voucher`, enum `DiscountType`, `Order.voucherId`, `Order.discountAmount` | Voucher thuộc MVP |
 
 ## Quan hệ giữa các model
@@ -78,6 +78,7 @@ model User {
   cart          Cart?
   orders        Order[]  @relation("OrderCustomer")   // đơn do user này đặt
   handledOrders Order[]  @relation("OrderHandler")    // đơn user này (Staff) phụ trách
+  stockMovements StockMovement[]                      // các lần đổi tồn kho do user này thực hiện
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -131,9 +132,36 @@ model ProductVariant {
   isActive   Boolean     @default(true)
   cartItems  CartItem[]
   orderItems OrderItem[]
+  stockMovements StockMovement[]
 
   @@unique([productId, size, color])
   @@map("product_variants")
+}
+
+// Lịch sử thay đổi tồn thực tế (stock). Giữ/nhả chỗ (reserved) không ghi.
+// Thêm giá trị enum mới (SALE, RETURN...) chỉ thêm vào CUỐI, không đổi thứ tự hay xóa.
+enum StockMovementType {
+  IMPORT   // nhập kho
+  EXPORT   // xuất kho thủ công (hỏng, mất, khác)
+  ADJUST   // điều chỉnh theo số đếm thực tế
+}
+
+model StockMovement {
+  id          Int               @id @default(autoincrement())
+  variantId   Int
+  variant     ProductVariant    @relation(fields: [variantId], references: [id])
+  type        StockMovementType
+  quantity    Int               // delta có dấu: nhập +n, xuất -n, điều chỉnh = số đếm - tồn cũ
+  stockBefore Int
+  stockAfter  Int
+  reason      String?           // EXPORT: mã DAMAGED/LOST/OTHER; ADJUST: lý do tự do; IMPORT: null
+  note        String?           @db.VarChar(500)
+  createdById Int
+  createdBy   User              @relation(fields: [createdById], references: [id])
+  createdAt   DateTime          @default(now())
+
+  @@index([variantId, createdAt])
+  @@map("stock_movements")
 }
 ```
 
@@ -242,7 +270,7 @@ model OrderItem {
 
 ## Quy tắc tồn kho
 
-Tồn khả dụng của một biến thể bằng `stock - reserved`. Bảng dưới cho thấy mỗi sự kiện tác động thế nào lên hai cột này (n là số lượng của biến thể trong sự kiện). Không có bảng lịch sử: `stock` được cập nhật trực tiếp trên `ProductVariant`; lịch sử nhập/xuất/điều chỉnh kho để V2.
+Tồn khả dụng của một biến thể bằng `stock - reserved`. Bảng dưới cho thấy mỗi sự kiện tác động thế nào lên hai cột này (n là số lượng của biến thể trong sự kiện). `stock` được cập nhật trực tiếp trên `ProductVariant`; mỗi lần đổi `stock` ghi thêm một dòng `StockMovement` (nhập, xuất thủ công, điều chỉnh) trong cùng transaction. Thay đổi `reserved` không ghi movement.
 
 | Sự kiện | `stock` | `reserved` |
 | --- | --- | --- |

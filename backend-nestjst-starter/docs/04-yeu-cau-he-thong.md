@@ -1,6 +1,6 @@
 # Yêu cầu hệ thống
 
-Hệ thống có 38 yêu cầu chức năng (trong đó FR-27 để V2) chia theo 11 module và 25 yêu cầu phi chức năng. Các con số phi chức năng là mục tiêu đề xuất cho shop quy mô vừa, chỉnh theo thực tế khi triển khai.
+Hệ thống có 38 yêu cầu chức năng chia theo 11 module và 25 yêu cầu phi chức năng. Các con số phi chức năng là mục tiêu đề xuất cho shop quy mô vừa, chỉnh theo thực tế khi triển khai.
 
 ## 1. Yêu cầu chức năng
 
@@ -32,7 +32,7 @@ Hệ thống có 38 yêu cầu chức năng (trong đó FR-27 để V2) chia the
 | | FR-24 | Khi chuyển SHIPPING: xuất kho, giảm `stock` và `reserved` |
 | | FR-25 | Khi đơn RETURNED và kiểm hàng đạt: cộng lại `stock` |
 | Quản lý kho | FR-26 | Nhập kho, điều chỉnh tồn bằng cách cộng/trừ trực tiếp `ProductVariant.stock`; không cho `stock` âm |
-| | FR-27 | (V2) Lưu lịch sử nhập, xuất, điều chỉnh kho: mỗi giao dịch có `stockAfter` và người thực hiện; không cho sửa hoặc xóa giao dịch đã ghi |
+| | FR-27 | Lưu lịch sử nhập, xuất, điều chỉnh kho (`StockMovement`): mỗi giao dịch có `stockAfter` và người thực hiện; không cho sửa hoặc xóa giao dịch đã ghi |
 | | FR-28 | Cảnh báo biến thể dưới ngưỡng tồn tối thiểu |
 | Quản lý user | FR-29 | Danh sách, tìm kiếm khách; xem chi tiết và lịch sử đơn |
 | | FR-30 | Admin khóa, mở khóa tài khoản; tạo, sửa Staff |
@@ -54,7 +54,7 @@ Hệ thống có 38 yêu cầu chức năng (trong đó FR-27 để V2) chia the
 | | NFR-03 | Nén, resize ảnh, lazy loading; dùng CDN nếu có |
 | Đồng thời và toàn vẹn dữ liệu | NFR-04 | Xử lý race condition khi hai khách mua cùng món cuối cùng (transaction, cập nhật có điều kiện), không bán vượt tồn |
 | | NFR-05 | Thao tác nhiều bước (đặt đơn, xuất kho, hủy đơn) phải nguyên tử |
-| | NFR-06 | Dữ liệu tài chính có dấu vết kiểm toán (đơn hàng lưu snapshot giá và `discountAmount`), không xóa cứng đơn hàng. Lịch sử tồn kho để V2 |
+| | NFR-06 | Dữ liệu tài chính có dấu vết kiểm toán (đơn hàng lưu snapshot giá và `discountAmount`), không xóa cứng đơn hàng. Mỗi lần đổi tồn ghi `StockMovement` (không sửa, không xóa) |
 | Bảo mật | NFR-07 | HTTPS toàn bộ; cookie `HttpOnly`, `Secure` hoặc token có thời hạn |
 | | NFR-08 | Chống SQL injection (Prisma tham số hóa), XSS, CSRF |
 | | NFR-09 | Kiểm tra phân quyền ở server cho mọi API quản trị, không chỉ ẩn nút trên giao diện |
@@ -65,7 +65,7 @@ Hệ thống có 38 yêu cầu chức năng (trong đó FR-27 để V2) chia the
 | Sẵn sàng và sao lưu | NFR-14 | Uptime mục tiêu 99% (nâng sau nếu cần) |
 | | NFR-15 | Sao lưu database hằng ngày, thử khôi phục định kỳ |
 | Khả năng mở rộng | NFR-16 | Kiến trúc tách lớp (UI, API, DB) để dễ mở rộng; API stateless |
-| | NFR-17 | Schema cho phép bổ sung đa kho, review, lịch sử kho mà không phải làm lại |
+| | NFR-17 | Schema cho phép bổ sung đa kho, review mà không phải làm lại |
 | Khả dụng (UX) | NFR-18 | Responsive, ưu tiên mobile vì đa số khách thời trang mua trên điện thoại |
 | | NFR-19 | Checkout tối đa 3 bước; thông báo lỗi rõ ràng bằng tiếng Việt |
 | | NFR-20 | Giao diện quản trị dùng được trên desktop; thao tác đơn hàng không quá 3 click |
