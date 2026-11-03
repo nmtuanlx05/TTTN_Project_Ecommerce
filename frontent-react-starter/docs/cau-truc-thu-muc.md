@@ -22,7 +22,7 @@ src/
 │   │               inventory ✓, vouchers, placeholder ✓
 │   ├─ styleguide/  ✓ trang nội bộ cho dev (route /styleguide), không thuộc admin
 │   ├─ forbidden.tsx ✓ (403), not-found.tsx ✓ (404)
-│   ├─ storefront/  home ✓ (hero, danh mục, sản phẩm mới, tuyên bố), catalog ✓ (/products), product-detail ✓ (/products/:slug), not-found ✓ (404 trong khung khách),
+│   ├─ storefront/  home ✓ (hero, danh mục, sản phẩm mới, tuyên bố), catalog ✓ (/products), product-detail ✓ (/products/:slug), stores ✓ (/dia-chi), not-found ✓ (404 trong khung khách),
 │   │               cart, checkout, order-success, my-orders, account
 ├─ features/      mỗi thực thể một thư mục theo khuôn mục 3
 │   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/ ✓ catalog/ ✓ (dữ liệu công khai của storefront: danh sách và chi tiết sản phẩm)
@@ -31,10 +31,12 @@ src/
 │   ├─ ui/          shadcn, KHÔNG sửa ✓
 │   ├─ admin/       khung admin và thứ dùng chung nhiều tính năng ✓ (category-select ✓ — ô chọn danh mục dạng cây thụt lề, dùng ở products và inventory)
 │   ├─ storefront/  ✓ khung khách và phần dựng sẵn dùng ở nhiều trang storefront: storefront-layout, storefront-header
-│   │                 (+ header-session, header-account, header-nav (+ header-nav-panel: bảng thả xuống danh mục từ `lg`), mobile-nav-drawer, mobile-category-list, mobile-account, search-panel,
+│   │                 (+ header-session, header-account, header-nav (+ header-nav-link, header-nav-panel: bảng toàn chiều rộng, header-nav-styles — thanh điều hướng và mega menu từ `xl`),
+│   │                 mobile-nav-drawer (+ mobile-nav-list, mobile-nav-accordion, mobile-nav-styles — ngăn kéo dưới `xl`), mobile-account, search-panel,
 │   │                 cart-button), storefront-footer, storefront-drawer (ngăn kéo/khung trượt dựng trên Base UI Dialog), skip-link,
 │   │                 breadcrumbs, pagination (số trang, dạng liên kết), product-image (khung 3:4, shimmer, fade, ảnh dự phòng),
-│   │                 reveal (hiện dần khi cuộn), state-message (rỗng/lỗi/404), section-heading, category-tiles (ô chữ danh mục trang chủ), brand-statement
+│   │                 reveal (hiện dần khi cuộn), state-message (rỗng/lỗi/404), section-heading, category-tiles (ô chữ danh mục trang chủ), brand-statement,
+│   │                 store-list (+ store-entry) — danh sách cửa hàng của trang /dia-chi
 │   └─ shared/      ✓ chỉ khi cả admin và storefront (kể cả trang auth) cùng dùng: theme-toggle (+ theme-cycle-button,
 │                     theme-options), password-input, user-menu, brand-logo, route-fallback ✓ (vòng quay khi tải trang lazy), form-dialog (vỏ hộp thoại có form: dùng cả ở admin lẫn hộp
 │                     thoại trong user-menu), image-upload-field (+ image-preview, image-upload-progress,
@@ -45,13 +47,14 @@ src/
 │                 categories và products, use-image-upload ✓ + use-file-drop ✓ — upload ảnh và kéo-thả cho image-upload-field, use-update-avatar ✓ — lưu ảnh đại diện, use-pan-zoom ✓ +
 │                 use-pan-zoom-gestures ✓ — thu phóng và kéo ảnh cho image-lightbox, use-debounce,
 │                 use-category-tree ✓ — cây danh mục công khai cho header/footer/catalog, use-document-title ✓, use-in-view ✓ — IntersectionObserver,
-│                 use-open-until-navigation ✓ — ngăn kéo menu/khung tìm kiếm tự đóng khi đổi pathname, use-scroll-restoration ✓ — cuộn lên đầu khi đổi trang
+│                 use-open-until-navigation ✓ — ngăn kéo menu/khung tìm kiếm tự đóng khi đổi pathname, use-mega-menu ✓ — trạng thái mở/đóng, hẹn giờ hover và bấm ra ngoài của bảng điều hướng ở header, use-scroll-restoration ✓ — cuộn lên đầu khi đổi trang
 │                 và khôi phục vị trí khi Back/F5 của storefront)
 ├─ lib/           hạ tầng: api-client ✓, api-error ✓, query-client ✓, format ✓, utils ✓, date-range ✓, category-tree-options ✓ (danh mục phẳng → danh sách theo cây, thuần túy),
 │                 form-errors ✓, password-rules ✓ (nguồn duy nhất độ dài mật khẩu), vn-phone ✓, display-name ✓ (tên hiển thị của tài khoản),
 │                 image-rules ✓ (giới hạn và kiểm tra file ảnh theo kind), upload-image ✓ (POST /uploads/<kind>), update-avatar ✓ (PATCH /users/me/avatar),
 │                 pan-zoom ✓ (toán thu phóng và kéo ảnh, thuần túy), store-info ✓ (nội dung cửa hàng: tên, khẩu hiệu, liên hệ — MỘT file duy nhất),
-│                 category-tree ✓ (danh mục phẳng → cây, tra slug, chuỗi cha; thuần túy)
+│                 category-tree ✓ (danh mục phẳng → cây, tra slug, chuỗi cha; thuần túy),
+│                 nav-items ✓ (cấu hình `STORE.navItems` + cây danh mục → mục điều hướng, dòng của bảng, mục đang xem; thuần túy)
 ├─ types/         kiểu dùng chung (api.ts ✓, user.ts ✓ — Role và User, dùng ở auth, users, components/admin; category.ts ✓ — PublicCategory,
 │                 dùng ở categories và products; upload.ts ✓ — ImageUploadKind)
 └─ assets/        ảnh, font nội bộ

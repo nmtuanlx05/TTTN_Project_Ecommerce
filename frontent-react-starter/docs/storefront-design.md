@@ -39,7 +39,7 @@ Font: Archivo (tiêu đề, logo, khung tìm kiếm) và Be Vietnam Pro (thân b
 |---|---|
 | Danh sách | `text-h1` hoa (tiêu đề trang) · `text-body-sm` (tên, giá, bộ lọc, chip, breadcrumb) · `text-overline` hoa giãn chữ (tên nhóm lọc, chân trang) |
 | Chi tiết | `text-h2` (tên, tiêu đề khối liên quan) · `text-body` (giá, mô tả) · `text-body-sm` (chip, nhãn, trạng thái) · `text-overline` (nhãn "Màu sắc", "Kích thước") |
-| Khung chung | `text-body-sm` (menu, liên kết chân trang) · `text-h3` (khung tìm kiếm, tiêu đề ngăn kéo) |
+| Khung chung | `text-body-sm` hoa giãn chữ (mục điều hướng, dòng trong bảng; danh mục cháu `text-caption`), `text-body-sm` (liên kết chân trang) · `text-h3` (khung tìm kiếm, tiêu đề ngăn kéo) |
 | Trang chủ | `text-display` hoa (hero) · `text-body-lg` (mô tả hero) · `text-h2` (tiêu đề khối, tên ô danh mục) · `text-h1` (dải tuyên bố) · `text-body-sm` (thẻ sản phẩm, liên kết "Xem tất cả") |
 
 `text-display` chỉ dùng cho hero trang chủ. Nhãn `overline` chỉ ở chỗ phụ (tên nhóm lọc, nhãn nhóm chip), không đặt trên mọi tiêu đề.
@@ -120,20 +120,44 @@ Dựng trên Base UI Dialog (`StorefrontDrawer`), không dùng `ui/sheet`. Modal
 
 `FilterDrawer` luôn phải được dựng (không nằm sau nhánh loading/lỗi/rỗng) để không mất trạng thái mở.
 
-## 9b. Menu danh mục ở header (từ `lg`)
+## 9b. Điều hướng ở header (mega menu, từ `xl`)
 
-Thanh điều hướng chỉ có **một mục** "Tất cả sản phẩm": chữ là liên kết thật tới `/products`, kèm **nút mũi tên riêng** (`aria-expanded`, `aria-controls`). Không có
-liên kết danh mục nằm ngang. Dưới `lg` vẫn là ngăn kéo menu (mục 9). Bảng thả xuống (`HeaderNavPanel`):
+**Điểm chuyển 1280px (`xl`)**, không phải `lg`. Đã đo: thanh điều hướng đủ 6 mục (Tất cả sản phẩm, Áo, Quần, Phụ kiện, Quà tặng, Địa chỉ) rộng ~613px; cộng logo 147px, khoảng cách 40px, nhóm biểu tượng 348px và lề 48px thì cần tối thiểu ~1195px, nên không vừa ở 1024px (iPad ngang dùng ngăn kéo) và 1280px là mốc Tailwind gần nhất vừa thoải mái. Đổi chữ nhãn hay thêm mục thì đo lại.
 
-- Dòng đầu "Xem tất cả sản phẩm" → `/products`; sau đó toàn bộ cây danh mục theo chiều dọc, danh mục con ngay dưới cha, thụt vào, chữ nhỏ hơn (`text-caption`), cùng hiện một lúc
-  (không có menu con bay sang bên cạnh). Mục đang xem: `aria-current="page"` + chữ đậm + gạch chân (không chỉ màu). Mỗi dòng cao ≥ 44px; hover/focus đổi sang `ink` + gạch chân.
-- Hình thức: nền `canvas` đặc, viền `border-subtle` 1px, `rounded-md` (= `radius-surface`), không đổ bóng, rộng 256px (`w-64`), canh trái theo mục, sát dưới header; cao tối đa
-  `100dvh - header - 2rem` rồi cuộn bên trong. Hiện bằng mờ dần + trượt xuống nhẹ (`--motion-base`), tắt khi giảm chuyển động.
-- Hành vi: chuột (`pointerType` mouse) mở sau 100ms, đóng sau 150ms khi rời. Bảng là **con** của vùng hover cao bằng header nên rê chéo từ nút xuống bảng không có khe hở. Cảm ứng không có hover nên mở
-  bằng chạm vào mũi tên. Bàn phím: Enter/Space trên mũi tên bật/tắt; ↓ từ mũi tên mở và vào dòng đầu; ↑/↓/Home/End di chuyển (↑ ở dòng đầu về mũi tên); Esc đóng và trả focus về mũi tên; Tab ra khỏi
-  menu thì đóng. Đóng khi chọn liên kết (kể cả chỉ đổi `?category=`), khi pathname đổi (`useOpenUntilNavigation`), khi bấm ra ngoài.
-- Cây danh mục đang tải hoặc lỗi: chỉ còn liên kết "Tất cả sản phẩm", không mũi tên, không bảng.
-- Tự dựng (state + hẹn giờ) thay vì Base UI NavigationMenu/Popover: cả hai coi trigger là một nút, không hợp với "chữ là liên kết + mũi tên là nút riêng"; hover-open của Popover chỉ gắn vào trigger và popup ở Portal nên dễ có khe hở khi rê chéo.
+**Bố cục từ `xl`**: logo `BrandLogo` bên trái; thanh điều hướng và nhóm biểu tượng (tìm kiếm, đổi sáng/tối, giỏ hàng, đăng nhập hoặc `UserMenu`) gom về BÊN PHẢI, thanh điều hướng sát bên trái nhóm biểu tượng, cách đúng 40px (`xl:ml-10`; hàng flex `xl:gap-0`). Dưới `xl`: nút menu, wordmark, tìm kiếm, giỏ hàng, và ngăn kéo (mục 9b-2).
+
+**Mục điều hướng** cấu hình ở `STORE.navItems` (`lib/store-info.ts`), theo thứ tự: Tất cả sản phẩm, Áo, Quần, Phụ kiện, Quà tặng, Địa chỉ. Không có "Trang chủ" (logo về trang chủ).
+Mỗi mục là `{ label, href }` (liên kết thường) hoặc `{ label, categorySlug }` (gắn danh mục). Nhãn luôn lấy từ `label`, không từ tên danh mục. Mục danh mục chỉ hiện khi slug có trong cây danh mục
+(`resolveNavItems` ở `lib/nav-items.ts`): danh mục thiếu thì ẩn mục, không tạo liên kết chết, không tạo dữ liệu. Mục có danh mục con mở bảng; không có con là liên kết thường. "Tất cả sản phẩm"
+là liên kết thường tới `/products`, không có bảng. Không phụ thuộc việc danh mục có sản phẩm hay chưa.
+
+**Kiểu chữ mục**: hoa, giãn 0.1em (`tracking-widest`), `text-body-sm` (14px), `font-medium`, màu `ink`, cách nhau 32px (`gap-8`). Hover, focus, đang mở (`aria-expanded`) và đang xem (`aria-current="page"`) đều gạch chân 1px
+(`header-nav-styles.ts`), chuyển theo `--motion-fast`. Không đổi màu chữ. Đang xem: "Tất cả sản phẩm" chỉ khi ở `/products` KHÔNG có `?category=`; có `?category=<slug>` thì đánh dấu mục danh mục chứa slug đó (chính nó hoặc tổ tiên);
+trang chi tiết sản phẩm không đánh dấu mục nào (`isNavItemActive`).
+
+**Bảng toàn chiều rộng** (`HeaderNavPanel`): nằm ngay dưới header dính, rộng hết màn hình, nền `canvas` đặc, kẻ `border-subtle` ở trên và dưới, không đổ bóng, không lớp phủ làm tối trang; nội dung trong container `max-w-7xl`.
+Cao tối đa `70dvh` rồi cuộn bên trong. Danh sách dọc: dòng đầu "Tất cả <mục>" → `/products?category=<slug>`, rồi danh mục con trực tiếp, cháu thụt vào ngay dưới cha và nhỏ hơn (`text-caption`); tối đa 3 cấp tính cả mục cha, sâu hơn bỏ qua (`panelRows`);
+thứ tự theo API (theo tên), không tự đổi. Mỗi dòng cao ≥ 44px, hoa, giãn chữ, gạch chân khi hover/focus, `aria-current` cho danh mục đang xem.
+- **Cột căn trái cố định**: danh sách căn theo mép trái của THANH ĐIỀU HƯỚNG, một vị trí duy nhất cho mọi mục, KHÔNG bám theo mép trái của từng mục cha, nên khi rê từ mục này sang mục khác danh sách không nhảy ngang. Vị trí đo bằng `useLayoutEffect`
+  (đo lại khi đổi cỡ cửa sổ) rồi ghi vào biến `--nav-offset`; class căn lề nằm trong hằng `LIST_ALIGN` (`ml-(--nav-offset)`), muốn căn giữa sau này chỉ đổi thành `mx-auto`.
+- Hiện bằng mờ dần + trượt xuống nhẹ (`--motion-base`), tắt khi giảm chuyển động. Chỉ có MỘT bảng dùng chung: đổi mục thì chỉ nội dung đổi (mờ dần nhanh, `--motion-fast`), bảng không đóng rồi mở lại nên không nháy.
+  Hai lớp animate-in phải kèm `transition-none`: `duration-*` của animate-in còn đặt `transition-duration`, không tắt thì `margin-left` căn lề chạy transition và danh sách trượt ngang lúc hiện.
+
+**Hành vi** (`useMegaMenu` + `HeaderNav`; tự dựng, không dùng Base UI NavigationMenu vì trigger của nó là nút, còn ở đây chữ phải là liên kết điều hướng, chạm lần đầu chỉ mở bảng, và bảng căn theo mép thanh điều hướng thay vì theo từng mục):
+- **Chuột**: rê vào mục có bảng thì mở sau 100ms; rời khỏi vùng (mục + bảng) thì đóng sau 150ms; rê sang mục không có bảng thì đóng. Bảng là CON của `<nav>`, nav cao đúng bằng header và bảng dính liền dưới header nên rê chéo từ mục xuống bảng
+  không có khe hở. `<nav>` không được đặt `position` (để bảng `absolute inset-x-0 top-full` tính theo header dính). Bấm mục thì điều hướng tới `/products?category=<slug>`.
+- **Bàn phím**: Tab tới mục (liên kết), Enter điều hướng; ↓ mở bảng và đưa focus vào dòng đầu; ↑/↓/Home/End di chuyển giữa các dòng (↑ ở dòng đầu về mục cha, Shift+Tab ở dòng đầu cũng vậy); Esc đóng và trả focus về mục cha (Esc cũng đóng bảng mở bằng chuột);
+  Tab ra khỏi menu hoặc sang mục khác thì đóng. `aria-haspopup`, `aria-expanded`, `aria-controls` trên mục có bảng; id bảng chỉ tồn tại khi bảng của mục đó đang mở.
+- **Cảm ứng** (màn hình cảm ứng khổ lớn từ 1280px; nhận biết bằng `pointerType` của lần bấm, không bằng media query): chạm lần đầu vào mục có bảng thì MỞ bảng, không điều hướng; chạm lần hai hoặc chạm "Tất cả <mục>" mới đi; chạm mục khác thì chuyển bảng; chạm ra ngoài thì đóng.
+- **Đóng khi**: chọn một liên kết, vị trí đổi (`location.key`: đổi đường dẫn lẫn `?category=`, kể cả Back/Forward), bấm ra ngoài (kể cả bấm nút tìm kiếm), Esc, mở khung tìm kiếm.
+- **Đang tải / lỗi cây danh mục**: các mục danh mục chưa hiện, chỉ có "Tất cả sản phẩm" và "Địa chỉ"; chiều cao header không đổi (81px). Hạn chế đã biết: thanh điều hướng căn phải nên khi các mục danh mục xuất hiện lần đầu,
+  "Tất cả sản phẩm" dịch sang trái (cây danh mục được cache nên chỉ ở lần tải đầu của phiên).
+
+## 9b-2. Ngăn kéo menu (dưới `xl`)
+
+`MobileNavDrawer` → `MobileNavList`: cùng `STORE.navItems`, cùng thứ tự: "Tất cả sản phẩm" ở hàng đầu, rồi Áo, Quần, Phụ kiện, Quà tặng (mục có con là accordion `MobileNavAccordion`: nút `aria-expanded`/`aria-controls`, mỗi lúc mở một mục,
+vùng thu gọn `inert`; bên trong có "Tất cả <mục>" và danh mục con, cháu thụt vào), rồi "Địa chỉ"; dưới cùng là khối tài khoản và `ThemeToggle`. Kiểu chữ hàng cùng thanh điều hướng (hoa, giãn chữ). Dòng đang xem có `aria-current` + nền hover;
+mục chứa danh mục đang xem tự mở sẵn và nhãn gạch chân. Chân trang có liên kết "Tất cả sản phẩm" và "Địa chỉ cửa hàng".
 
 ## 10. Trạng thái bắt buộc
 
@@ -160,9 +184,12 @@ Hiện khi nút "Thêm vào giỏ" chính đã cuộn lên trên khỏi màn hì
 
 ## 13. Nội dung
 
-`src/lib/store-info.ts` là nơi duy nhất cho tên, khẩu hiệu, mô tả, dải tuyên bố, nhãn khối trang chủ, ảnh hero tĩnh và liên hệ. **Nội dung mẫu, chờ chủ cửa hàng xác nhận**: khẩu hiệu "Thời trang tối giản cho mọi ngày",
+`src/lib/store-info.ts` là nơi duy nhất cho tên, khẩu hiệu, mô tả, dải tuyên bố, nhãn khối trang chủ, ảnh hero tĩnh, mục điều hướng (`navItems`), danh sách cửa hàng (`stores`) và liên hệ. **Nội dung mẫu, chờ chủ cửa hàng xác nhận**: khẩu hiệu "Thời trang tối giản cho mọi ngày",
 mô tả "Những thiết kế đơn sắc, dễ phối.", tuyên bố "Ít màu. Ít chi tiết. Nhiều chỗ cho chính bạn.", nhãn "Khám phá cửa hàng", "Mua theo danh mục", "Sản phẩm mới", "Xem tất cả". Liên hệ chưa có (footer ghi
 "Thông tin liên hệ đang được cập nhật"). Không bịa cam kết kinh doanh (miễn phí vận chuyển, đổi trả, chất lượng...). Giọng ngắn gọn, tự tin, tiếng Việt.
+
+`STORE.stores` (`{ name, address, phone?, hours?, mapUrl? }`) cho trang `/dia-chi` (`pages/storefront/stores`): ĐỂ RỖNG cho tới khi chủ cửa hàng cung cấp thông tin thật; rỗng thì hiện `StateMessage` "Thông tin cửa hàng đang được cập nhật". Mỗi cửa hàng là một khối
+(`StoreEntry`: tên `h2`, địa chỉ, điện thoại `tel:`, giờ mở cửa, "Xem bản đồ" mở tab mới và chỉ dựng khi `mapUrl` là http/https). Trang có một `h1` "Địa chỉ" và tiêu đề tab. Chân trang có liên kết "Địa chỉ cửa hàng" sang trang này.
 
 ## 14. Trang chủ
 

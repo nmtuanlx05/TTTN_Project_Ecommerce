@@ -2,6 +2,7 @@ import { Link } from "react-router-dom"
 import { BrandLogo } from "@/components/shared/brand-logo"
 import type { CategoryNode } from "@/lib/category-tree"
 import { STORE } from "@/lib/store-info"
+import { cn } from "@/lib/utils"
 
 const LINK =
   "inline-flex min-h-control min-w-control items-center text-body-sm text-ink-muted underline decoration-transparent decoration-1 underline-offset-4 transition-colors duration-(--motion-fast) ease-smooth hover:text-ink hover:decoration-ink"
@@ -52,6 +53,9 @@ function StorefrontFooter({ categories = [] }: { categories?: CategoryNode[] }) 
             ) : (
               <p className="text-body-sm text-ink-muted">{STORE.contactPending}</p>
             )}
+            <Link to="/dia-chi" className={cn(LINK, "self-start")}>
+              Địa chỉ cửa hàng
+            </Link>
           </div>
         </div>
 

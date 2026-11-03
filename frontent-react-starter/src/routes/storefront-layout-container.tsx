@@ -42,7 +42,7 @@ function StorefrontLayoutContainer() {
       header={
         <StorefrontHeader
           session={session}
-          categories={roots}
+          categoryTree={tree}
           // TẠM: chưa có giỏ hàng, xem `useRequireLogin`.
           onCartClick={() => requireLogin()}
         />

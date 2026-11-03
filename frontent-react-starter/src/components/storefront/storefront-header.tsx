@@ -1,7 +1,10 @@
+import { useMemo } from "react"
 import { BrandLogo } from "@/components/shared/brand-logo"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { useInView } from "@/hooks/use-in-view"
-import type { CategoryNode } from "@/lib/category-tree"
+import type { CategoryTree } from "@/lib/category-tree"
+import { resolveNavItems } from "@/lib/nav-items"
+import { STORE } from "@/lib/store-info"
 import { cn } from "@/lib/utils"
 import { CartButton } from "./cart-button"
 import { HeaderAccount } from "./header-account"
@@ -14,21 +17,23 @@ import { SearchPanel } from "./search-panel"
  * Header cửa hàng, dính khi cuộn. Ở đầu trang nền liền với trang; cuộn quá vài px thì nền mờ nhẹ và hiện đường kẻ mảnh
  * (phát hiện bằng một phần tử mốc cao 8px ở đầu tài liệu, không dùng scroll listener).
  *
- * Từ `lg`: logo, menu danh mục, tìm kiếm, đổi sáng/tối, giỏ hàng, tài khoản. Dưới `lg`: nút menu, logo, tìm kiếm, giỏ hàng;
- * danh mục, tài khoản và đổi sáng/tối nằm trong ngăn kéo (không đủ chỗ ở 360px).
+ * Từ `xl` (1280px): logo bên trái; thanh điều hướng (`STORE.navItems`) và nhóm biểu tượng (tìm kiếm, đổi sáng/tối, giỏ hàng, tài khoản)
+ * gom về bên phải, thanh điều hướng cách nhóm biểu tượng 40px. Dưới `xl`: nút menu, logo, tìm kiếm, giỏ hàng; điều hướng, tài khoản
+ * và đổi sáng/tối nằm trong ngăn kéo (thanh điều hướng đầy đủ không vừa ở 1024px).
  */
 function StorefrontHeader({
   session,
-  categories = [],
+  categoryTree = null,
   onCartClick,
 }: {
   session: HeaderSession
-  /** Danh mục gốc (đã dựng cây). Chưa có thì menu chỉ còn "Tất cả sản phẩm". */
-  categories?: CategoryNode[]
+  /** Cây danh mục. Chưa có (đang tải hoặc lỗi) thì các mục danh mục ẩn, chỉ còn mục liên kết thường. */
+  categoryTree?: CategoryTree | null
   onCartClick?: () => void
 }) {
   const { ref, inView } = useInView<HTMLDivElement>({ initialInView: true })
   const scrolled = !inView
+  const navItems = useMemo(() => resolveNavItems(STORE.navItems, categoryTree), [categoryTree])
 
   return (
     <>
@@ -41,17 +46,17 @@ function StorefrontHeader({
             : "border-transparent bg-canvas",
         )}
       >
-        <div className="mx-auto flex h-header w-full max-w-7xl items-center gap-2 px-gutter lg:gap-8">
-          <MobileNavDrawer categories={categories} session={session} />
+        <div className="mx-auto flex h-header w-full max-w-7xl items-center gap-2 px-gutter xl:gap-0">
+          <MobileNavDrawer items={navItems} session={session} />
           <BrandLogo to="/" />
-          <HeaderNav categories={categories} />
-          <div className="ml-auto flex items-center gap-1 lg:gap-inline">
+          <HeaderNav items={navItems} className="ml-auto max-xl:hidden xl:flex" />
+          <div className="ml-auto flex items-center gap-1 xl:ml-10 xl:gap-inline">
             <SearchPanel />
-            <div className="max-lg:hidden">
+            <div className="max-xl:hidden">
               <ThemeToggle />
             </div>
             <CartButton onClick={onCartClick} />
-            <div className="max-lg:hidden">
+            <div className="max-xl:hidden">
               <HeaderAccount session={session} />
             </div>
           </div>

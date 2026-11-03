@@ -1,160 +1,163 @@
-import { useEffect, useId, useRef, type KeyboardEvent } from "react"
-import { Link, useLocation, useSearchParams } from "react-router-dom"
-import { ChevronDown } from "lucide-react"
-import { useOpenUntilNavigation } from "@/hooks/use-open-until-navigation"
-import type { CategoryNode } from "@/lib/category-tree"
+import { useEffect, useId, useLayoutEffect, useRef, type KeyboardEvent } from "react"
+import { useLocation, useSearchParams } from "react-router-dom"
+import { useMegaMenu } from "@/hooks/use-mega-menu"
+import { hasPanel, isNavItemActive, type NavItem } from "@/lib/nav-items"
 import { cn } from "@/lib/utils"
+import { HeaderNavLink } from "./header-nav-link"
 import { HeaderNavPanel } from "./header-nav-panel"
 
-const OPEN_DELAY_MS = 100
-const CLOSE_DELAY_MS = 150
-
 /**
- * Menu của header từ `lg`: MỘT mục "Tất cả sản phẩm" (liên kết tới /products) + nút mũi tên mở bảng thả xuống liệt kê cây danh mục
- * theo chiều dọc (`HeaderNavPanel`). Dưới `lg` dùng ngăn kéo (`MobileNavDrawer`), không qua đây.
+ * Thanh điều hướng của header từ `xl` (dưới `xl` dùng ngăn kéo `MobileNavDrawer`). Mỗi mục là liên kết thật; mục có danh mục con
+ * mở một bảng toàn chiều rộng (`HeaderNavPanel`) dùng chung cho mọi mục.
  *
- * Tự dựng bằng state + hẹn giờ thay vì `@base-ui/react` NavigationMenu/Popover: cả hai coi trigger là MỘT nút, trong khi ở đây chữ phải
- * là liên kết thật và mũi tên là nút riêng (aria-expanded/aria-controls); hover-open của Popover chỉ gắn vào trigger và popup nằm ở
- * Portal nên rê chéo từ nút xuống bảng dễ có khe hở. Ở đây bảng là CON của vùng hover, vùng hover cao đúng bằng header nên bảng
- * liền sát, không có khe.
+ * Tự dựng bằng `useMegaMenu` thay vì `@base-ui/react` NavigationMenu: ở đây chữ phải là liên kết điều hướng chứ không phải nút mở,
+ * chạm lần đầu chỉ mở bảng (lần hai mới đi), và bảng phải căn theo mép thanh điều hướng thay vì theo từng mục. Trigger của
+ * NavigationMenu là một nút nên không thỏa cả ba.
  *
- * - Chuột (pointerType mouse): mở sau 100ms, đóng sau 150ms khi rời. Cảm ứng không có hover nên mở bằng chạm vào mũi tên.
- * - Bàn phím: Enter/Space trên mũi tên bật/tắt; ↓ từ mũi tên mở và vào bảng; ↑/↓/Home/End di chuyển; Esc đóng và trả focus về mũi tên;
- *   Tab ra ngoài thì đóng.
- * - Đóng khi chọn liên kết, đổi pathname (`useOpenUntilNavigation`), bấm ra ngoài, Esc.
- * - Chưa có danh mục (đang tải hoặc lỗi): chỉ còn liên kết "Tất cả sản phẩm", không mũi tên, không bảng.
+ * - Chuột: rê vào mục có bảng thì mở sau 100ms, rời cả vùng (mục + bảng) thì đóng sau 150ms. Bảng là CON của `<nav>` và dính liền
+ *   dưới header nên không có khe hở khi rê từ mục xuống bảng. Bấm mục thì đi tới liên kết.
+ * - Bàn phím: Enter đi tới liên kết; ↓ mở và vào dòng đầu; ↑/↓/Home/End di chuyển (↑ ở dòng đầu về mục cha); Esc đóng và trả focus
+ *   về mục cha; Tab ra khỏi menu thì đóng.
+ * - Cảm ứng: chạm lần đầu vào mục có bảng thì mở (không đi), chạm lần hai hoặc chạm "Tất cả …" mới đi; chạm ra ngoài thì đóng.
  */
-function HeaderNav({ categories }: { categories: CategoryNode[] }) {
+function HeaderNav({ items, className }: { items: NavItem[]; className?: string }) {
   const { pathname } = useLocation()
   const [searchParams] = useSearchParams()
-  const [open, setOpen] = useOpenUntilNavigation()
-  const panelId = useId()
-  const wrapperRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
+  // Chỉ ở /products thì `?category=` mới là danh mục đang xem.
+  const categorySlug = pathname === "/products" ? searchParams.get("category") || null : null
+  const navRef = useRef<HTMLElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
-  const timer = useRef<number | undefined>(undefined)
+  const linkRefs = useRef(new Map<string, HTMLAnchorElement>())
+  const pointerType = useRef("mouse")
+  const focusPanelOnOpen = useRef(false)
+  const baseId = useId()
+  const menu = useMegaMenu(navRef)
+  const { closeNow } = menu
 
-  const onShop = pathname === "/products"
-  const activeSlug = onShop ? searchParams.get("category") : null
-  const allActive = onShop && !activeSlug
-  const hasPanel = categories.length > 0
+  const openItem = items.find((item) => item.key === menu.openKey && hasPanel(item)) ?? null
+  const openKey = openItem?.key ?? null
+  const panelId = (key: string) => `${baseId}-${key}`
 
-  useEffect(() => () => window.clearTimeout(timer.current), [])
+  const panelLinks = () => [...(panelRef.current?.querySelectorAll<HTMLElement>("a") ?? [])]
 
-  // Bấm ra ngoài thì đóng (chạm trên màn hình cảm ứng cũng đi qua đây).
+  // ↓ trên một mục: bảng mới dựng ở lần render kế tiếp, nên chờ rồi mới đưa focus vào dòng đầu.
+  useLayoutEffect(() => {
+    if (!openKey || !focusPanelOnOpen.current) return
+    focusPanelOnOpen.current = false
+    panelLinks()[0]?.focus()
+  }, [openKey])
+
+  // Esc đóng ngay cả khi bảng mở bằng chuột (focus đang ở chỗ khác); chỉ trả focus về mục cha khi focus đang trong menu.
   useEffect(() => {
-    if (!open) return
-    const onPointerDown = (event: PointerEvent) => {
-      if (!wrapperRef.current?.contains(event.target as Node)) setOpen(false)
+    if (!openKey) return
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      const focusInside = navRef.current?.contains(document.activeElement) ?? false
+      closeNow()
+      if (focusInside) linkRefs.current.get(openKey)?.focus()
     }
-    document.addEventListener("pointerdown", onPointerDown)
-    return () => document.removeEventListener("pointerdown", onPointerDown)
-  }, [open, setOpen])
+    document.addEventListener("keydown", onKeyDown)
+    return () => document.removeEventListener("keydown", onKeyDown)
+  }, [openKey, closeNow])
 
-  const schedule = (next: boolean, delay: number) => {
-    window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => setOpen(next), delay)
-  }
-
-  const focusLink = (index: number) => {
-    const links = panelRef.current?.querySelectorAll<HTMLElement>("a") ?? []
-    links[(index + links.length) % links.length]?.focus()
-  }
-
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (!hasPanel) return
-    if (event.key === "Escape" && open) {
-      event.preventDefault()
-      window.clearTimeout(timer.current)
-      setOpen(false)
-      buttonRef.current?.focus()
-      return
-    }
-    const fromButton = event.target === buttonRef.current
-    if (event.key === "ArrowDown" && fromButton) {
-      event.preventDefault()
-      window.clearTimeout(timer.current)
-      setOpen(true)
-      // Bảng mới dựng ở lần render kế tiếp: chờ rồi mới focus dòng đầu.
-      requestAnimationFrame(() => focusLink(0))
-      return
-    }
-    const links = [...(panelRef.current?.querySelectorAll<HTMLElement>("a") ?? [])]
+  const onPanelKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    const links = panelLinks()
     const index = links.indexOf(document.activeElement as HTMLElement)
     if (index === -1) return
-    if (event.key === "ArrowDown") focusLink(index + 1)
+    const focusAt = (next: number) => links[(next + links.length) % links.length]?.focus()
+    const toParent = () => (openKey ? linkRefs.current.get(openKey)?.focus() : undefined)
+    if (event.key === "ArrowDown") focusAt(index + 1)
     else if (event.key === "ArrowUp") {
-      if (index === 0) buttonRef.current?.focus()
-      else focusLink(index - 1)
-    } else if (event.key === "Home") focusLink(0)
-    else if (event.key === "End") focusLink(-1)
+      if (index === 0) toParent()
+      else focusAt(index - 1)
+    }
+    else if (event.key === "Home") focusAt(0)
+    else if (event.key === "End") focusAt(-1)
+    else if (event.key === "Tab" && event.shiftKey && index === 0) toParent()
     else return
     event.preventDefault()
   }
 
   return (
-    <nav aria-label="Danh mục" className="hidden lg:flex">
-      <div
-        ref={wrapperRef}
-        onKeyDown={onKeyDown}
-        onPointerEnter={(event) => {
-          if (hasPanel && event.pointerType === "mouse") schedule(true, OPEN_DELAY_MS)
-        }}
-        onPointerLeave={(event) => {
-          if (hasPanel && event.pointerType === "mouse") schedule(false, CLOSE_DELAY_MS)
-        }}
-        onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false)
-        }}
-        className="relative flex h-header items-center"
-      >
-        <Link
-          to="/products"
-          aria-current={allActive ? "page" : undefined}
-          className={cn(
-            "inline-flex min-h-control items-center text-body-sm text-ink-muted underline decoration-transparent decoration-1 underline-offset-8 transition-colors duration-(--motion-fast) ease-smooth hover:text-ink hover:decoration-ink",
-            allActive && "text-ink decoration-ink",
-          )}
-        >
-          Tất cả sản phẩm
-        </Link>
-        {hasPanel ? (
-          <>
-            <button
-              ref={buttonRef}
-              type="button"
-              aria-label="Danh mục sản phẩm"
-              aria-expanded={open}
-              aria-controls={panelId}
-              onClick={() => {
-                window.clearTimeout(timer.current)
-                setOpen(!open)
-              }}
-              className="press inline-flex size-control items-center justify-center text-ink-muted transition-colors duration-(--motion-fast) hover:text-ink"
-            >
-              <ChevronDown
-                aria-hidden="true"
-                className={cn("size-4 transition-transform duration-(--motion-fast) ease-smooth", open && "rotate-180")}
+    <nav
+      ref={navRef}
+      aria-label="Điều hướng chính"
+      className={cn("h-header items-center", className)}
+      onKeyDown={onPanelKeyDown}
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") menu.cancelClose()
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") menu.closeSoon()
+      }}
+      onBlur={(event) => {
+        if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node)) closeNow()
+      }}
+    >
+      <ul className="flex items-center gap-8">
+        {items.map((item) => {
+          const withPanel = hasPanel(item)
+          return (
+            <li key={item.key}>
+              <HeaderNavLink
+                ref={(element) => {
+                  if (element) linkRefs.current.set(item.key, element)
+                  else linkRefs.current.delete(item.key)
+                }}
+                item={item}
+                active={isNavItemActive(item, pathname, categorySlug)}
+                panelId={withPanel ? panelId(item.key) : undefined}
+                expanded={openKey === item.key}
+                onPointerDown={(event) => {
+                  pointerType.current = event.pointerType
+                }}
+                onPointerEnter={(event) => {
+                  if (event.pointerType !== "mouse") return
+                  if (withPanel) menu.openSoon(item.key)
+                  else if (openKey) menu.closeSoon()
+                }}
+                onPointerLeave={(event) => {
+                  if (event.pointerType === "mouse") menu.cancelOpen()
+                }}
+                onFocus={() => {
+                  // Tab sang mục khác thì bảng của mục trước phải đóng; con trỏ làm focus nhảy thì không đụng.
+                  if (pointerType.current === "keyboard" && openKey && openKey !== item.key) closeNow()
+                }}
+                onKeyDown={(event) => {
+                  pointerType.current = "keyboard"
+                  if (event.key !== "ArrowDown" || !withPanel) return
+                  event.preventDefault()
+                  if (openKey === item.key) panelLinks()[0]?.focus()
+                  else {
+                    focusPanelOnOpen.current = true
+                    menu.openNow(item.key)
+                  }
+                }}
+                onClick={(event) => {
+                  const touch = pointerType.current === "touch" || pointerType.current === "pen"
+                  if (withPanel && touch && openKey !== item.key) {
+                    // Chạm lần đầu: chỉ mở bảng, chưa đi.
+                    event.preventDefault()
+                    menu.openNow(item.key)
+                    return
+                  }
+                  closeNow()
+                }}
               />
-            </button>
-            {open ? (
-              <div
-                ref={panelRef}
-                id={panelId}
-                tabIndex={-1}
-                className="absolute top-full left-0 z-40 max-h-[calc(100dvh-var(--header-h)-2rem)] w-64 overflow-y-auto rounded-md border border-border-subtle bg-canvas py-2 outline-none motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 motion-safe:duration-(--motion-base)"
-              >
-                <HeaderNavPanel
-                  categories={categories}
-                  activeSlug={activeSlug}
-                  allActive={allActive}
-                  onNavigate={() => setOpen(false)}
-                />
-              </div>
-            ) : null}
-          </>
-        ) : null}
-      </div>
+            </li>
+          )
+        })}
+      </ul>
+      {openItem ? (
+        <HeaderNavPanel
+          ref={panelRef}
+          item={openItem}
+          id={panelId(openItem.key)}
+          alignTo={navRef}
+          activeSlug={categorySlug}
+          onNavigate={closeNow}
+        />
+      ) : null}
     </nav>
   )
 }
