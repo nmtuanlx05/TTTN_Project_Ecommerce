@@ -2,7 +2,8 @@
 
 Viết theo code (`src/products/`, `src/common/`, `src/auth/guards/roles.guard.ts`). Phân quyền (401/403), validate, định dạng
 response và lỗi đã có e2e với service giả (`test/products.e2e-spec.ts`); phần ánh xạ dữ liệu public/admin (không lộ trường nội bộ)
-có unit test (`src/products/products.mapper.spec.ts`). **Logic truy vấn trên database thật (phân trang, tìm kiếm, lọc, trùng
+có unit test (`src/products/products.mapper.spec.ts`); câu truy vấn public (bộ lọc giá, `excludeId`, sắp xếp có khóa phụ `id`)
+được kiểm bằng Prisma giả ở `src/products/products.service.spec.ts`. **Logic truy vấn trên database thật (phân trang, tìm kiếm, lọc, trùng
 slug/SKU, upsert biến thể, ẩn sản phẩm rồi kiểm tra public) chưa được test tự động**, cần chạy thử tay.
 
 - Base URL dev: `http://localhost:3000` (đọc `PORT` từ env, mặc định 3000)
@@ -135,16 +136,43 @@ Query params (đều tùy chọn):
 | Tên | Kiểu | Mặc định | Ràng buộc / ý nghĩa |
 |---|---|---|---|
 | `q` | chuỗi | — | Tìm gần đúng (chứa) trong `name`, `slug`; bỏ khoảng trắng đầu/cuối. Không phân biệt hoa/thường và dấu tiếng Việt (do collation DB) |
-| `categoryId` | số nguyên | — | ≥ 1; lấy sản phẩm của danh mục này **và mọi danh mục con/cháu** của nó. Id không tồn tại → danh sách rỗng (không lỗi) |
+| `categoryId` | số nguyên | — | ≥ 1; lấy sản phẩm của danh mục này **và mọi danh mục con/cháu** của nó. Id không tồn tại → danh sách rỗng (không lỗi). Không có `categorySlug`: frontend tra slug sang id từ `GET /categories` |
+| `minPrice` | số nguyên | — | 0 – 2147483647; lấy sản phẩm có `price >= minPrice` |
+| `maxPrice` | số nguyên | — | 0 – 2147483647; lấy sản phẩm có `price <= maxPrice`. Nếu gửi cả hai mà `minPrice > maxPrice` → **400** (lỗi ở `maxPrice`). Chỉ gửi một trong hai thì không có lỗi |
+| `excludeId` | số nguyên | — | ≥ 1; loại sản phẩm có id này khỏi kết quả (dùng cho "sản phẩm liên quan") |
 | `sortBy` | enum | `createdAt` | `createdAt`, `price`, `name` |
 | `order` | enum | `desc` | `asc`, `desc` |
 | `page` | số nguyên | 1 | ≥ 1 |
-| `limit` | số nguyên | 10 | 1–100 |
+| `limit` | số nguyên | **12** | 1–**48** |
 
+- **Giới hạn khác admin:** public mặc định `limit=12`, tối đa **48**; `GET /admin/products` vẫn mặc định 10, tối đa 100. (Trước đây
+  public dùng chung 10/100.)
 - Chỉ trả sản phẩm `isActive = true` **và còn ít nhất một biến thể đang bán**. Sản phẩm không có biến thể nào đang bán bị ẩn khỏi public.
-- Sắp xếp phụ theo `id` cùng chiều `order` để phân trang ổn định.
+  Sản phẩm đang bán nhưng **hết hàng vẫn có trong danh sách** với `inStock: false`.
+- Sắp xếp phụ theo `id` cùng chiều `order` (mọi giá trị `sortBy`), nên sản phẩm trùng giá, tên hay ngày tạo vẫn có thứ tự cố định:
+  không lặp hay sót sản phẩm giữa các trang.
 - Các điều kiện kết hợp bằng AND; `total` đếm theo cùng điều kiện lọc.
-- Không nhận `isActive` (gửi lên → 400). Query param không khai báo (vd `foo=1`) → **400**. Trang vượt quá `totalPages` trả `data: []`.
+- **Không nhận `isActive`** hay bất kỳ query nào không khai báo ở bảng trên (vd `foo=1`, `stock=1`) → **400**
+  `Trường <tên> không được phép gửi lên`. Vì vậy không có cách nào truy vấn sản phẩm đang ẩn qua đường public, kể cả khi
+  gửi kèm token ADMIN. Trang vượt quá `totalPages` trả `data: []`.
+
+Ba kiểu sắp xếp của storefront:
+
+| Kiểu | Query |
+|---|---|
+| Mới nhất | `sortBy=createdAt&order=desc` (mặc định) |
+| Giá tăng dần | `sortBy=price&order=asc` |
+| Giá giảm dần | `sortBy=price&order=desc` |
+
+(`sortBy=name` cũng được hỗ trợ.)
+
+Cách dùng cho các khối của storefront (không có endpoint riêng):
+
+- **Sản phẩm mới (trang chủ):** `GET /products?sortBy=createdAt&order=desc&limit=8`
+- **Sản phẩm liên quan:** `GET /products?categoryId=<category.id của sản phẩm đang xem>&excludeId=<id sản phẩm đang xem>&limit=8`
+  (mới nhất trước). Số lượng do frontend truyền qua `limit`, server không ép riêng. Nếu danh mục của sản phẩm có danh mục con thì kết
+  quả gồm cả sản phẩm của các danh mục con.
+- **Lọc theo giá:** `GET /products?minPrice=100000&maxPrice=300000`
 
 Ví dụ `GET /products?categoryId=1&sortBy=price&order=asc&page=1&limit=2`:
 
@@ -169,7 +197,8 @@ Ví dụ `GET /products?categoryId=1&sortBy=price&order=asc&page=1&limit=2`:
 
 ### GET /admin/products
 
-Query params (đều tùy chọn): như `GET /products` và thêm:
+Query params (đều tùy chọn): `q`, `categoryId`, `sortBy`, `order`, `page`, `limit` như `GET /products` (nhưng `limit` mặc định
+10, tối đa 100), không có `minPrice`/`maxPrice`/`excludeId` (gửi lên → 400), và thêm:
 
 | Tên | Kiểu | Mặc định | Ràng buộc / ý nghĩa |
 |---|---|---|---|
@@ -330,11 +359,14 @@ Phần tử `variants[]`:
 |---|---|
 | `q` | `Từ khóa tìm kiếm phải là chuỗi` |
 | `categoryId` | `categoryId phải là số nguyên`, `categoryId phải lớn hơn hoặc bằng 1` |
+| `minPrice` (public) | `minPrice phải là số nguyên`, `minPrice phải lớn hơn hoặc bằng 0`, `minPrice không được vượt quá 2147483647` |
+| `maxPrice` (public) | `maxPrice phải là số nguyên`, `maxPrice phải lớn hơn hoặc bằng 0`, `maxPrice không được vượt quá 2147483647`, `maxPrice phải lớn hơn hoặc bằng minPrice` |
+| `excludeId` (public) | `excludeId phải là số nguyên`, `excludeId phải lớn hơn hoặc bằng 1` |
 | `isActive` (admin) | `isActive phải là true hoặc false` |
 | `sortBy` | `sortBy phải là createdAt, price hoặc name` |
 | `order` | `order phải là asc hoặc desc` |
 | `page` | `page phải là số nguyên`, `page phải lớn hơn hoặc bằng 1` |
-| `limit` | `limit phải là số nguyên`, `limit phải lớn hơn hoặc bằng 1`, `limit không được vượt quá 100` |
+| `limit` | `limit phải là số nguyên`, `limit phải lớn hơn hoặc bằng 1`, `limit không được vượt quá 100` (admin) / `limit không được vượt quá 48` (public) |
 
 ### Trường lạ
 
@@ -403,6 +435,9 @@ CUSTOMER=$(curl -s $BASE/auth/login -H 'Content-Type: application/json' \
 
 # Public: không cần token
 curl -s "$BASE/products?categoryId=1&sortBy=price&order=asc&page=1&limit=10"
+curl -s "$BASE/products?minPrice=100000&maxPrice=300000&sortBy=price&order=asc"
+curl -s "$BASE/products?categoryId=1&excludeId=1&limit=8"   # sản phẩm liên quan
+curl -s -i "$BASE/products?isActive=false"                  # 400: public không nhận isActive
 curl -s $BASE/products/ao-thun-basic-co-tron
 
 # Không token → 401; CUSTOMER → 403

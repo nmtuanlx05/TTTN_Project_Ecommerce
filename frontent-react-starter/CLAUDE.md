@@ -18,6 +18,7 @@ của phần mình và nhắc chạy `git restore --staged :/` nếu đang có f
 - Hai giao diện: storefront (khách) ở `/`, admin (ADMIN và STAFF dùng chung) ở `/admin`. Không làm trang staff riêng.
 - Luật ngắn: pages chỉ ghép (không gọi API, không logic); thứ riêng của tính năng nằm trong `features/<tên>/`; features không import lẫn nhau; mỗi file một component dưới ~150 dòng; chỉ `api.ts` và `lib/api-client.ts` dùng axios; không sửa `components/ui/`.
 - Tạo module mới: làm theo mục "Checklist module mới" trong docs.
+- Làm giao diện khách (storefront): đọc `docs/storefront-design.md` (ý tưởng, token dùng cho từng vai trò, thang chữ, lưới, chuyển động, ảnh, trạng thái, truy cập).
 - Đổi cấu trúc thì sửa file docs trước.
 
 ## Luật bắt buộc
@@ -368,12 +369,22 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
 - `/login` — đăng nhập (`features/auth/components/login-form.tsx` trong `auth-shell.tsx`). 401/403/lỗi mạng hiện thành
   Alert đầu form, lỗi `errors[]` gắn đúng ô. Có sáng/tối.
 - `/register` — đăng ký tài khoản CUSTOMER (`features/auth/components/register-form.tsx`): email, mật khẩu + nhập lại, họ tên và số điện thoại tùy chọn.
-- `/` — trang chủ storefront, công khai. Khung `components/storefront/storefront-layout.tsx` (header dính + `<Outlet/>` + footer),
-  nối phiên ở `routes/storefront-layout-container.tsx`. Header: `BrandLogo` bên trái; bên phải `ThemeToggle` và một mục tài khoản —
-  đang tải phiên thì giữ chỗ, chưa đăng nhập chỉ có MỘT nút "Đăng nhập" (không có "Đăng ký": `/login` đã có liên kết sang `/register`),
-  đã đăng nhập thì `UserMenu`. Nội dung: `home-hero.tsx` + `EmptyState` "Sản phẩm sắp ra mắt". **Đây là nền storefront**: khi có
-  `features/products`, thay khối `EmptyState` trong `pages/storefront/home` bằng danh sách sản phẩm; trang storefront mới đặt trong cùng
-  `<Route element={<StorefrontLayoutContainer />}>` ở `routes/storefront-routes.tsx` để có sẵn header/footer.
+- `/` — trang chủ storefront, công khai. Khung dùng chung của mọi trang khách: `components/storefront/storefront-layout.tsx` (liên kết "bỏ qua tới nội dung", header dính, `<main id="main-content">`,
+  footer), nối phiên + cây danh mục + cổng đăng nhập ở `routes/storefront-layout-container.tsx`. **Header**: logo `BrandLogo` bên trái; từ `xl` (1280px) thanh điều hướng gom về bên phải, cách nhóm biểu tượng 40px: các mục theo `STORE.navItems` (Tất cả sản phẩm, Áo, Quần, Phụ kiện, Quà tặng, Địa chỉ; mục danh mục chỉ hiện khi slug có trong cây danh mục), mục có danh mục con mở bảng toàn chiều rộng
+  (`header-nav.tsx`, `header-nav-panel.tsx`, `hooks/use-mega-menu.ts`, `lib/nav-items.ts`; chi tiết ở `docs/storefront-design.md` mục 9b), rồi tìm kiếm (khung trượt từ trên, tự focus, Enter → `/products?q=`), đổi sáng/tối, giỏ hàng, đăng nhập hoặc `UserMenu`; dưới `xl` còn nút menu (ngăn kéo cùng cấu hình, mục danh mục là accordion
+  (`mobile-nav-list.tsx`), kèm tài khoản kể cả "Ảnh đại diện" và "Vào trang quản trị", đổi sáng/tối), tìm kiếm, giỏ hàng. Nền header mờ nhẹ + đường kẻ khi cuộn. **Footer**: tên, khẩu hiệu, liên kết danh mục, vùng liên hệ. Nội dung cửa hàng (tên, khẩu hiệu,
+  liên hệ) chỉ ở `lib/store-info.ts`: **khẩu hiệu và mô tả là nội dung mẫu, liên hệ chưa có** (footer ghi "đang được cập nhật"). **Trang chủ** (`pages/storefront/home`, chi tiết ở `docs/storefront-design.md` mục 14): hero (khẩu hiệu `text-display` là `h1` duy nhất, mô tả, nút "Khám phá cửa hàng" cỡ `lg`, tối đa 3 ảnh 3:4 lệch nhau lấy từ 3 sản phẩm mới nhất hoặc từ
+  `STORE.heroImages`), lưới ô chữ danh mục cấp 1, "Sản phẩm mới" (8 thẻ, chung một request `limit=8` với hero) và dải tuyên bố; các khối dưới hero bọc `Reveal`. Nhãn, tuyên bố, khẩu hiệu đều là **nội dung mẫu** ở `lib/store-info.ts`. Trang storefront mới đặt trong cùng `<Route element={<StorefrontLayoutContainer />}>` ở `routes/storefront-routes.tsx`.
+- `/dia-chi` — danh sách cửa hàng (`pages/storefront/stores`, `components/storefront/store-list.tsx`) từ `STORE.stores` trong `lib/store-info.ts`; **mảng để rỗng cho tới khi chủ cửa hàng cung cấp thông tin thật** (rỗng thì hiện "Thông tin cửa hàng đang được cập nhật"). Không bịa địa chỉ, số điện thoại, giờ mở cửa.
+- `/products` — danh sách sản phẩm công khai (`docs/api/products.md`, `features/catalog`). Trạng thái trên URL `?category=<slug>&q=&sort=newest|price-asc|price-desc&minPrice=&maxPrice=&page=` (`use-catalog-search-params.ts`, lọc
+  whitelist, mặc định không ghi URL; **đổi lọc/sắp xếp dùng `replace`, đổi trang dùng `push`**). Slug danh mục được tra sang `categoryId` từ cây danh mục (`hooks/use-category-tree.ts`, GET `/categories`); slug không có
+  → "Không tìm thấy danh mục", không gọi API sản phẩm. 12 sản phẩm/trang; lọc cây danh mục (gồm cả con) và 4 khoảng giá nhanh nửa mở (`constants.ts`), sắp xếp, chip bộ lọc đang áp dụng, phân trang bằng số.
+  Cột lọc sticky từ `lg`, dưới `lg` là ngăn kéo (không tự đóng khi query đổi). Đổi lọc/trang giữ lưới cũ mờ, không nháy skeleton. Thẻ sản phẩm tải trước chi tiết khi rê chuột/focus. Query key `["catalog", ...]`, tách khỏi `["products"]` của admin.
+- `/products/:slug` — chi tiết sản phẩm công khai. Breadcrumb từ cây danh mục, ảnh (nút mở `ImageLightbox`), chọn màu/size (`radiogroup`, chip hết hàng/không có tổ hợp ghi "Hết hàng"; logic ở `variant-options.ts`), số lượng 1–99,
+  "Thêm vào giỏ" (cột 6/6 từ `md`, 7/5 từ `lg`), thanh mua dính đáy ở di động, "Sản phẩm cùng danh mục" (`Reveal`). Không hiển thị SKU. 404 hiện trang thân thiện.
+- **Cổng đăng nhập cho hành động mua** (`features/auth/use-require-login.ts`): khách bấm "Thêm vào giỏ" hoặc biểu tượng giỏ → `/login` kèm `state.from` (trang đang xem), đăng nhập xong quay lại đúng trang đó
+  (`RedirectIfAuthenticated` đọc `from`; `returnPathState` giữ `from` khi chuyển giữa `/login` và `/register`). ADMIN/STAFF: toast "Tài khoản quản trị không dùng để mua hàng". **TẠM**: chưa có giỏ hàng nên với CUSTOMER chỉ
+  hiện toast "Giỏ hàng sẽ sớm có mặt" (nhánh giỏ hàng truyền hành động thật vào `onCustomer` và xóa nhánh mặc định). Trang `pages/storefront/product-detail` và container khung lấy hook rồi truyền xuống bằng props.
 - `/styleguide` — trình bày toàn bộ hệ thống (công khai, không cần đăng nhập).
 - `/admin/dashboard` — dữ liệu giả (`src/features/dashboard/mock.ts`). Chỉ ADMIN.
 - `/admin/users` — chỉ ADMIN. Danh sách người dùng nối backend thật: tìm kiếm, lọc, sắp xếp, phân trang phía
@@ -415,7 +426,7 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
   Lịch sử (`movements-list.tsx`): `useInfiniteQuery`, "Tải thêm" dựa vào `meta.totalPages`; loại EXPORT ánh xạ mã sang nhãn, ADJUST hiện nguyên văn, loại lạ hiện nguyên giá trị. Khóa truy vấn dưới `["inventory"]`;
   sau mỗi thao tác làm mới cả `["inventory"]` và `["products"]` (khóa chữ trong `queries.ts`, khớp `productKeys.all`, không import vì features không import lẫn nhau — đổi một nơi phải đổi nơi kia).
   Tên sản phẩm là liên kết sang trang sửa; nút "Quay lại" ở đó về danh sách sản phẩm chứ không về Kho (hạn chế đã biết: `list-link.ts` của products cố định đường dẫn).
-- Các mục menu còn lại hiện là `PlaceholderPage`. Route lạ trong `/admin` hiện 404 trong khung admin; ngoài `/admin` hiện 404 toàn trang.
+- Các mục menu còn lại hiện là `PlaceholderPage`. Route lạ trong `/admin` hiện 404 trong khung admin; ngoài `/admin` hiện 404 TRONG khung storefront (`pages/storefront/not-found`, route `*` ở `routes/storefront-routes.tsx`: có header, footer, tiêu đề tab, `h1`).
 - **Upload ảnh dùng chung**: `components/shared/image-upload-field.tsx` (props `value`, `onChange`, `kind` = `products`|`avatars`, `shape` = `square`|`circle`, `label`, `error`, `disabled`,
   `zoomable` (mặc định bật), `fallback`, `onUploadingChange`). Chọn file hoặc kéo-thả (tự dùng sự kiện trình duyệt, `hooks/use-file-drop.ts`), tiến độ và nút Hủy (`hooks/use-image-upload.ts`). Giới hạn
   (products 5 MB, avatars 2 MB; JPEG/PNG/WebP) ở `lib/image-rules.ts`, khớp backend; client chỉ kiểm loại file (`File.type`, rỗng cũng coi là sai), dung lượng, file rỗng
@@ -451,7 +462,12 @@ một module, và cập nhật `/styleguide` nếu có thêm token hoặc compon
 - Quên mật khẩu / đặt lại mật khẩu (backend chưa có endpoint).
 - Đồng bộ đăng xuất giữa nhiều tab (hiện tab khác chỉ biết khi request kế tiếp gặp 401).
 - Trang đích của STAFF sau đăng nhập đang là `/admin/orders` (placeholder); đổi khi có trang Đơn hàng thật.
-- Trang chủ storefront (`/`) mới có header + hero + khối "sắp ra mắt"; chưa có điều hướng, giỏ hàng, tìm kiếm (thêm khi có chức năng).
+- Storefront: trang chủ đã có; giỏ hàng, thanh toán, voucher, đánh giá chưa có. Nút "Thêm vào giỏ" và biểu tượng giỏ mới chỉ có cổng đăng nhập + toast tạm (xem mục Cổng đăng nhập).
+- Storefront: ảnh sản phẩm là ảnh gốc từ máy chủ, không có bản thu nhỏ (`srcset`/resize) nên nặng trên di động; danh mục chưa có sản phẩm vẫn hiện trên menu (API danh mục không có cờ ẩn) và dẫn tới trạng thái rỗng; mục "Phụ kiện", "Quà tặng" trong `STORE.navItems` đang ẩn vì GET `/categories` chưa có danh mục slug `phu-kien`, `qua-tang` (Mũ, giày đang là danh mục gốc riêng); khi các mục danh mục xuất hiện lần đầu, "Tất cả sản phẩm" dịch trái vì thanh điều hướng căn phải; khách bấm "Đăng ký"
+  rồi mới đăng nhập vẫn giữ `from` (đã xử lý), nhưng đăng ký bằng đường khác (mở thẳng `/register`) thì không có đường quay lại; thanh mua dính đáy chưa tận dụng `env(safe-area-inset-bottom)` vì `index.html` chưa đặt `viewport-fit=cover`;
+  cache `["catalog"]` không tự làm mới khi admin sửa sản phẩm trong cùng phiên (tối đa 30 giây theo staleTime).
+- `AuthBootstrap` chặn render toàn ứng dụng tới khi `POST /auth/refresh` trả về, kể cả với khách chưa đăng nhập: trong lúc chờ chỉ hiện màn hình `SessionLoadingScreen` (wordmark, vòng quay, "Đang khôi phục phiên đăng nhập…"), nên storefront
+  công khai không vẽ được gì trước khi có kết quả. Cải thiện cho sau: vẽ storefront ngay với `HeaderSession` ở trạng thái `loading` (header đã hỗ trợ), chỉ chặn các route cần phiên.
 - `user-form-dialog.tsx` còn tự map lỗi API; chuyển sang `applyServerErrors` (`lib/form-errors.ts`) như login/register.
 - Kho: nút "Quay lại" từ trang sửa sản phẩm về danh sách sản phẩm (không về Kho); liên kết "Quản lý tồn kho" mở trong cùng tab nên chỉnh sửa chưa lưu ở trang sửa sản phẩm bị mất; còn trùng lặp với products (hook tham số URL, skeleton bảng, tiêu đề sắp xếp, khung trạng thái danh sách) chưa gom lại.
 - Sản phẩm: danh sách chưa có cột tồn kho (API không trả); ảnh upload xong mà không lưu (hoặc bị thay) vẫn nằm trên server, chưa có cách dọn; chưa cảnh báo khi rời trang sửa lúc có thay đổi chưa lưu; hoán đổi size/màu giữa hai biến thể trong một lần lưu bị 409 (tách hai lần lưu).

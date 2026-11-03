@@ -14,7 +14,7 @@ Quy ước này là luật. Code mới phải theo. Muốn đổi thì sửa fil
 src/
 ├─ main.tsx, App.tsx, global.css, vite-env.d.ts   ✓
 ├─ routes/        ✓ admin-routes, auth-routes, storefront-routes, admin-layout-container,
-│                 storefront-layout-container, admin-index-redirect, can-access-path, guards/ (require-auth, require-role,
+│                 storefront-layout-container, admin-pages ✓ (các trang admin nạp bằng React.lazy), admin-index-redirect, can-access-path, guards/ (require-auth, require-role,
 │                 redirect-if-authenticated), use-avatar-saved ✓ (cập nhật phiên + cache sau khi đổi ảnh đại diện)
 ├─ pages/         MỎNG: chỉ ghép
 │   ├─ auth/        login ✓, register ✓
@@ -22,32 +22,58 @@ src/
 │   │               inventory ✓, vouchers, placeholder ✓
 │   ├─ styleguide/  ✓ trang nội bộ cho dev (route /styleguide), không thuộc admin
 │   ├─ forbidden.tsx ✓ (403), not-found.tsx ✓ (404)
-│   ├─ storefront/  home ✓ (hero + khối "sắp ra mắt"), catalog, product-detail, cart, checkout,
-│   │               order-success, my-orders, account
+│   ├─ storefront/  home ✓ (hero, danh mục, sản phẩm mới, tuyên bố), catalog ✓ (/products), product-detail ✓ (/products/:slug), stores ✓ (/dia-chi), not-found ✓ (404 trong khung khách),
+│   │               cart, checkout, order-success, my-orders, account
 ├─ features/      mỗi thực thể một thư mục theo khuôn mục 3
-│   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/ ✓
+│   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/ ✓ catalog/ ✓ (dữ liệu công khai của storefront: danh sách và chi tiết sản phẩm)
 │   └─ cart/ checkout/ orders/ vouchers/ payments/ account/
 ├─ components/
 │   ├─ ui/          shadcn, KHÔNG sửa ✓
 │   ├─ admin/       khung admin và thứ dùng chung nhiều tính năng ✓ (category-select ✓ — ô chọn danh mục dạng cây thụt lề, dùng ở products và inventory)
-│   ├─ storefront/  ✓ khung khách: storefront-layout, storefront-header, storefront-footer, home-hero
+│   ├─ storefront/  ✓ khung khách và phần dựng sẵn dùng ở nhiều trang storefront: storefront-layout, storefront-header
+│   │                 (+ header-session, header-account, header-nav (+ header-nav-link, header-nav-panel: bảng toàn chiều rộng, header-nav-styles — thanh điều hướng và mega menu từ `xl`),
+│   │                 mobile-nav-drawer (+ mobile-nav-list, mobile-nav-accordion, mobile-nav-styles — ngăn kéo dưới `xl`), mobile-account, search-panel,
+│   │                 cart-button), storefront-footer, storefront-drawer (ngăn kéo/khung trượt dựng trên Base UI Dialog), skip-link,
+│   │                 breadcrumbs, pagination (số trang, dạng liên kết), product-image (khung 3:4, shimmer, fade, ảnh dự phòng),
+│   │                 reveal (hiện dần khi cuộn), state-message (rỗng/lỗi/404), section-heading, category-tiles (ô chữ danh mục trang chủ), brand-statement,
+│   │                 store-list (+ store-entry) — danh sách cửa hàng của trang /dia-chi
 │   └─ shared/      ✓ chỉ khi cả admin và storefront (kể cả trang auth) cùng dùng: theme-toggle (+ theme-cycle-button,
-│                     theme-options), password-input, user-menu, brand-logo, form-dialog (vỏ hộp thoại có form: dùng cả ở admin lẫn hộp
+│                     theme-options), password-input, user-menu, brand-logo, route-fallback ✓ (vòng quay khi tải trang lazy), form-dialog (vỏ hộp thoại có form: dùng cả ở admin lẫn hộp
 │                     thoại trong user-menu), image-upload-field (+ image-preview, image-upload-progress,
 │                     image-upload-message) — ô upload một ảnh, dùng cho sản phẩm và ảnh đại diện; user-avatar (+ avatar-initials) — avatar tròn có chữ cái
 │                     đầu khi chưa có ảnh; avatar-dialog (+ avatar-form) — hộp thoại đổi ảnh đại diện, mở từ user-menu; image-lightbox (+ -viewer,
 │                     -toolbar) — xem ảnh lớn có thu phóng, bật qua `zoomable` của image-preview
 ├─ hooks/         hook dùng chung (use-theme ✓, use-mobile ✓, use-dialog-target ✓, use-category-options ✓ — danh mục cho ô chọn của
 │                 categories và products, use-image-upload ✓ + use-file-drop ✓ — upload ảnh và kéo-thả cho image-upload-field, use-update-avatar ✓ — lưu ảnh đại diện, use-pan-zoom ✓ +
-│                 use-pan-zoom-gestures ✓ — thu phóng và kéo ảnh cho image-lightbox, use-debounce)
+│                 use-pan-zoom-gestures ✓ — thu phóng và kéo ảnh cho image-lightbox, use-debounce,
+│                 use-category-tree ✓ — cây danh mục công khai cho header/footer/catalog, use-document-title ✓, use-in-view ✓ — IntersectionObserver,
+│                 use-open-until-navigation ✓ — ngăn kéo menu/khung tìm kiếm tự đóng khi đổi pathname, use-mega-menu ✓ — trạng thái mở/đóng, hẹn giờ hover và bấm ra ngoài của bảng điều hướng ở header, use-scroll-restoration ✓ — cuộn lên đầu khi đổi trang
+│                 và khôi phục vị trí khi Back/F5 của storefront)
 ├─ lib/           hạ tầng: api-client ✓, api-error ✓, query-client ✓, format ✓, utils ✓, date-range ✓, category-tree-options ✓ (danh mục phẳng → danh sách theo cây, thuần túy),
 │                 form-errors ✓, password-rules ✓ (nguồn duy nhất độ dài mật khẩu), vn-phone ✓, display-name ✓ (tên hiển thị của tài khoản),
 │                 image-rules ✓ (giới hạn và kiểm tra file ảnh theo kind), upload-image ✓ (POST /uploads/<kind>), update-avatar ✓ (PATCH /users/me/avatar),
-│                 pan-zoom ✓ (toán thu phóng và kéo ảnh, thuần túy)
+│                 pan-zoom ✓ (toán thu phóng và kéo ảnh, thuần túy), store-info ✓ (nội dung cửa hàng: tên, khẩu hiệu, liên hệ — MỘT file duy nhất),
+│                 category-tree ✓ (danh mục phẳng → cây, tra slug, chuỗi cha; thuần túy),
+│                 nav-items ✓ (cấu hình `STORE.navItems` + cây danh mục → mục điều hướng, dòng của bảng, mục đang xem; thuần túy)
 ├─ types/         kiểu dùng chung (api.ts ✓, user.ts ✓ — Role và User, dùng ở auth, users, components/admin; category.ts ✓ — PublicCategory,
 │                 dùng ở categories và products; upload.ts ✓ — ImageUploadKind)
 └─ assets/        ảnh, font nội bộ
 ````
+
+### features/catalog (dữ liệu công khai của storefront)
+````
+features/catalog/
+├─ api.ts  queries.ts  types.ts  constants.ts  (GET /products và /products/:slug; key `["catalog", ...]`)
+├─ use-catalog-search-params.ts   (URL → bộ lọc: category slug, q, sort, minPrice, maxPrice, page; lọc whitelist)
+├─ variant-options.ts  price-range.ts   (logic thuần)
+└─ components/   danh sách: catalog-content, catalog-heading, catalog-results, catalog-states, catalog-filters, category-filter,
+                 price-filter, filter-link, filter-drawer, sort-select, active-filter-chips, product-grid(+skeleton), product-card
+                 chi tiết: product-detail-content (+skeleton, not-found), product-gallery, purchase-panel, variant-picker,
+                 option-chip-group, quantity-stepper, sticky-buy-bar, related-products
+                 trang chủ: home-hero (+ home-hero-images), home-new-arrivals (dùng chung một request `limit=8` với hero)
+````
+Cổng đăng nhập cho hành động mua nằm ở `features/auth/use-require-login.ts`; trang (`pages/`) và `routes/storefront-layout-container.tsx`
+lấy hook rồi truyền xuống bằng props, vì features không import lẫn nhau.
 
 ## 3. Khuôn của một feature
 ````
@@ -82,6 +108,7 @@ Tính năng chỉ có một phía (users, dashboard, cart) để phẳng `compon
 | Component dùng cả admin và storefront, không thuộc thực thể | components/shared/ |
 | Ghép các phần thành một trang | pages/... |
 | Hạ tầng (axios, format tiền, ngày) | lib/ |
+| Nội dung cửa hàng (tên, khẩu hiệu, liên hệ) | lib/store-info.ts (không viết rải rác) |
 
 ## 6. Checklist module mới
 1. Đọc ../backend-nestjst-starter/docs/api/<tên>.md (chỉ đọc, không sửa backend).
@@ -119,13 +146,15 @@ Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 4
 | Danh mục ✓, sản phẩm ✓ | features/categories/ ✓, features/products/ ✓ |
 | Kho ✓ | features/inventory/ ✓ |
 | Giỏ hàng, đơn hàng, voucher | features/cart/, orders/, vouchers/ |
-| Storefront | pages/storefront/, components/storefront/, features/checkout/, account/ |
+| Storefront khung + catalog ✓ | components/storefront/, pages/storefront/catalog + product-detail, features/catalog/ |
+| Storefront còn lại | features/checkout/, account/ |
 | Thanh toán online | features/payments/ |
 | Dashboard thật | features/dashboard/ nối API thật |
 
 ## 9. Việc tồn đọng
-- Storefront dùng mật độ mặc định (không `.density-admin`), tông tối giản biên tập (Archivo cho logo/tiêu đề). Header chưa có điều hướng, giỏ hàng, tìm kiếm.
-- Backend Products đã tách `/admin/products` (thấy cả sản phẩm ẩn) và `/products` (khách, chỉ sản phẩm đang bán). Frontend mới dùng phía admin; phía khách làm cùng storefront.
+- Storefront dùng mật độ mặc định (không `.density-admin`), tông tối giản biên tập (Archivo cho logo/tiêu đề). Định hướng thiết kế chi tiết: `docs/storefront-design.md`.
+- Backend Products đã tách `/admin/products` (thấy cả sản phẩm ẩn) và `/products` (khách, chỉ sản phẩm đang bán). Admin dùng `features/products`, khách dùng `features/catalog` (query key `["catalog", ...]`, tách khỏi `["products"]` của admin).
+- Trang admin và `/styleguide` nạp bằng `React.lazy` (`routes/admin-routes.tsx`, `App.tsx`) để khách storefront không tải mã quản trị; `/login` và `/register` KHÔNG lazy vì nằm trên đường mua hàng.
 - Ẩn hoặc chặn `/styleguide` ở bản production.
 - `components/shared/` hiện chứa `theme-toggle`, `password-input`, `user-menu`, `brand-logo`, `form-dialog` (dùng từ hai khu trở lên) và bộ `image-*` (ô upload ảnh). `form-dialog` trước đây nằm ở `components/admin/`; đã chuyển sang `shared/` vì hộp thoại trong `user-menu` (storefront cũng dùng) cần nó, và `shared/` không được phụ thuộc ngược vào `admin/`. `confirm-dialog` vẫn ở `components/admin/` (chỉ admin dùng).
 - Upload ảnh là hạ tầng chung, không thuộc feature nào: `components/` không được import `features/`, nên hàm gọi API nằm ở `lib/upload-image.ts` (đi qua `apiUpload` của `api-client`, không import axios) và hook ở `hooks/`. Avatar dùng lại bằng `kind="avatars"`, `shape="circle"` (hộp thoại `avatar-dialog`); hàm lưu `lib/update-avatar.ts` và hook `hooks/use-update-avatar.ts` cũng ở tầng chung vì `shared/` không import `features/`. Phần cập nhật phiên và cache sau khi lưu nằm ở `routes/use-avatar-saved.ts`.

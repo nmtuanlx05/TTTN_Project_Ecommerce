@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom"
+import { STORE } from "@/lib/store-info"
 import { cn } from "@/lib/utils"
 
 const WORDMARK = "shrink-0 whitespace-nowrap font-display text-body font-bold uppercase tracking-[0.08em] text-ink sm:tracking-[0.12em] md:text-body-lg"
@@ -8,12 +9,12 @@ const WORDMARK = "shrink-0 whitespace-nowrap font-display text-body font-bold up
  * (màn hình chờ, nơi không có chỗ để đi tiếp).
  */
 function BrandLogo({ to, className }: { to?: string; className?: string }) {
-  if (!to) return <span className={cn(WORDMARK, className)}>MONO STUDIO</span>
+  if (!to) return <span className={cn(WORDMARK, className)}>{STORE.name}</span>
 
   return (
     <Link
       to={to}
-      aria-label="MONO STUDIO, về trang chủ"
+      aria-label={`${STORE.name}, về trang chủ`}
       className={cn(
         WORDMARK,
         "inline-flex min-h-control items-center rounded-xs outline-none",
@@ -21,7 +22,7 @@ function BrandLogo({ to, className }: { to?: string; className?: string }) {
         className
       )}
     >
-      MONO STUDIO
+      {STORE.name}
     </Link>
   )
 }

@@ -1,7 +1,7 @@
 import { useId, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { PasswordInput } from "@/components/shared/password-input"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { applyServerErrors } from "@/lib/form-errors"
 import { PASSWORD_HINT } from "@/lib/password-rules"
 import { EMAIL_TAKEN_MESSAGE } from "../constants"
 import { useRegister } from "../queries"
+import { returnPathState } from "../safe-redirect"
 import { registerSchema, type RegisterFormValues } from "../schemas"
 import type { RegisterInput } from "../types"
 
@@ -20,6 +21,7 @@ const REGISTER_FIELDS = ["email", "password", "name", "phone"] as const
 function RegisterForm() {
   const id = useId()
   const navigate = useNavigate()
+  const location = useLocation()
   const toast = useToast()
   const { mutate, isPending } = useRegister()
   const [formError, setFormError] = useState<string | null>(null)
@@ -49,7 +51,10 @@ function RegisterForm() {
           title: "Đăng ký thành công, hãy đăng nhập",
           data: { tone: "success" },
         })
-        navigate("/login", { replace: true, state: { email: user.email } })
+        navigate("/login", {
+          replace: true,
+          state: { email: user.email, ...returnPathState(location.state) },
+        })
       },
       onError: (error) => {
         if (error.statusCode === 409) {

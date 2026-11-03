@@ -54,6 +54,10 @@ describe('Products API (e2e, service giả)', () => {
   const errorsOf = (
     res: request.Response,
   ): { field: string; message: string }[] => res.body.errors;
+  // Một trường có thể báo nhiều lỗi (vd "abc" vừa không phải số nguyên vừa nhỏ hơn 1): gom theo trường
+  const fieldsOf = (res: request.Response) => [
+    ...new Set(errorsOf(res).map((e) => e.field)),
+  ];
 
   const validVariant = { sku: 'atb-m-den', size: 'M', color: 'Đen' };
   const validCreate = {
@@ -231,7 +235,7 @@ describe('Products API (e2e, service giả)', () => {
       productsService.findAllPublic.mockResolvedValue(
         new Paginated([{ id: 1, slug: 'ao-thun', inStock: true }], {
           page: 1,
-          limit: 10,
+          limit: 12,
           total: 1,
         }),
       );
@@ -241,7 +245,7 @@ describe('Products API (e2e, service giả)', () => {
       expect(res.body).toEqual({
         success: true,
         data: [{ id: 1, slug: 'ao-thun', inStock: true }],
-        meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+        meta: { page: 1, limit: 12, total: 1, totalPages: 1 },
       });
     });
 
@@ -308,16 +312,29 @@ describe('Products API (e2e, service giả)', () => {
       ]);
     });
 
-    it('mặc định page=1, limit=10, sortBy=createdAt, order=desc', async () => {
+    it('mặc định page=1, limit=12, sortBy=createdAt, order=desc', async () => {
       await request(server()).get('/products').expect(200);
       expect(productsService.findAllPublic).toHaveBeenCalledWith(
         expect.objectContaining({
           page: 1,
-          limit: 10,
+          limit: 12,
           sortBy: 'createdAt',
           order: 'desc',
         }),
       );
+    });
+
+    it('limit: 48 hợp lệ, 49 và 101 → 400 (tối đa 48)', async () => {
+      await request(server()).get('/products?limit=48').expect(200);
+      for (const limit of [49, 101]) {
+        const res = await request(server())
+          .get(`/products?limit=${limit}`)
+          .expect(400);
+        expect(errorsOf(res)).toContainEqual({
+          field: 'limit',
+          message: 'limit không được vượt quá 48',
+        });
+      }
     });
 
     it('query sai → 400 kèm errors theo trường', async () => {
@@ -338,6 +355,144 @@ describe('Products API (e2e, service giả)', () => {
         message: 'sortBy phải là createdAt, price hoặc name',
       });
       expect(productsService.findAllPublic).not.toHaveBeenCalled();
+    });
+
+    it('page < 1 hoặc không phải số nguyên → 400', async () => {
+      for (const page of ['0', '-1', '1.5', 'abc']) {
+        const res = await request(server())
+          .get(`/products?page=${page}`)
+          .expect(400);
+        expect(fieldsOf(res)).toEqual(['page']);
+      }
+      expect(productsService.findAllPublic).not.toHaveBeenCalled();
+    });
+
+    it('sortBy ngoài whitelist (id, stock, isActive, chuỗi tùy ý) → 400', async () => {
+      for (const sortBy of ['id', 'stock', 'isActive', 'price;DROP TABLE']) {
+        const res = await request(server())
+          .get(`/products?sortBy=${encodeURIComponent(sortBy)}`)
+          .expect(400);
+        expect(fieldsOf(res)).toEqual(['sortBy']);
+      }
+      expect(productsService.findAllPublic).not.toHaveBeenCalled();
+    });
+
+    it('chấp nhận đủ 3 kiểu sắp xếp: mới nhất, giá tăng, giá giảm (và name)', async () => {
+      const cases = [
+        { sortBy: 'createdAt', order: 'desc' },
+        { sortBy: 'price', order: 'asc' },
+        { sortBy: 'price', order: 'desc' },
+        { sortBy: 'name', order: 'asc' },
+      ];
+      for (const { sortBy, order } of cases) {
+        await request(server())
+          .get(`/products?sortBy=${sortBy}&order=${order}`)
+          .expect(200);
+        expect(productsService.findAllPublic).toHaveBeenLastCalledWith(
+          expect.objectContaining({ sortBy, order }),
+        );
+      }
+    });
+
+    describe('bộ lọc giá và excludeId', () => {
+      it('ép kiểu minPrice, maxPrice, excludeId và truyền cho service', async () => {
+        await request(server())
+          .get('/products?minPrice=100000&maxPrice=300000&excludeId=7')
+          .expect(200);
+        expect(productsService.findAllPublic).toHaveBeenCalledWith(
+          expect.objectContaining({
+            minPrice: 100000,
+            maxPrice: 300000,
+            excludeId: 7,
+          }),
+        );
+      });
+
+      it('không gửi thì các trường này là undefined', async () => {
+        await request(server()).get('/products').expect(200);
+        const [query] = productsService.findAllPublic.mock.calls[0] as [
+          Record<string, unknown>,
+        ];
+        expect(query.minPrice).toBeUndefined();
+        expect(query.maxPrice).toBeUndefined();
+        expect(query.excludeId).toBeUndefined();
+      });
+
+      it('minPrice > maxPrice → 400, lỗi ở maxPrice', async () => {
+        const res = await request(server())
+          .get('/products?minPrice=500000&maxPrice=100000')
+          .expect(400);
+        expect(errorsOf(res)).toEqual([
+          {
+            field: 'maxPrice',
+            message: 'maxPrice phải lớn hơn hoặc bằng minPrice',
+          },
+        ]);
+        expect(productsService.findAllPublic).not.toHaveBeenCalled();
+      });
+
+      it('minPrice = maxPrice hợp lệ; chỉ gửi một trong hai không bị lỗi', async () => {
+        await request(server())
+          .get('/products?minPrice=200000&maxPrice=200000')
+          .expect(200);
+        await request(server()).get('/products?minPrice=999999').expect(200);
+        await request(server()).get('/products?maxPrice=0').expect(200);
+      });
+
+      it('giá âm, số lẻ, chữ, vượt 2147483647 → 400', async () => {
+        for (const field of ['minPrice', 'maxPrice']) {
+          for (const value of ['-1', '1.5', 'abc', '2147483648']) {
+            const res = await request(server())
+              .get(`/products?${field}=${value}`)
+              .expect(400);
+            expect(fieldsOf(res)).toEqual([field]);
+          }
+        }
+        expect(productsService.findAllPublic).not.toHaveBeenCalled();
+      });
+
+      it('excludeId < 1 hoặc không phải số nguyên → 400', async () => {
+        for (const value of ['0', '-3', '1.5', 'abc']) {
+          const res = await request(server())
+            .get(`/products?excludeId=${value}`)
+            .expect(400);
+          expect(fieldsOf(res)).toEqual(['excludeId']);
+        }
+      });
+    });
+
+    describe('không truy vấn được sản phẩm ẩn', () => {
+      it('isActive (true, false, bất kỳ) → 400, kể cả khi đã đăng nhập ADMIN', async () => {
+        for (const role of [undefined, 'CUSTOMER', 'ADMIN'] as const) {
+          for (const value of ['true', 'false', '1']) {
+            const res = await as(role)(
+              request(server()).get(`/products?isActive=${value}`),
+            ).expect(400);
+            expect(errorsOf(res)).toEqual([
+              {
+                field: 'isActive',
+                message: 'Trường isActive không được phép gửi lên',
+              },
+            ]);
+          }
+        }
+        expect(productsService.findAllPublic).not.toHaveBeenCalled();
+      });
+
+      it('trường lạ bất kỳ (foo, stock, status, includeHidden) → 400', async () => {
+        for (const field of ['foo', 'stock', 'status', 'includeHidden']) {
+          const res = await request(server())
+            .get(`/products?${field}=1`)
+            .expect(400);
+          expect(errorsOf(res)).toEqual([
+            {
+              field,
+              message: `Trường ${field} không được phép gửi lên`,
+            },
+          ]);
+        }
+        expect(productsService.findAllPublic).not.toHaveBeenCalled();
+      });
     });
   });
 
@@ -404,6 +559,40 @@ describe('Products API (e2e, service giả)', () => {
       expect(errorsOf(res)).toEqual([
         { field: 'foo', message: 'Trường foo không được phép gửi lên' },
       ]);
+    });
+
+    // Public đã đổi sang 12/48; admin phải giữ nguyên 10/100
+    it('mặc định limit=10; limit=100 hợp lệ, 101 → 400', async () => {
+      await as('ADMIN')(request(server()).get('/admin/products')).expect(200);
+      expect(productsService.findAll).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 1, limit: 10 }),
+      );
+
+      await as('ADMIN')(
+        request(server()).get('/admin/products?limit=100'),
+      ).expect(200);
+      expect(productsService.findAll).toHaveBeenLastCalledWith(
+        expect.objectContaining({ limit: 100 }),
+      );
+
+      const res = await as('ADMIN')(
+        request(server()).get('/admin/products?limit=101'),
+      ).expect(400);
+      expect(errorsOf(res)).toContainEqual({
+        field: 'limit',
+        message: 'limit không được vượt quá 100',
+      });
+    });
+
+    it('không nhận bộ lọc riêng của public (minPrice, maxPrice, excludeId)', async () => {
+      for (const field of ['minPrice', 'maxPrice', 'excludeId']) {
+        const res = await as('ADMIN')(
+          request(server()).get(`/admin/products?${field}=1`),
+        ).expect(400);
+        expect(errorsOf(res)).toEqual([
+          { field, message: `Trường ${field} không được phép gửi lên` },
+        ]);
+      }
     });
   });
 

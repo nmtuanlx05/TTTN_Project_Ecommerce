@@ -47,7 +47,17 @@ export class ProductsService {
 
   // Chỉ sản phẩm đang hiện và còn ít nhất một biến thể đang bán
   async findAllPublic(query: QueryPublicProductsDto) {
-    const { q, categoryId, sortBy, order, page, limit } = query;
+    const {
+      q,
+      categoryId,
+      minPrice,
+      maxPrice,
+      excludeId,
+      sortBy,
+      order,
+      page,
+      limit,
+    } = query;
 
     // Lọc theo danh mục cha thì lấy luôn sản phẩm của danh mục con/cháu
     const categoryIds =
@@ -60,6 +70,13 @@ export class ProductsService {
       variants: { some: { isActive: true } },
       ...(categoryIds && { categoryId: { in: categoryIds } }),
       ...(q && searchCondition(q)),
+      ...((minPrice !== undefined || maxPrice !== undefined) && {
+        price: {
+          ...(minPrice !== undefined && { gte: minPrice }),
+          ...(maxPrice !== undefined && { lte: maxPrice }),
+        },
+      }),
+      ...(excludeId !== undefined && { id: { not: excludeId } }),
     };
 
     const [rows, total] = await this.prisma.$transaction([

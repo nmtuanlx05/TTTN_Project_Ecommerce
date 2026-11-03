@@ -11,6 +11,15 @@ export function isSafeRedirectPath(value: unknown): value is string {
   return !/[\\\u0000-\u001f]/.test(value)
 }
 
+/**
+ * Giữ đường dẫn cần quay lại (`state.from`) khi người dùng chuyển giữa /login và /register (liên kết chéo, và chuyển sang
+ * /login sau khi đăng ký). Chỉ truyền đi giá trị an toàn; `RedirectIfAuthenticated` vẫn kiểm lại lần nữa trước khi dùng.
+ */
+export function returnPathState(state: unknown): { from: string } | undefined {
+  const from = (state as { from?: unknown } | null)?.from
+  return isSafeRedirectPath(from) ? { from } : undefined
+}
+
 /** Trang đích khi đăng nhập mà không có đường dẫn cũ cần quay lại. */
 export function landingPathFor(role: Role): string {
   if (role === "ADMIN") return "/admin"

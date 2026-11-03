@@ -1,15 +1,17 @@
 import type { ReactElement } from "react"
 import { Outlet, Route } from "react-router-dom"
 import { navRoles } from "@/components/admin/nav-items"
-import CategoriesPage from "@/pages/admin/categories"
-import DashboardPage from "@/pages/admin/dashboard"
-import InventoryPage from "@/pages/admin/inventory"
 import PlaceholderPage from "@/pages/admin/placeholder"
-import ProductCreatePage from "@/pages/admin/products/new"
-import ProductEditPage from "@/pages/admin/products/edit"
-import ProductsPage from "@/pages/admin/products"
-import UsersPage from "@/pages/admin/users"
 import NotFoundPage from "@/pages/not-found"
+import {
+  CategoriesPage,
+  DashboardPage,
+  InventoryPage,
+  ProductCreatePage,
+  ProductEditPage,
+  ProductsPage,
+  UsersPage,
+} from "./admin-pages"
 import { AdminIndexRedirect } from "./admin-index-redirect"
 import { AdminLayoutContainer } from "./admin-layout-container"
 import { RequireAuth } from "./guards/require-auth"

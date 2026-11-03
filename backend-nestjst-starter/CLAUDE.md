@@ -207,7 +207,7 @@ Order, OrderItem, Voucher, StockMovement).
   log server, không trả client.
 - Trong service vẫn ném built-in exception với message tiếng Việt (`NotFoundException`, `ConflictException`...).
 
-**Phân trang và danh sách**: query `page` (≥ 1, mặc định 1) và `limit` (1–100, mặc định 10); `skip = (page - 1) * limit`.
+**Phân trang và danh sách**: query `page` (≥ 1, mặc định 1) và `limit` (1–100, mặc định 10; riêng `GET /products` công khai là 1–48, mặc định 12); `skip = (page - 1) * limit`.
 Tổng `total` đếm theo cùng điều kiện lọc, lấy danh sách và đếm trong một `$transaction`. Sắp xếp dùng
 `sortBy` (whitelist field) + `order` (`asc|desc`), mặc định mới nhất trước. Query boolean (`isActive`) phải
 transform từ chuỗi `"true"/"false"`.
