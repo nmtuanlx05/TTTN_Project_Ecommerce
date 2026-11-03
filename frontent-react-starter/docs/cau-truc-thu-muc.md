@@ -26,6 +26,7 @@ src/
 │   │               cart, checkout, order-success, my-orders, account
 ├─ features/      mỗi thực thể một thư mục theo khuôn mục 3
 │   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/ ✓ catalog/ ✓ (dữ liệu công khai của storefront: danh sách và chi tiết sản phẩm)
+│   │  newsletter/ ✓ (form đăng ký nhận tin ở chân trang — mới có giao diện, chưa có backend)
 │   └─ cart/ checkout/ orders/ vouchers/ payments/ account/
 ├─ components/
 │   ├─ ui/          shadcn, KHÔNG sửa ✓
@@ -36,7 +37,9 @@ src/
 │   │                 cart-button), storefront-footer, storefront-drawer (ngăn kéo/khung trượt dựng trên Base UI Dialog), skip-link,
 │   │                 breadcrumbs, pagination (số trang, dạng liên kết), product-image (khung 3:4, shimmer, fade, ảnh dự phòng),
 │   │                 reveal (hiện dần khi cuộn), state-message (rỗng/lỗi/404), section-heading, category-tiles (ô chữ danh mục trang chủ), brand-statement,
-│   │                 store-list (+ store-entry) — danh sách cửa hàng của trang /dia-chi
+│   │                 store-list (+ store-entry) — danh sách cửa hàng của trang /dia-chi,
+│   │                 announcement-bar (thanh thông báo chạy chữ phía trên header), footer-brand, footer-link-column, footer-bottom-bar (các phần của storefront-footer),
+│   │                 info-page-content (nội dung trang chính sách tạm), not-found-content (nội dung 404 dùng chung cho 404 và slug lạ của trang thông tin)
 │   └─ shared/      ✓ chỉ khi cả admin và storefront (kể cả trang auth) cùng dùng: theme-toggle (+ theme-cycle-button,
 │                     theme-options), password-input, user-menu, brand-logo, route-fallback ✓ (vòng quay khi tải trang lazy), form-dialog (vỏ hộp thoại có form: dùng cả ở admin lẫn hộp
 │                     thoại trong user-menu), image-upload-field (+ image-preview, image-upload-progress,
@@ -54,7 +57,8 @@ src/
 │                 image-rules ✓ (giới hạn và kiểm tra file ảnh theo kind), upload-image ✓ (POST /uploads/<kind>), update-avatar ✓ (PATCH /users/me/avatar),
 │                 pan-zoom ✓ (toán thu phóng và kéo ảnh, thuần túy), store-info ✓ (nội dung cửa hàng: tên, khẩu hiệu, liên hệ — MỘT file duy nhất),
 │                 category-tree ✓ (danh mục phẳng → cây, tra slug, chuỗi cha; thuần túy),
-│                 nav-items ✓ (cấu hình `STORE.navItems` + cây danh mục → mục điều hướng, dòng của bảng, mục đang xem; thuần túy)
+│                 nav-items ✓ (cấu hình `STORE.navItems` + cây danh mục → mục điều hướng, dòng của bảng, mục đang xem; thuần túy),
+│                 info-pages ✓ (cấu hình các trang chính sách tạm `{ slug, title, paragraphs? }`, tra theo slug, đường dẫn; thuần túy)
 ├─ types/         kiểu dùng chung (api.ts ✓, user.ts ✓ — Role và User, dùng ở auth, users, components/admin; category.ts ✓ — PublicCategory,
 │                 dùng ở categories và products; upload.ts ✓ — ImageUploadKind)
 └─ assets/        ảnh, font nội bộ
@@ -71,7 +75,18 @@ features/catalog/
                  chi tiết: product-detail-content (+skeleton, not-found), product-gallery, purchase-panel, variant-picker,
                  option-chip-group, quantity-stepper, sticky-buy-bar, related-products
                  trang chủ: home-hero (+ home-hero-images), home-new-arrivals (dùng chung một request `limit=8` với hero)
+                 thẻ sản phẩm: product-card + product-stock-badge (huy hiệu "Hết hàng" / "Sắp hết")
 ````
+
+### features/newsletter (đăng ký nhận tin ở chân trang)
+````
+features/newsletter/
+├─ api.ts   (MỘT hàm `subscribeNewsletter` — TẠM trả "chưa khả dụng", sau này thay bằng POST /newsletter/subscribers)
+├─ schemas.ts  constants.ts  use-newsletter-form.ts
+└─ components/newsletter-form.tsx
+````
+Chân trang (`components/storefront/storefront-footer`) nhận form qua slot `newsletter`; `routes/storefront-layout-container.tsx` dựng `<NewsletterForm />`
+rồi truyền xuống, vì components/ không import features/.
 Cổng đăng nhập cho hành động mua nằm ở `features/auth/use-require-login.ts`; trang (`pages/`) và `routes/storefront-layout-container.tsx`
 lấy hook rồi truyền xuống bằng props, vì features không import lẫn nhau.
 
@@ -147,6 +162,7 @@ Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 4
 | Kho ✓ | features/inventory/ ✓ |
 | Giỏ hàng, đơn hàng, voucher | features/cart/, orders/, vouchers/ |
 | Storefront khung + catalog ✓ | components/storefront/, pages/storefront/catalog + product-detail, features/catalog/ |
+| Storefront: thanh thông báo, thẻ sản phẩm mới, chân trang, trang thông tin ✓ | features/newsletter/, pages/storefront/info/ |
 | Storefront còn lại | features/checkout/, account/ |
 | Thanh toán online | features/payments/ |
 | Dashboard thật | features/dashboard/ nối API thật |
