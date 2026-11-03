@@ -1,4 +1,5 @@
 import type { Prisma } from '../generated/prisma/client';
+import { getStockStatus } from '../inventory/inventory.mapper';
 
 // Mỗi `select` dưới đây là danh sách trường được phép trả ra: thêm trường vào đây mới lộ ra API.
 // Hàm map là hàm thuần nên unit test được mà không cần database.
@@ -72,10 +73,10 @@ export const publicProductListSelect = {
   price: true,
   imageUrl: true,
   category: { select: { id: true, name: true, slug: true } },
-  // Chỉ biến thể đang bán, và chỉ lấy số liệu tồn để tính inStock (không trả ra ngoài)
+  // Chỉ biến thể đang bán, và chỉ lấy số liệu tồn để tính inStock/lowStock (không trả ra ngoài)
   variants: {
     where: { isActive: true },
-    select: { stock: true, reserved: true },
+    select: { stock: true, reserved: true, minStock: true },
   },
 } as const;
 
@@ -83,11 +84,29 @@ type PublicProductListRow = Prisma.ProductGetPayload<{
   select: typeof publicProductListSelect;
 }>;
 
-export function toPublicListItem({
-  variants,
-  ...product
-}: PublicProductListRow) {
-  return { ...product, inStock: variants.some(isAvailable) };
+// Sắp hết: có ít nhất một biến thể còn hàng và mọi biến thể còn hàng đều ở trạng thái 'low'
+// của module Kho (biến thể đã hết hàng không tính). minStock = 0 thì không bao giờ 'low'.
+const isLowStock = (variants: PublicProductListRow['variants']) => {
+  const inStockStatuses = variants
+    .map(getStockStatus)
+    .filter((status) => status !== 'out');
+  return (
+    inStockStatuses.length > 0 && inStockStatuses.every((s) => s === 'low')
+  );
+};
+
+// Dựng object tường minh (không spread) để không lộ thêm trường khi select đổi
+export function toPublicListItem(product: PublicProductListRow) {
+  return {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    price: product.price,
+    imageUrl: product.imageUrl,
+    category: product.category,
+    inStock: product.variants.some(isAvailable),
+    lowStock: isLowStock(product.variants),
+  };
 }
 
 // ===== Public: chi tiết =====

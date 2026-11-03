@@ -31,6 +31,8 @@ Không có token (hoặc token sai/hết hạn) → **401**. CUSTOMER → **403*
 | `in_stock` | `available > minStock` và `available > 0` (còn lại) |
 
   Với `minStock = 0` không bao giờ có `low`: còn 1 cái là `in_stock`, hết là `out`.
+  Danh sách sản phẩm công khai dựa vào trạng thái `low` này để báo `lowStock` (huy hiệu "Sắp hết"): xem
+  `lowStock` trong `docs/api/products.md` (mục "Public: item trong danh sách").
 
 - **Bất biến** (luôn đúng sau mọi thao tác): `stock` là số nguyên, `0 <= reserved <= stock`, `stock <= 2147483647`.
   Thao tác nào làm vỡ bất biến bị từ chối (409 hoặc 400) và **không ghi gì**.
