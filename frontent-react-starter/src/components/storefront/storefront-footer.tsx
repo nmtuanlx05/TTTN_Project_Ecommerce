@@ -1,67 +1,43 @@
-import { Link } from "react-router-dom"
-import { BrandLogo } from "@/components/shared/brand-logo"
-import type { CategoryNode } from "@/lib/category-tree"
+import type { ReactNode } from "react"
+import { infoPageHref, infoPageTitle } from "@/lib/info-pages"
+import type { NavItem } from "@/lib/nav-items"
 import { STORE } from "@/lib/store-info"
-import { cn } from "@/lib/utils"
-
-const LINK =
-  "inline-flex min-h-control min-w-control items-center text-body-sm text-ink-muted underline decoration-transparent decoration-1 underline-offset-4 transition-colors duration-(--motion-fast) ease-smooth hover:text-ink hover:decoration-ink"
+import { FooterBottomBar } from "./footer-bottom-bar"
+import { FooterBrand } from "./footer-brand"
+import { FooterLinkColumn } from "./footer-link-column"
 
 /**
- * Chân trang: tên + khẩu hiệu, liên kết danh mục (gốc), vùng liên hệ. Thông tin liên hệ chưa có thì hiện
- * dòng "đang được cập nhật" thay vì bịa; điền ở `lib/store-info.ts`. Không có cam kết kinh doanh nào ở đây.
+ * Chân trang bốn cột: giới thiệu + liên hệ, đường dẫn nhanh, chính sách khách hàng, đăng ký nhận tin; dưới cùng là dòng bản quyền.
+ * Dưới 768px xếp dọc, từ 768px hai cột, từ 1024px bốn cột (cột đầu và cuối rộng hơn). Nền tối ở cả hai chế độ nhờ class `dark`
+ * (dùng bộ token tối trong phạm vi chân trang, không thêm token mới).
+ *
+ * `quickLinks` là các mục điều hướng đã đối chiếu với cây danh mục (cùng nguồn với header, nên mục danh mục chỉ hiện khi danh mục
+ * tồn tại). `newsletter` là form nhận tin do nơi dựng khung truyền vào (components/ không import features/).
  */
-function StorefrontFooter({ categories = [] }: { categories?: CategoryNode[] }) {
-  const { contact } = STORE
-  const contactLines = [contact.address, contact.phone, contact.email, contact.hours].filter(
-    (line): line is string => Boolean(line),
-  )
+function StorefrontFooter({ quickLinks = [], newsletter }: { quickLinks?: NavItem[]; newsletter?: ReactNode }) {
+  const { footer } = STORE
+  const quickLinkItems = [
+    footer.quickLinksLead,
+    ...quickLinks.map(({ label, href }) => ({ label, href })),
+  ]
+  const policyLinks = footer.policySlugs.map((slug) => ({ label: infoPageTitle(slug), href: infoPageHref(slug) }))
 
   return (
-    <footer className="border-t border-border-subtle">
+    <footer className="dark border-t border-border-strong bg-surface-sunken text-ink">
       <div className="mx-auto w-full max-w-7xl px-gutter pt-12 pb-8 lg:pt-16">
-        <div className="grid gap-10 md:grid-cols-3">
-          <div className="flex flex-col gap-2">
-            <BrandLogo />
-            <p className="max-w-xs text-body-sm text-ink-muted">{STORE.tagline}</p>
-          </div>
-
-          <nav aria-label="Danh mục ở chân trang" className="flex flex-col items-start">
-            <h2 className="mb-1 text-overline uppercase text-ink">Cửa hàng</h2>
-            <Link to="/products" className={LINK}>
-              Tất cả sản phẩm
-            </Link>
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                to={`/products?category=${encodeURIComponent(category.slug)}`}
-                className={LINK}
-              >
-                {category.name}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex flex-col gap-1">
-            <h2 className="mb-1 text-overline uppercase text-ink">Liên hệ</h2>
-            {contactLines.length > 0 ? (
-              contactLines.map((line) => (
-                <p key={line} className="text-body-sm text-ink-muted">
-                  {line}
-                </p>
-              ))
-            ) : (
-              <p className="text-body-sm text-ink-muted">{STORE.contactPending}</p>
-            )}
-            <Link to="/dia-chi" className={cn(LINK, "self-start")}>
-              Địa chỉ cửa hàng
-            </Link>
-          </div>
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[5fr_4fr_4fr_5fr]">
+          <FooterBrand />
+          <FooterLinkColumn title={footer.quickLinksTitle} links={quickLinkItems} />
+          <FooterLinkColumn title={footer.policiesTitle} links={policyLinks} />
+          <section aria-labelledby="footer-newsletter" className="flex flex-col gap-stack">
+            <h2 id="footer-newsletter" className="text-overline text-ink uppercase">
+              {STORE.newsletter.title}
+            </h2>
+            <p className="max-w-sm text-body-sm text-ink-muted">{STORE.newsletter.description}</p>
+            {newsletter}
+          </section>
         </div>
-
-        <p className="mt-12 border-t border-border-subtle pt-6 text-caption text-ink-muted">
-          © {new Date().getFullYear()} {STORE.name}
-        </p>
+        <FooterBottomBar />
       </div>
     </footer>
   )
