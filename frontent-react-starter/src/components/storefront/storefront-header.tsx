@@ -15,7 +15,8 @@ import { SearchPanel } from "./search-panel"
 
 /**
  * Header cửa hàng, dính khi cuộn. Ở đầu trang nền liền với trang; cuộn quá vài px thì nền mờ nhẹ và hiện đường kẻ mảnh
- * (phát hiện bằng một phần tử mốc cao 8px ở đầu tài liệu, không dùng scroll listener).
+ * (phát hiện bằng một phần tử mốc cao 8px, đặt ngay dưới thanh thông báo ở đầu tài liệu — tức đúng chỗ header đang nằm khi chưa dính —
+ * không dùng scroll listener).
  *
  * Từ `xl` (1280px): logo bên trái; thanh điều hướng (`STORE.navItems`) và nhóm biểu tượng (tìm kiếm, đổi sáng/tối, giỏ hàng, tài khoản)
  * gom về bên phải, thanh điều hướng cách nhóm biểu tượng 40px. Dưới `xl`: nút menu, logo, tìm kiếm, giỏ hàng; điều hướng, tài khoản
@@ -37,7 +38,7 @@ function StorefrontHeader({
 
   return (
     <>
-      <div ref={ref} aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-2" />
+      <div ref={ref} aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-announcement h-2" />
       <header
         className={cn(
           "sticky top-0 z-30 border-b transition-[background-color,border-color] duration-(--motion-base) ease-smooth",
