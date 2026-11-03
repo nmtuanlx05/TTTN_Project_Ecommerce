@@ -193,10 +193,14 @@
      --sp-block: giữa các khối lớn của trang (di động 56, từ lg 96). Không đổi
      --sp-section (80) vì trang đăng nhập và trang chủ hiện tại đang dùng.
      --header-h: chiều cao header dính, dùng cho scroll-margin và vị trí dính.
+     --announcement-h: chiều cao thanh thông báo chạy chữ phía trên header (không dính).
+     --motion-marquee: thời gian chạy hết MỘT nửa dải chữ (thanh thông báo); dài hơn = chậm hơn.
      ======================================================================== */
 
   --sp-block: 56px;
   --header-h: 64px;
+  --announcement-h: 40px;
+  --motion-marquee: 60s;
 }
 
 @media (min-width: 768px) {
@@ -486,10 +490,12 @@
   --spacing-control-px: var(--sp-control-px);
   --spacing-block: var(--sp-block);
   --spacing-header: var(--header-h);
+  --spacing-announcement: var(--announcement-h);
 
-  /* Chuyển động: ease-smooth, animate-page-enter */
+  /* Chuyển động: ease-smooth, animate-page-enter, animate-marquee */
   --ease-smooth: var(--motion-ease);
   --animate-page-enter: page-enter var(--motion-base) var(--motion-ease) both;
+  --animate-marquee: marquee var(--motion-marquee) linear infinite;
 
   /* Bo góc — ghi đè thang mặc định của shadcn cho khớp tham chiếu */
   --radius-xs: var(--radius-control);
@@ -514,6 +520,16 @@
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Dải chữ chạy ngang: dịch đúng một nửa dải (hai nửa giống hệt nhau) nên điểm lặp vòng không thấy được. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }
 
