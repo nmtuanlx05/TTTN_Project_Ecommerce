@@ -8,8 +8,8 @@ import { FooterLinkColumn } from "./footer-link-column"
 
 /**
  * Chân trang bốn cột: giới thiệu + liên hệ, đường dẫn nhanh, chính sách khách hàng, đăng ký nhận tin; dưới cùng là dòng bản quyền.
- * Dưới 768px xếp dọc, từ 768px hai cột, từ 1024px bốn cột (cột đầu và cuối rộng hơn). Nền tối ở cả hai chế độ nhờ class `dark`
- * (dùng bộ token tối trong phạm vi chân trang, không thêm token mới).
+ * Dưới 768px xếp dọc, từ 768px hai cột, từ 1024px bốn cột (cột đầu và cuối rộng hơn). Nền tối cố định nhờ class `dark`
+ * (vùng tối cố định: dùng bộ token tối trong phạm vi chân trang, không thêm token mới).
  *
  * `quickLinks` là các mục điều hướng đã đối chiếu với cây danh mục (cùng nguồn với header, nên mục danh mục chỉ hiện khi danh mục
  * tồn tại). `newsletter` là form nhận tin do nơi dựng khung truyền vào (components/ không import features/).

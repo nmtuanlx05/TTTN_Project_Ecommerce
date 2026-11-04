@@ -17,8 +17,8 @@ type DrawerSide = keyof typeof SIDE_CLASS
  * `ui/sheet.tsx` trái token: lớp phủ `bg-black`, đổ bóng, nút đóng 38px ghi tiếng Anh. Dialog modal nên khóa cuộn,
  * giữ focus bên trong, Esc và bấm nền đều đóng, và trả focus về nút đã mở (`trigger`).
  *
- * Nền đặc `surface-raised` + viền `border-default` để thấy rõ mép ở cả sáng và tối; lớp phủ là `canvas` mờ
- * (sáng ở light, tối ở dark) nên không cần màu riêng. Có thể điều khiển từ ngoài (`open`).
+ * Nền đặc `surface-raised` + viền `border-default` để thấy rõ mép; lớp phủ là `canvas` mờ
+ * nên không cần màu riêng. Có thể điều khiển từ ngoài (`open`).
  * `hideHeader`: bỏ thanh tiêu đề mặc định (khung tìm kiếm tự dựng); tiêu đề vẫn có cho trình đọc màn hình.
  */
 function StorefrontDrawer({

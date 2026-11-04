@@ -8,7 +8,7 @@ const STATIC_SRC = /^\/(?!\/)/
 /**
  * Ảnh tĩnh trong `public/` (hero, thẻ danh mục, dải câu chuyện) lấp đầy khung của phần tử cha (`absolute inset-0`; cha phải `relative` và có kích
  * thước/tỉ lệ). Trong lúc tải là skeleton; xong thì mờ dần vào. Thiếu file hoặc lỗi tải: khung trung tính kèm chữ cái đầu thương hiệu (token,
- * tự theo phạm vi sáng/tối của cha), không bao giờ hiện chữ giữ chỗ. `objectPosition` là vùng ảnh giữ lại khi bị cắt (cấu hình ở `lib/home-content.ts`).
+ * tự theo phạm vi `dark` cố định của cha nếu có), không bao giờ hiện chữ giữ chỗ. `objectPosition` là vùng ảnh giữ lại khi bị cắt (cấu hình ở `lib/home-content.ts`).
  * `alt` rỗng = ảnh trang trí. `eager`: ảnh nằm ngay màn hình đầu thì tải ngay với ưu tiên cao; còn lại lazy.
  */
 function StaticImage({

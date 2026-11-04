@@ -93,7 +93,11 @@ Toàn bộ dựng trong OKLCH rồi xuất hex, nên các bậc sáng đều v�
 
 ### Nền tảng
 
-| Token | Light | Dark |
+Website **chỉ có giao diện sáng** (cột Light). Cột "Vùng tối cố định" là bộ token của class `dark`
+(`.dark` trong `global.css`), chỉ có tác dụng bên trong 5 vùng tối cố định: thanh thông báo, chân trang,
+dải câu chuyện thương hiệu, thẻ danh mục nổi bật và lightbox xem ảnh (xem mục "Giao diện sáng và vùng tối cố định").
+
+| Token | Light | Vùng tối cố định |
 |---|---|---|
 | `--color-canvas` | `#F2F1EE` | `#11100E` |
 | `--color-surface` | `#FAF9F7` | `#1C1B19` |
@@ -108,7 +112,7 @@ Toàn bộ dựng trong OKLCH rồi xuất hex, nên các bậc sáng đều v�
 | `--color-border-control` | `#7C7A77` | `#767370` |
 | `--color-primary` | `#171614` | `#EEEDE9` |
 
-Dark mode không phải đảo ngược máy móc: nền là đen ngà chứ không đen tuyền, chữ
+Bộ token vùng tối cố định không phải đảo ngược máy móc: nền là đen ngà chứ không đen tuyền, chữ
 là trắng ngà chứ không trắng tinh, và màu trạng thái được chỉnh lại độ sáng
 riêng chứ không lật.
 
@@ -121,9 +125,9 @@ riêng chứ không lật.
    đạt 3.79, thỏa WCAG 1.4.11 cho ranh giới input/checkbox/radio.
 
 3. **Nền hover phải khác nền của vùng nó nằm trên.** Popup, dropdown, dialog dùng
-   `surface-raised`; dark mode từng đặt `surface-hover` trùng đúng màu đó nên mục
-   đang hover không đổi gì. Hiện hover/raised ở dark là 1.27 (light là 1.21). Chữ
-   `ink-subtle` không dùng trên nền hover (dark chỉ 3.99).
+   `surface-raised`; bộ token vùng tối từng đặt `surface-hover` trùng đúng màu đó nên mục
+   đang hover không đổi gì. Hiện hover/raised ở vùng tối là 1.27 (light là 1.21). Chữ
+   `ink-subtle` không dùng trên nền hover (vùng tối chỉ 3.99).
 
 Mọi cặp chữ/nền khác trong hệ thống đều ≥ 4.5. Bảng đầy đủ nằm ở `/styleguide`.
 
@@ -131,7 +135,7 @@ Mọi cặp chữ/nền khác trong hệ thống đều ≥ 4.5. Bảng đầy �
 
 Nguyên tắc: **độ đậm của mực tăng dần theo tiến độ đơn hàng.** Yêu cầu "phân
 biệt được khi in đen trắng" buộc 7 badge phải trải rộng thang sáng, không thể
-nhét hết vào vùng pastel. Bậc xám giữa các badge liền kề ở light mode:
+nhét hết vào vùng pastel. Bậc xám giữa các badge liền kề ở giao diện sáng:
 1.22 → 1.28 → 1.30 → 2.20 → 1.73.
 
 Hai nhánh phụ tách khỏi thang bằng **hình thức** chứ không chỉ bằng tông:
@@ -139,8 +143,8 @@ Hai nhánh phụ tách khỏi thang bằng **hình thức** chứ không chỉ b
 mực. Trong bản in, badge rỗng không thể nhầm với badge có nền. `UNPAID` dùng
 cùng hình thức rỗng ở cột thanh toán.
 
-Dark mode giữ đúng hướng thang nhưng bậc hẹp hơn (1.05–1.12), vì ở vùng tối mọi
-màu dồn về gần đen. Chấp nhận được: không ai in trang ở dark mode.
+Bộ token vùng tối giữ đúng hướng thang nhưng bậc hẹp hơn (1.05–1.12), vì ở vùng tối mọi
+màu dồn về gần đen. Chấp nhận được: badge trạng thái chỉ hiện trên nền sáng của admin, không nằm trong vùng tối nào.
 
 Dùng `<OrderStatusBadge status="SHIPPING" />` và
 `<PaymentStatusBadge status="PAID" />` — hai component này tự tra nhãn tiếng
@@ -215,20 +219,22 @@ Mọi nút đã có đủ default, hover, active, focus-visible, disabled và lo
 `default` và `outline` là tên cũ của shadcn, giữ lại cho component sinh sẵn —
 code mới dùng `primary` / `secondary`.
 
-## Sáng / tối
+## Giao diện sáng và vùng tối cố định
 
-- `src/hooks/use-theme.ts` — lưu `"light" | "dark" | "system"` vào localStorage,
-  mặc định `system`. `resolved` được tính trong lúc render, không giữ thành
-  state riêng, nên không có vòng render thừa.
-- `index.html` có script nhỏ đặt class `dark` lên `<html>` **trước khi React
-  mount** → không nhấp nháy khi tải trang. Nếu đổi key localStorage thì phải
-  sửa cả script này.
-- `<ThemeToggle />` — ba trạng thái, dựng bằng `radiogroup`, đi được bằng mũi tên.
+- Website **chỉ có giao diện sáng**, bất kể hệ điều hành đặt chế độ tối. Không có nút chuyển chế độ, không có hook/provider
+  theme, không có script trong `index.html`, không đọc/ghi localStorage cho theme (giá trị `theme` cũ còn trong trình duyệt
+  người dùng bị bỏ qua). `:root { color-scheme: light }` trong `global.css` và `<meta name="color-scheme" content="light">`
+  giữ ô nhập, thanh cuộn và điều khiển mặc định của trình duyệt ở chế độ sáng. `<html>` không bao giờ có class `dark`.
+- Class `dark` (khối `.dark` và `@custom-variant dark` trong `global.css`) nay nghĩa là **vùng tối cố định** (inverse scope):
+  đặt lên MỘT phần tử thì mọi token bên trong dùng bộ màu tối (kể cả `ui/Input`, `ui/Button`, `color-scheme: dark`). Hiện có 5 vùng:
+  `announcement-bar`, `storefront-footer`, `home/brand-story`, `home/category-card`, `shared/image-lightbox`. Không xóa khối `.dark`
+  hay đổi tên class. Không thêm lại chuyển chế độ cho cả trang.
+- Các class `dark:` (biến thể Tailwind) nằm NGOÀI 5 vùng tối trên (hiện còn ở `ui/dropdown-menu.tsx`, `ui/avatar.tsx`) không còn tác dụng; vô hại, để nhánh dọn code quyết định.
 
 ## Tiếp cận
 
 - Mọi thành phần phải dùng được bằng bàn phím. Focus ring 2px, cách mép 2px,
-  nhìn rõ ở cả hai chế độ. Không bao giờ `outline: none` mà không thay bằng
+  nhìn rõ trên nền sáng lẫn trong vùng tối cố định. Không bao giờ `outline: none` mà không thay bằng
   thứ khác nhìn thấy được. **Không viết `outline-none` cạnh `focus-visible:outline-*`**: trong Tailwind v4 nó đặt
   `--tw-outline-style: none` nên vòng focus không bao giờ hiện (đã đo); chỉ phần tử nhận focus bằng chương trình (`main`, popup) mới có `outline-none`
   (xem `docs/storefront-design.md` mục 11).
@@ -370,12 +376,12 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
 ## Trang hiện có
 
 - `/login` — đăng nhập (`features/auth/components/login-form.tsx` trong `auth-shell.tsx`). 401/403/lỗi mạng hiện thành
-  Alert đầu form, lỗi `errors[]` gắn đúng ô. Có sáng/tối.
+  Alert đầu form, lỗi `errors[]` gắn đúng ô.
 - `/register` — đăng ký tài khoản CUSTOMER (`features/auth/components/register-form.tsx`): email, mật khẩu + nhập lại, họ tên và số điện thoại tùy chọn.
 - `/` — trang chủ storefront, công khai. Khung dùng chung của mọi trang khách: `components/storefront/storefront-layout.tsx` (liên kết "bỏ qua tới nội dung", header dính, `<main id="main-content">`,
   footer), nối phiên + cây danh mục + cổng đăng nhập ở `routes/storefront-layout-container.tsx`. **Header**: logo `BrandLogo` bên trái; từ `xl` (1280px) thanh điều hướng gom về bên phải, cách nhóm biểu tượng 40px: các mục theo `STORE.navItems` (Tất cả sản phẩm, Áo, Quần, Phụ kiện, Quà tặng, Địa chỉ; mục danh mục chỉ hiện khi slug có trong cây danh mục), mục có danh mục con mở bảng toàn chiều rộng
-  (`header-nav.tsx`, `header-nav-panel.tsx`, `hooks/use-mega-menu.ts`, `lib/nav-items.ts`; chi tiết ở `docs/storefront-design.md` mục 9b), rồi tìm kiếm (khung trượt từ trên, tự focus, Enter → `/products?q=`), đổi sáng/tối, giỏ hàng, đăng nhập hoặc `UserMenu`; dưới `xl` còn nút menu (ngăn kéo cùng cấu hình, mục danh mục là accordion
-  (`mobile-nav-list.tsx`), kèm tài khoản kể cả "Ảnh đại diện" và "Vào trang quản trị", đổi sáng/tối), tìm kiếm, giỏ hàng. Nền header mờ nhẹ + đường kẻ khi cuộn. **Thanh thông báo chạy chữ** (`announcement-bar.tsx`, dựng trong `StorefrontLayout` ngay trên header, không dính): nội dung `STORE.announcements`, dừng khi rê chuột/focus, tắt khi giảm chuyển động. **Footer** (nền tối ở cả hai chế độ nhờ class `dark` cục bộ, không token mới): 4 cột
+  (`header-nav.tsx`, `header-nav-panel.tsx`, `hooks/use-mega-menu.ts`, `lib/nav-items.ts`; chi tiết ở `docs/storefront-design.md` mục 9b), rồi tìm kiếm (khung trượt từ trên, tự focus, Enter → `/products?q=`), giỏ hàng, đăng nhập hoặc `UserMenu`; dưới `xl` còn nút menu (ngăn kéo cùng cấu hình, mục danh mục là accordion
+  (`mobile-nav-list.tsx`), kèm tài khoản kể cả "Ảnh đại diện" và "Vào trang quản trị"), tìm kiếm, giỏ hàng. Nền header mờ nhẹ + đường kẻ khi cuộn. **Thanh thông báo chạy chữ** (`announcement-bar.tsx`, dựng trong `StorefrontLayout` ngay trên header, không dính): nội dung `STORE.announcements`, dừng khi rê chuột/focus, tắt khi giảm chuyển động. **Footer** (nền tối cố định nhờ class `dark` cục bộ, không token mới): 4 cột
   (giới thiệu + liên hệ, đường dẫn nhanh từ `navItems`, chính sách khách hàng, đăng ký nhận tin), dòng bản quyền. Nội dung cửa hàng (tên, khẩu hiệu,
   liên hệ, thanh thông báo, chữ chân trang) chỉ ở `lib/store-info.ts`: **khẩu hiệu, mô tả và các cam kết (miễn phí vận chuyển, đổi trả 30 ngày, ưu đãi 10%) là nội dung mẫu chờ xác nhận**, hệ thống chưa làm thật (bảng ở `docs/storefront-design.md` mục 13); liên hệ chưa có (footer ghi "đang được cập nhật"). **Trang chủ** (`pages/storefront/home`, chi tiết ở `docs/storefront-design.md` mục 14; nội dung ở `lib/home-content.ts`, ảnh tĩnh ở `public/home/`): hero carousel THỦ CÔNG 3 slide (nút, thanh tiến trình, phím ←/→, vuốt; không tự chạy; một `h1` ẩn thị giác, tiêu đề slide là `h2`; ảnh tràn sát mép phải, chữ canh theo container bằng `--container-inset`), "Danh mục nổi bật" (4 thẻ ảnh, gradient `scrim`), "Best sellers" (**TẠM**: hook `useBestSellerProducts` lấy sản phẩm tạo sớm nhất, chưa phải bán chạy), "Câu chuyện thương hiệu" (dải tối, tiêu đề serif nghiêng), "Sản phẩm mới về" (3 tab + danh sách cuộn ngang) và dải cam kết; mỗi khối tự xử lý rỗng/lỗi và tự bọc `Reveal`. Mọi chữ là **nội dung mẫu** chờ xác nhận, nhiều câu là cam kết chưa có thật (bảng ở `docs/storefront-design.md` mục 13). Khung nội dung của trang dùng `PageContainer` (`components/storefront/page-container.tsx`; header, chân trang, khung tìm kiếm, bảng điều hướng dùng cùng giá trị nhưng tự viết class). Trang storefront mới đặt trong cùng `<Route element={<StorefrontLayoutContainer />}>` ở `routes/storefront-routes.tsx`.
 - `/dia-chi` — danh sách cửa hàng (`pages/storefront/stores`, `components/storefront/store-list.tsx`) từ `STORE.stores` trong `lib/store-info.ts`; **mảng để rỗng cho tới khi chủ cửa hàng cung cấp thông tin thật** (rỗng thì hiện "Thông tin cửa hàng đang được cập nhật"). Không bịa địa chỉ, số điện thoại, giờ mở cửa.
@@ -448,14 +454,13 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
 - **Xem ảnh lớn (lightbox)**: `ImagePreview` có prop `zoomable`; khi bật và ảnh hợp lệ, khung ảnh là nút (`type="button"`) mở `components/shared/image-lightbox.tsx`
   (`src`, `alt`, `open`, `onOpenChange`, `title?` — điều khiển từ ngoài nên dùng lại được ở storefront). Đang bật ở ô upload ảnh (khi không đang tải lên) và
   ảnh nhỏ trong bảng sản phẩm. Dựng thẳng trên `@base-ui/react/dialog` (như `ConfirmDialog`/`FormDialog`, vì `ui/dialog.tsx` trái token), nền tối bằng lớp `dark` đặt lên
-  Popup (token dark khai báo trong `.dark` và Tailwind dùng `@theme inline` nên mọi token trong Popup tự đổi, không cần token riêng). 100% = vừa khung (ảnh nhỏ giãn
+  Popup (vùng tối cố định thứ 5; token khai báo trong `.dark` và Tailwind dùng `@theme inline` nên mọi token trong Popup tự đổi, không cần token riêng). 100% = vừa khung (ảnh nhỏ giãn
   tối đa 2× kích thước gốc), giới hạn 100–400%. Bánh xe zoom quanh con trỏ, bấm đúp chuyển 100%/200%, kéo khi đã phóng to (giới hạn để ảnh luôn phủ kín khung), hai ngón
   chụm để zoom, phím `+ − 0` và mũi tên, bấm vùng trống đóng. Logic ở `hooks/use-pan-zoom.ts` (state, bánh xe, phím) + `use-pan-zoom-gestures.ts` (pointer events; bấm vùng trống
   nhận diện bằng pointer chứ không dùng `click` để không đóng nhầm sau khi kéo) + `lib/pan-zoom.ts` (toán thuần). Lint React Compiler (`react-hooks/refs`) coi object hook
   trả về là "chứa ref" nếu có ref trong đó, nên hai hook tách riêng và khung ảnh được giữ bằng `useState` + `ref={setStageEl}` ở nơi gọi.
 - Dùng chung: `components/shared/user-menu.tsx` (menu tài khoản của storefront và admin-topbar; nhận dữ liệu qua props, "Vào trang quản trị" chỉ hiện khi
-  `canAccessAdmin`), `brand-logo.tsx` (logo chữ của header, `AuthShell`, màn hình chờ), `theme-toggle.tsx` (từ `md` nhóm 3 nút, dưới `md` một nút xoay vòng
-  44px — `theme-cycle-button.tsx`, `theme-options.ts`). Tên hiển thị: `lib/display-name.ts` (`name` đã trim, trống thì phần trước `@` của email); chỗ cần phân biệt
+  `canAccessAdmin`), `brand-logo.tsx` (logo chữ của header, `AuthShell`, màn hình chờ). Tên hiển thị: `lib/display-name.ts` (`name` đã trim, trống thì phần trước `@` của email); chỗ cần phân biệt
   người dùng (hộp khóa/mở khóa) hiện kèm email.
 - Trang 403 ("Bạn không có quyền truy cập") do `RequireRole` hiển thị tại chỗ.
 

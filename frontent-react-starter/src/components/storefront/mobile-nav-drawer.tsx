@@ -1,6 +1,5 @@
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { useOpenUntilNavigation } from "@/hooks/use-open-until-navigation"
 import type { NavItem } from "@/lib/nav-items"
 import type { HeaderSession } from "./header-session"
@@ -9,7 +8,7 @@ import { MobileNavList } from "./mobile-nav-list"
 import { StorefrontDrawer } from "./storefront-drawer"
 
 /**
- * Nút menu + ngăn kéo trái (dưới `xl`): điều hướng chính, tài khoản, đổi sáng/tối. Tự đóng khi pathname đổi hoặc khi bấm
+ * Nút menu + ngăn kéo trái (dưới `xl`): điều hướng chính, tài khoản. Tự đóng khi pathname đổi hoặc khi bấm
  * một liên kết bên trong (`onNavigate`); focus trả về nút menu.
  */
 function MobileNavDrawer({
@@ -36,7 +35,6 @@ function MobileNavDrawer({
       </div>
       <div className="flex flex-col gap-stack border-t border-border-subtle p-gutter">
         <MobileAccount session={session} onNavigate={close} />
-        <ThemeToggle className="self-start" />
       </div>
     </StorefrontDrawer>
   )

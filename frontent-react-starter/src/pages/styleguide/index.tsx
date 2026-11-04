@@ -17,8 +17,6 @@ import {
 import { ArrowUpDown, PackageOpen, Plus } from "lucide-react"
 
 import { TablePagination } from "@/components/admin/table-pagination"
-import { ThemeToggle } from "@/components/shared/theme-toggle"
-import { useTheme } from "@/hooks/use-theme"
 import { Alert } from "@/components/ui/alert"
 import {
   Badge,
@@ -102,9 +100,6 @@ function Ratio({ value }: { value: number | null }) {
 /* ------------------------------- 1. Màu sắc ------------------------------- */
 
 function ColorSection() {
-  const { resolved } = useTheme()
-  const isDark = resolved === "dark"
-
   return (
     <div className="flex flex-col gap-section">
       <div>
@@ -117,14 +112,14 @@ function ColorSection() {
             >
               <div
                 className="size-11 shrink-0 rounded-xs border border-border-control"
-                style={{ background: isDark ? swatch.dark : swatch.light }}
+                style={{ background: swatch.light }}
               />
               <div className="min-w-0">
                 <p className="truncate font-mono text-caption text-ink">
                   {swatch.token}
                 </p>
                 <p className="text-caption text-ink-muted">
-                  <span data-numeric>{isDark ? swatch.dark : swatch.light}</span>
+                  <span data-numeric>{swatch.light}</span>
                   {swatch.note ? ` · ${swatch.note}` : null}
                 </p>
               </div>
@@ -145,7 +140,7 @@ function ColorSection() {
               <TableRow>
                 <TableHead>Cặp màu</TableHead>
                 <TableHead className="text-right">Sáng</TableHead>
-                <TableHead className="text-right">Tối</TableHead>
+                <TableHead className="text-right">Vùng tối cố định</TableHead>
                 <TableHead>Ghi chú</TableHead>
               </TableRow>
             </TableHeader>
@@ -175,15 +170,15 @@ function ColorSection() {
               key={tone.name}
               className="rounded-md border p-card"
               style={{
-                background: isDark ? tone.darkTint : tone.lightTint,
-                borderColor: isDark ? tone.darkFg : tone.lightFg,
-                color: isDark ? tone.darkFg : tone.lightFg,
+                background: tone.lightTint,
+                borderColor: tone.lightFg,
+                color: tone.lightFg,
               }}
             >
               <p className="text-body-sm font-semibold">{tone.label}</p>
               <p className="mt-1 font-mono text-caption">
-                {isDark ? tone.darkFg : tone.lightFg} · tương phản{" "}
-                {(isDark ? tone.darkRatio : tone.lightRatio).toFixed(2)}
+                {tone.lightFg} · tương phản{" "}
+                {tone.lightRatio.toFixed(2)}
               </p>
             </div>
           ))}
@@ -285,8 +280,8 @@ function ButtonSection() {
 
       <p className="mt-stack text-body-sm text-ink-muted">
         Hover và active không chụp lại được trong bảng — rê chuột lên từng nút để
-        xem. Nhấn Tab để kiểm tra vòng focus: viền 2px, cách mép 2px, hiện rõ ở
-        cả hai chế độ.
+        xem. Nhấn Tab để kiểm tra vòng focus: viền 2px, cách mép 2px, hiện rõ cả
+        trên nền sáng lẫn trong vùng tối cố định.
       </p>
     </div>
   )
@@ -295,9 +290,6 @@ function ButtonSection() {
 /* -------------------------------- 4. Badge -------------------------------- */
 
 function BadgeSection() {
-  const { resolved } = useTheme()
-  const isDark = resolved === "dark"
-
   return (
     <div className="flex flex-col gap-section">
       <div className="density-admin">
@@ -321,13 +313,13 @@ function BadgeSection() {
                   <OrderStatusBadge status={item.status as OrderStatus} />
                 </TableCell>
                 <TableCell data-numeric className="text-ink-muted">
-                  {item.outlined ? "trong suốt" : isDark ? item.darkBg : item.lightBg}
+                  {item.outlined ? "trong suốt" : item.lightBg}
                 </TableCell>
                 <TableCell data-numeric className="text-ink-muted">
-                  {isDark ? item.darkFg : item.lightFg}
+                  {item.lightFg}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Ratio value={isDark ? item.darkRatio : item.lightRatio} />
+                  <Ratio value={item.lightRatio} />
                 </TableCell>
               </TableRow>
             ))}
@@ -360,7 +352,7 @@ function BadgeSection() {
                   <PaymentStatusBadge status={item.status as PaymentStatus} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <Ratio value={isDark ? item.darkRatio : item.lightRatio} />
+                  <Ratio value={item.lightRatio} />
                 </TableCell>
               </TableRow>
             ))}
@@ -831,7 +823,6 @@ function StyleguideContent() {
             <p className="text-overline uppercase text-ink-muted">Hệ thống thiết kế</p>
             <p className="font-display text-h3 text-ink">Thời trang — nội bộ</p>
           </div>
-          <ThemeToggle />
         </div>
         <nav
           aria-label="Mục lục"

@@ -19,9 +19,9 @@ function stopDrag(event: DragEvent) {
  * Dựng thẳng trên Base UI Dialog như `ConfirmDialog`/`FormDialog` vì `ui/dialog.tsx` (shadcn) trái token
  * của hệ thống. Dialog modal nên khóa cuộn trang, khóa focus bên trong, Esc đóng và trả focus về nút đã mở.
  *
- * Nền tối bằng lớp `dark` đặt lên Popup: token dark mode khai báo trong `.dark` và Tailwind dùng
- * `@theme inline`, nên mọi token (nền, chữ, nút, viền focus) trong Popup tự đổi sang bộ tối kể cả khi
- * giao diện đang sáng, không cần token riêng.
+ * Nền tối bằng lớp `dark` đặt lên Popup (vùng tối cố định): bộ token tối khai báo trong `.dark` và Tailwind dùng
+ * `@theme inline`, nên mọi token (nền, chữ, nút, viền focus) trong Popup tự đổi sang bộ tối dù
+ * toàn trang chỉ có giao diện sáng, không cần token riêng.
  */
 function ImageLightbox({
   src,

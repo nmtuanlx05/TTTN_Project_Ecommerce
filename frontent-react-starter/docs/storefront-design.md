@@ -7,7 +7,7 @@ danh sách và chi tiết sản phẩm.
 ## 1. Ý tưởng
 
 Cửa hàng như **phòng trưng bày tối giản**: giao diện lùi lại, ảnh sản phẩm là nhân vật chính. Đen trắng, nhiều khoảng trắng, hiện đại,
-mượt nhưng tiết chế. Nhấn mạnh bằng **tương phản, cỡ chữ, độ đậm và khoảng trắng**, không bằng màu. Làm tốt cả light và dark; di động trước
+mượt nhưng tiết chế. Nhấn mạnh bằng **tương phản, cỡ chữ, độ đậm và khoảng trắng**, không bằng màu. Chỉ có giao diện sáng (cộng một số vùng tối cố định, mục 2); di động trước
 (thiết kế từ 375px lên).
 
 ## 2. Màu: chỉ dùng token, không thêm màu
@@ -19,26 +19,26 @@ Cấm mã màu viết cứng và class màu dựng sẵn của Tailwind. Thêm t
 | Nền trang, header lúc ở đầu trang | `canvas` |
 | Header khi đã cuộn | `canvas/80` + `backdrop-blur-md` + viền `border-subtle` |
 | Khung ảnh, ảnh dự phòng | `surface-sunken`; chữ cái "M" dự phòng dùng `ink-subtle` |
-| Ngăn kéo (menu, bộ lọc), khung tìm kiếm | nền đặc `surface-raised` + viền `border-default` (thấy rõ mép ở cả hai chế độ) |
-| Lớp phủ sau ngăn kéo | `canvas/70` + `backdrop-blur-xs` (sáng ở light, tối ở dark, không cần màu riêng) |
+| Ngăn kéo (menu, bộ lọc), khung tìm kiếm | nền đặc `surface-raised` + viền `border-default` (thấy rõ mép) |
+| Lớp phủ sau ngăn kéo | `canvas/70` + `backdrop-blur-xs` (không cần màu riêng) |
 | Chữ chính / phụ / metadata | `ink` / `ink-muted` / `ink-subtle` (không dùng `ink-subtle` trên `surface-sunken` hoặc nền hover) |
 | Đường kẻ trang trí | `border-subtle` (header, footer, đường phân mô tả); `border-default` cho ngăn kéo |
 | Viền điều khiển (chip, ô nhập, nút lọc) | `border-control` (đạt tương phản 3:1) |
-| Chip đang chọn, nút chính | `primary` / `primary-fg` (đảo màu ở dark) |
+| Chip đang chọn, nút chính | `primary` / `primary-fg` |
 | Skeleton + vệt sáng lướt | `skeleton` + `surface-hover` |
 | Lỗi / cảnh báo | `danger-*`, `warning-*` chỉ cho trạng thái thật (hiện chỉ có toast `info`) |
-| Thanh thông báo, chân trang (tối ở cả hai chế độ) | class `dark` trên phần tử + `bg-surface-sunken` + chữ `ink` / `ink-muted`; xem mục 15 và 17 |
+| Thanh thông báo, chân trang (vùng tối cố định) | class `dark` trên phần tử + `bg-surface-sunken` + chữ `ink` / `ink-muted`; xem mục 15 và 17 |
 | Huy hiệu tồn kho trên ảnh | `bg-canvas/80` + `backdrop-blur-sm` + viền `border-default` + chữ `ink`; chấm "Sắp hết" `warning-fg` |
 | Thông báo trung tính của form (vd. "đang hoàn thiện") | `info-fg` (không dùng màu lỗi cho thứ không phải lỗi) |
 | Lớp tối phủ trên ảnh (thẻ danh mục, dải câu chuyện) | `scrim` + độ mờ; chữ trong phạm vi `dark` |
-| Dải câu chuyện, thẻ danh mục (tối ở cả hai chế độ) | phạm vi `dark` + `bg-surface-sunken` (nền khi chưa có ảnh) |
-| Dải cam kết | `surface` + `border-y border-subtle` (không dùng `surface-sunken`: ở dark nó trùng màu chân trang) |
+| Dải câu chuyện, thẻ danh mục (vùng tối cố định) | phạm vi `dark` + `bg-surface-sunken` (nền khi chưa có ảnh) |
+| Lightbox xem ảnh (vùng tối cố định thứ 5) | lớp `dark` trên Popup + `bg-surface-sunken/90`; xem `components/shared/image-lightbox.tsx` |
+| Dải cam kết | `surface` + `border-y border-subtle` |
 | Khung viền mảnh lùi 20px trên ảnh hero (trang trí) | `border-canvas/60` |
 | Thanh cuộn ngang mảnh | tiện ích `scrollbar-thin` (thumb `ink`, track `border-subtle`) |
 
-**Phạm vi tối (`dark` cục bộ)**: đặt class `dark` lên một phần tử thì mọi token bên trong (kể cả `ui/Input`, `ui/Button`) dùng bộ màu tối, mà không thêm token. Dùng cho thanh thông báo và chân trang để chúng
-tối ở cả light lẫn dark; ở dark chúng là `surface-sunken` (đen ngà sâu hơn nền trang) và tách khỏi trang bằng viền `border-strong` (đã đo ≥ 2,9:1 so với nền trang). Chữ phụ chỉ dùng `ink-muted` (không dùng `ink-subtle` trên `surface-sunken`).
-**Lớp tối phủ trên ảnh** (thẻ danh mục, dải câu chuyện): token `scrim` (`#11100E`, cùng giá trị ở light và dark, không khai báo lại trong `.dark`), dùng với độ mờ (`bg-scrim/70`, `from-scrim/85 via-scrim/50 to-transparent`). Chữ đặt trên ảnh dùng phạm vi `dark` (chữ `ink` luôn sáng) và vòng focus của thẻ vẽ BÊN TRONG (`-outline-offset-4`) vì vòng ngoài của phạm vi `dark` là màu sáng, sẽ biến mất trên nền trang sáng.
+**Giao diện chỉ có chế độ sáng; `dark` là vùng tối cố định.** Website không có chuyển sáng/tối và không theo cài đặt của hệ điều hành. Class `dark` (khối `.dark` trong `global.css`) nay nghĩa là **vùng tối cố định** (inverse scope), không còn là "chế độ tối của cả trang": đặt lên một phần tử thì mọi token bên trong (kể cả `ui/Input`, `ui/Button`, `color-scheme: dark` cho ô nhập và thanh cuộn) dùng bộ màu tối, mà không thêm token. Có đúng **5 vùng**: thanh thông báo (`announcement-bar`), chân trang (`storefront-footer`), dải câu chuyện thương hiệu (`brand-story`), thẻ danh mục nổi bật (`category-card`) và lightbox xem ảnh (`image-lightbox`). Trong vùng này nền là `surface-sunken` của bộ token tối (đen ngà), tách khỏi trang sáng bằng viền `border-strong`. Chữ phụ chỉ dùng `ink-muted` (không dùng `ink-subtle` trên `surface-sunken`).
+**Lớp tối phủ trên ảnh** (thẻ danh mục, dải câu chuyện): token `scrim` (`#11100E`, luôn tối, không khai báo lại trong `.dark`), dùng với độ mờ (`bg-scrim/70`, `from-scrim/85 via-scrim/50 to-transparent`). Chữ đặt trên ảnh dùng phạm vi `dark` (chữ `ink` luôn sáng) và vòng focus của thẻ vẽ BÊN TRONG (`-outline-offset-4`) vì vòng ngoài của phạm vi `dark` là màu sáng, sẽ biến mất trên nền trang sáng.
 **Giới hạn của ngoại lệ gradient**: quy ước "không gradient" vẫn nguyên; `scrim` là ngoại lệ DUY NHẤT và chỉ được dùng làm lớp phủ trên ảnh (gradient đáy thẻ danh mục, lớp phủ phẳng của dải câu chuyện). Không dùng gradient làm nền, viền, nút hay trang trí khác; không thêm token gradient khác.
 Đã đo (ảnh nền trắng là trường hợp xấu nhất): chữ `ink` trên `scrim/70` đạt 6,10:1; chữ thẻ danh mục trên gradient (alpha ~0,69 tại đỉnh chữ) đạt 5,80:1. Chữ phụ `ink-muted` trên `scrim/70` KHÔNG đạt trên ảnh trắng (≈3,1:1) nên dải câu chuyện chỉ dùng `ink`.
 **Viền điều khiển**: nút viền ở trang chủ (mũi tên hero, nút "XEM BỘ SƯU TẬP", tab chưa chọn) dùng `border-control` (3,79:1) thay cho `border-strong` (2,37:1) của `Button secondary`; đoạn thanh tiến trình chưa chọn cũng `border-control`.
@@ -143,7 +143,7 @@ Dựng trên Base UI Dialog (`StorefrontDrawer`), không dùng `ui/sheet`. Modal
 
 **Điểm chuyển 1280px (`xl`)**, không phải `lg`. Đã đo: thanh điều hướng đủ 6 mục (Tất cả sản phẩm, Áo, Quần, Phụ kiện, Quà tặng, Địa chỉ) rộng ~613px; cộng logo 147px, khoảng cách 40px, nhóm biểu tượng 348px và lề 48px thì cần tối thiểu ~1195px, nên không vừa ở 1024px (iPad ngang dùng ngăn kéo) và 1280px là mốc Tailwind gần nhất vừa thoải mái. Đổi chữ nhãn hay thêm mục thì đo lại.
 
-**Bố cục từ `xl`**: logo `BrandLogo` bên trái; thanh điều hướng và nhóm biểu tượng (tìm kiếm, đổi sáng/tối, giỏ hàng, đăng nhập hoặc `UserMenu`) gom về BÊN PHẢI, thanh điều hướng sát bên trái nhóm biểu tượng, cách đúng 40px (`xl:ml-10`; hàng flex `xl:gap-0`). Dưới `xl`: nút menu, wordmark, tìm kiếm, giỏ hàng, và ngăn kéo (mục 9b-2).
+**Bố cục từ `xl`**: logo `BrandLogo` bên trái; thanh điều hướng và nhóm biểu tượng (tìm kiếm, giỏ hàng, đăng nhập hoặc `UserMenu`) gom về BÊN PHẢI, thanh điều hướng sát bên trái nhóm biểu tượng, cách đúng 40px (`xl:ml-10`; hàng flex `xl:gap-0`). Dưới `xl`: nút menu, wordmark, tìm kiếm, giỏ hàng, và ngăn kéo (mục 9b-2).
 
 **Mục điều hướng** cấu hình ở `STORE.navItems` (`lib/store-info.ts`), theo thứ tự: Tất cả sản phẩm, Áo, Quần, Phụ kiện, Quà tặng, Địa chỉ. Không có "Trang chủ" (logo về trang chủ).
 Mỗi mục là `{ label, href }` (liên kết thường) hoặc `{ label, categorySlug }` (gắn danh mục). Nhãn luôn lấy từ `label`, không từ tên danh mục. Mục danh mục chỉ hiện khi slug có trong cây danh mục
@@ -175,7 +175,7 @@ thứ tự theo API (theo tên), không tự đổi. Mỗi dòng cao ≥ 44px, h
 ## 9b-2. Ngăn kéo menu (dưới `xl`)
 
 `MobileNavDrawer` → `MobileNavList`: cùng `STORE.navItems`, cùng thứ tự: "Tất cả sản phẩm" ở hàng đầu, rồi Áo, Quần, Phụ kiện, Quà tặng (mục có con là accordion `MobileNavAccordion`: nút `aria-expanded`/`aria-controls`, mỗi lúc mở một mục,
-vùng thu gọn `inert`; bên trong có "Tất cả <mục>" và danh mục con, cháu thụt vào), rồi "Địa chỉ"; dưới cùng là khối tài khoản và `ThemeToggle`. Kiểu chữ hàng cùng thanh điều hướng (hoa, giãn chữ). Dòng đang xem có `aria-current` + nền hover;
+vùng thu gọn `inert`; bên trong có "Tất cả <mục>" và danh mục con, cháu thụt vào), rồi "Địa chỉ"; dưới cùng là khối tài khoản. Kiểu chữ hàng cùng thanh điều hướng (hoa, giãn chữ). Dòng đang xem có `aria-current` + nền hover;
 mục chứa danh mục đang xem tự mở sẵn và nhãn gạch chân. Chân trang có liên kết "Tất cả sản phẩm" và "Địa chỉ cửa hàng".
 
 ## 10. Trạng thái bắt buộc
@@ -241,7 +241,7 @@ Trang `pages/storefront/home` chỉ ghép. Nội dung ở `lib/home-content.ts` 
    - Cỡ tiêu đề: `text-h1` dưới `md` và ở `lg`, `text-display` ở `md` và từ `xl`. Đã đo "MINIMALIST" (từ dài nhất) không tràn cột chữ ở 360, 375, 768, 1024, 1100, 1200, 1280, 1366, 1440, 1536 (rộng 438px so với cột 507px ở `xl`).
 2. **Danh mục nổi bật** (`category-showcase`, `category-card`): đầu khối (nhãn, `text-h1` hoa, "Xem tất cả sản phẩm →"), 4 thẻ dọc 3:4 (2 cột di động, 4 cột từ `md`): ảnh nền, gradient `scrim` ở đáy, tên ở góc dưới trái, mũi tên góc dưới phải; hover phóng ảnh 1,03 và mũi tên dịch phải. Thẻ chỉ hiện khi danh mục có trong cây; đang tải thì skeleton; cây lỗi hoặc không thẻ nào khớp thì ẩn cả khối.
 3. **Best sellers (TẠM)** (`features/catalog/components/home/home-best-sellers.tsx`): 4 thẻ `ProductCard` (`ProductGrid layout="four-up"`: 2 cột di động, 4 cột từ `md`). Nguồn là hook DUY NHẤT `useBestSellerProducts` (`createdAt` tăng dần, `limit=4`), có comment "TẠM: thay bằng dữ liệu bán chạy khi có đơn hàng". Rỗng thì ẩn khối; lỗi có "Thử lại".
-4. **Câu chuyện thương hiệu** (`brand-story`): dải `dark` + `surface-sunken` toàn chiều rộng, ảnh nền tĩnh + `scrim/70`, tiêu đề serif nghiêng (Newsreader, mục 3), mô tả `ink`, nút sáng `lg`. Chưa có ảnh thì chỉ còn nền tối (không chữ cái giữ chỗ). Ở dark mode dải gần như cùng màu nền trang khi chưa có ảnh (ảnh thật sẽ tách ra).
+4. **Câu chuyện thương hiệu** (`brand-story`): dải `dark` + `surface-sunken` toàn chiều rộng, ảnh nền tĩnh + `scrim/70`, tiêu đề serif nghiêng (Newsreader, mục 3), mô tả `ink`, nút sáng `lg`. Chưa có ảnh thì chỉ còn nền tối (không chữ cái giữ chỗ).
 5. **Sản phẩm mới về** (`home-new-arrivals`, `components/storefront/tab-bar.tsx`, `hscroll-list.tsx`): tiêu đề trái, 3 tab phải (`tablist`/`tab`/`tabpanel`; ←/→ chuyển và kích hoạt ngay, Home/End; tab đang chọn là nút đặc, tab thường nút viền `border-control`); tab "Áo mới"/"Quần mới" chỉ hiện khi danh mục `ao`/`quan` tồn tại, còn mỗi "Tất cả" thì ẩn cả thanh tab. Mỗi tab gọi `GET /products` (`createdAt` giảm dần, `limit=8`, tab danh mục kèm `categoryId`); đổi tab giữ danh sách cũ mờ đi (`keepPreviousData`, `aria-busy`), tab đã xem lấy từ cache. Danh sách CUỘN NGANG (`region` có `aria-label`, `tabIndex=0`, `scroll-snap`, thẻ rộng cố định `w-44/md:w-56/lg:w-64` để luôn thấy một phần thẻ kế tiếp, thanh cuộn mảnh). Skeleton đúng tỉ lệ; rỗng và lỗi có trạng thái riêng ngay trong khối.
 6. **Dải cam kết** (`assurance-strip`, `assurance-item`): nền `surface`, kẻ mảnh hai cạnh, 4 ô biểu tượng (`lucide-react`) + tiêu đề + mô tả (4 cột từ `lg`, 2×2 ở `md`, 1 cột ở di động). Đứng giữa "Sản phẩm mới về" và chân trang, không thuộc chân trang. Nội dung là cam kết mẫu chờ xác nhận (mục 13).
 
@@ -254,7 +254,7 @@ Không làm: carousel tự chạy, nút tim, "Thêm nhanh", ảnh thứ hai khi 
 `AnnouncementBar` (`components/storefront/announcement-bar.tsx`, `announcement-message-set.tsx`), dựng trong `StorefrontLayout` NGAY TRÊN header, hiện ở mọi trang storefront. Nội dung từ `STORE.announcements` (mẫu: "MIỄN PHÍ VẬN CHUYỂN CHO ĐƠN HÀNG TỪ 500.000₫",
 "ĐỔI TRẢ TRONG 30 NGÀY"; xem bảng cam kết ở mục 13).
 
-- Cao `--announcement-h` (40px), `text-overline` hoa, **không dính**: cuộn là trượt đi, header dính như cũ. Nền tối ở cả hai chế độ nhờ phạm vi `dark` (mục 2), viền dưới `border-strong`.
+- Cao `--announcement-h` (40px), `text-overline` hoa, **không dính**: cuộn là trượt đi, header dính như cũ. Nền tối cố định nhờ phạm vi `dark` (mục 2), viền dưới `border-strong`.
 - Hai thông điệp liền nhau ngăn bằng nét "|" mảnh, giữa các lần lặp vòng là một chấm tròn nhỏ; cả hai chỉ để trang trí nên `aria-hidden`.
 - Chạy bằng CSS: dải gồm hai nửa giống hệt nhau (mỗi nửa 5 lượt thông điệp, phủ được màn 2560px), `animate-marquee` dịch đúng `-50%` rồi lặp nên không thấy điểm nối. Không thư viện.
 - Rê chuột (thiết bị có hover) hoặc focus bàn phím vào thanh thì dừng (`animation-play-state: paused`). Vùng là `role="region"` có `aria-label` tiếng Việt và `tabIndex={0}` để người dùng bàn phím dừng được; vòng focus là vòng chung của `global.css` lùi vào trong
@@ -270,11 +270,11 @@ Không làm: carousel tự chạy, nút tim, "Thêm nhanh", ảnh thứ hai khi 
 `ProductCard` (`features/catalog/components/product-card.tsx`, dùng chung trang danh sách, "Sản phẩm cùng danh mục" và trang chủ). Ảnh 3:4, tên tối đa 2 dòng, giá; cả thẻ là một liên kết (prefetch khi rê chuột/focus, ảnh dự phòng, skeleton, phóng ảnh 1,03 khi rê chuột giữ nguyên).
 
 - **Huy hiệu tồn kho** (`product-stock-badge.tsx`) góc trên trái, cách mép 12px, chữ `text-overline` hoa, nền kính mờ (`bg-canvas/80` + `backdrop-blur-sm`), viền `border-default`. Chỉ MỘT huy hiệu: `inStock = false` → "Hết hàng" (ưu tiên); `lowStock = true` → "Sắp hết" kèm chấm 8px `warning-fg`.
-  Đã đo trên ảnh nền trắng và nền đen thuần, hai chế độ: chữ huy hiệu ≥ 8,8:1.
+  Đã đo trên ảnh nền trắng và nền đen thuần: chữ huy hiệu ≥ 8,8:1.
   **Màu chấm**: nhóm `warning` chỉ có `warning-fg` / `-tint` / `-border` (cùng sắc vàng-cam ~42° nhưng đều nhạt màu, không có token vàng đặc). Chấm không phải chữ nên chỉ cần ≥ 3:1 với nền kính; đã đo (nền kính = `canvas/80` trên ảnh trắng / đen):
-  `warning-fg` 7,7 / 4,7 (light) và 5,6 / 10,6 (dark) → đạt; `warning-border` 1,1 đến 2,0, `warning-tint` 1,1 đến 1,6 và `status-pending-bg` 1,1 đến 1,8 → không đạt. Vì vậy dùng `warning-fg` (nâu ở light, be ở dark, không vàng như thiết kế mẫu) và KHÔNG thêm token vàng.
+  `warning-fg` 7,7 / 4,7 → đạt; `warning-border` 1,1 đến 2,0, `warning-tint` 1,1 đến 1,6 và `status-pending-bg` 1,1 đến 1,8 → không đạt. Vì vậy dùng `warning-fg` (nâu, không vàng như thiết kế mẫu) và KHÔNG thêm token vàng.
   Muốn chấm vàng thật thì phải đề xuất token riêng (cần duyệt).
-- **Hết hàng**: ảnh `opacity-60`, tên `ink-muted` (6,06:1 light, 8,39:1 dark), giá giữ `ink-muted`. Truyền đạt bằng chữ của huy hiệu, không chỉ bằng màu.
+- **Hết hàng**: ảnh `opacity-60`, tên `ink-muted` (6,06:1), giá giữ `ink-muted`. Truyền đạt bằng chữ của huy hiệu, không chỉ bằng màu.
 - `lowStock` chỉ có ở `GET /products` (danh sách); `GET /products/:slug` không có nên `CatalogProductDetail` là `Omit<CatalogProductListItem, "lowStock">`. Backend: `lowStock` phụ thuộc `minStock` do kho đặt, `minStock` mặc định 0 nên chưa đặt ngưỡng thì không bao giờ hiện "Sắp hết".
 - Chưa làm (xem mục "việc hoãn"): chấm màu, nút tim, "Thêm nhanh", ảnh thứ hai khi rê chuột.
 
@@ -304,4 +304,3 @@ Từ `xl` (1280px) ô nhập và nút "ĐĂNG KÝ" cùng một hàng (đã đo �
 - **Vòng focus ở khu admin**: mẫu `outline-none focus-visible:outline-2 ...` (làm vòng focus không hiện, xem mục 11) còn nằm ở admin (`admin-sidebar`, `disabled-action`, các tiêu đề sắp xếp bảng, `inventory-*`, `product-*`, `users-table`, `dashboard/*`, `ui/checkbox`, `ui/badge`, `ui/toast`, `styleguide`). Ngoài phạm vi storefront nên chưa sửa; cách sửa là bỏ `outline-none` ở từng chỗ.
 - **`header-nav.tsx` dài 165 dòng** (quy ước ~150) và `lib/api-client.ts` 214 dòng: chưa tách (header giữ nguyên).
 - **Best sellers và các cam kết ở dải cam kết** đang là nội dung mẫu/dữ liệu tạm: xem bảng mục 13.
-- **Dải câu chuyện ở dark mode** gần cùng màu nền trang khi chưa có ảnh; cân nhắc kẻ mảnh hai cạnh nếu ảnh thật không đủ tách.

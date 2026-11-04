@@ -9,7 +9,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu, type UserMenuAccount } from "@/components/shared/user-menu";
 import { AdminNav } from "@/components/admin/admin-sidebar";
 import { NAV_ITEMS } from "@/components/admin/nav-items";
@@ -85,8 +84,6 @@ function AdminTopbar({
           </li>
         </ol>
       </nav>
-
-      <ThemeToggle />
 
       <UserMenu
         account={{ ...account, canAccessAdmin: false }}

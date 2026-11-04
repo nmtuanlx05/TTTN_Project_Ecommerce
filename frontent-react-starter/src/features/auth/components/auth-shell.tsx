@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 import { BrandLogo } from "@/components/shared/brand-logo";
-import { ThemeToggle } from "@/components/shared/theme-toggle";
 
 /**
- * Khung trang đăng nhập và đăng ký: thương hiệu, nút đổi sáng/tối, thẻ ở giữa.
+ * Khung trang đăng nhập và đăng ký: thương hiệu, thẻ ở giữa.
  * Nằm ngoài `.density-admin` nên dùng mật độ storefront (ô nhập cao 44px, đủ vùng bấm trên mobile).
  */
 function AuthShell({
@@ -21,7 +20,6 @@ function AuthShell({
     <div className="flex min-h-dvh flex-col bg-canvas px-gutter">
       <header className="flex items-center justify-between py-stack">
         <BrandLogo to="/" />
-        <ThemeToggle />
       </header>
 
       <main className="flex flex-1 items-center justify-center py-section">
