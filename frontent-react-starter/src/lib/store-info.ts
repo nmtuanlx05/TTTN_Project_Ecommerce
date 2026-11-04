@@ -1,4 +1,11 @@
+import { formatNumber } from "@/lib/format"
 import type { InfoPageSlug } from "@/lib/info-pages"
+
+/**
+ * Mức đơn hàng (VND, theo `subtotal`) được miễn phí vận chuyển. Một nguồn duy nhất cho thanh thông báo và dải tiến trình ở giỏ hàng.
+ * CHƯA có phí vận chuyển thật ở backend: bước đặt đơn phải áp dụng đúng quy tắc này (docs/storefront-design.md mục 13).
+ */
+export const FREE_SHIPPING_THRESHOLD = 500_000
 
 /**
  * Nội dung cửa hàng: MỘT file duy nhất. Header, footer, tiêu đề tab, logo chữ đều đọc từ đây,
@@ -64,14 +71,14 @@ interface StoreNewsletter {
   submitLabel: string
 }
 
-/** Thông báo (toast, tone info) của các điểm tương tác GIẢ chưa có tính năng thật; cùng giọng với "Giỏ hàng sẽ sớm có mặt" (docs/storefront-design.md mục 13). */
+/** Thông báo (toast, tone info) của các điểm tương tác GIẢ chưa có tính năng thật; cùng giọng "… sẽ sớm có mặt" (docs/storefront-design.md mục 13). */
 interface StoreComingSoon {
   /** Nút trái tim ở header và trên thẻ sản phẩm. */
   wishlist: string
-  /** Nút "Thêm nhanh" trên thẻ sản phẩm. */
-  quickAdd: string
   /** Link "Hướng dẫn chọn size" ở trang chi tiết sản phẩm. */
   sizeGuide: string
+  /** Nút "Thanh toán ngay" ở ngăn kéo giỏ và trang giỏ hàng (chưa có bước đặt đơn). */
+  checkout: string
 }
 
 interface StoreInfo {
@@ -98,7 +105,7 @@ interface StoreInfo {
 export const STORE: StoreInfo = {
   name: "MONO STUDIO",
   tagline: "Thời trang tối giản cho mọi ngày",
-  announcements: ["MIỄN PHÍ VẬN CHUYỂN CHO ĐƠN HÀNG TỪ 500.000₫", "ĐỔI TRẢ TRONG 30 NGÀY"],
+  announcements: [`MIỄN PHÍ VẬN CHUYỂN CHO ĐƠN HÀNG TỪ ${formatNumber(FREE_SHIPPING_THRESHOLD)}₫`, "ĐỔI TRẢ TRONG 30 NGÀY"],
   footer: {
     description: "Thời trang tối giản cho mọi ngày. Chất liệu thoáng mát, form chuẩn, dễ phối.",
     quickLinksTitle: "Đường dẫn nhanh",
@@ -116,7 +123,11 @@ export const STORE: StoreInfo = {
     emailLabel: "Email của bạn",
     submitLabel: "ĐĂNG KÝ",
   },
-  comingSoon: { wishlist: "Yêu thích sẽ sớm có mặt", quickAdd: "Thêm nhanh sẽ sớm có mặt", sizeGuide: "Hướng dẫn chọn size sẽ sớm có mặt" },
+  comingSoon: {
+    wishlist: "Yêu thích sẽ sớm có mặt",
+    sizeGuide: "Hướng dẫn chọn size sẽ sớm có mặt",
+    checkout: "Thanh toán sẽ sớm có mặt",
+  },
   // Slug "phu-kien" và "qua-tang" là slug mà backend sẽ sinh từ tên danh mục; mục chỉ hiện khi danh mục đó có trong GET /categories.
   navItems: [
     { label: "Tất cả sản phẩm", href: "/products" },

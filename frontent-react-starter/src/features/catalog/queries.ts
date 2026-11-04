@@ -48,3 +48,13 @@ export function usePrefetchCatalogProduct() {
       queryFn: ({ signal }) => getCatalogProduct(slug, signal),
     })
 }
+
+/** Lấy chi tiết (dùng cache nếu còn mới, thường đã được tải trước khi rê chuột vào thẻ) và chờ xong: cho "Thêm nhanh", cần biết biến thể trước khi quyết định. */
+export function useFetchCatalogProduct() {
+  const queryClient = useQueryClient()
+  return (slug: string) =>
+    queryClient.fetchQuery({
+      queryKey: catalogKeys.detail(slug),
+      queryFn: ({ signal }) => getCatalogProduct(slug, signal),
+    })
+}

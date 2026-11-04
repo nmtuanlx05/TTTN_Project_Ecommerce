@@ -21,7 +21,16 @@ import { PageContainer } from "@/components/storefront/page-container"
  * cuộn dưới header và dừng ở mép dưới cột ảnh (ô lưới cao bằng hàng). Không lớp cha nào được đặt `overflow` (sẽ làm hỏng sticky); xem `ProductInfoCard`
  * cho phần cuộn bên trong khi cửa sổ thấp.
  */
-function ProductDetailContent({ slug, onAddToCart }: { slug: string; onAddToCart: (input: AddToCartInput) => void }) {
+function ProductDetailContent({
+  slug,
+  onAddToCart,
+  addingToCart = false,
+}: {
+  slug: string
+  onAddToCart: (input: AddToCartInput) => void
+  /** Đang gửi yêu cầu thêm vào giỏ: khóa nút thêm. */
+  addingToCart?: boolean
+}) {
   const query = useCatalogProduct(slug)
   const { tree } = useCategoryTree()
   // Ô dính đáy màn hình ở cuối trang: nơi `PurchasePanel` portal thanh mua (di động) vào.
@@ -49,7 +58,7 @@ function ProductDetailContent({ slug, onAddToCart }: { slug: string; onAddToCart
             <ProductGallery images={galleryImages(product)} alt={product.name} />
           </div>
           <div className="lg:sticky lg:top-(--sticky-top) lg:col-span-5 lg:self-start">
-            <ProductInfoCard product={product} barSlot={barSlot} onAddToCart={onAddToCart} />
+            <ProductInfoCard product={product} barSlot={barSlot} onAddToCart={onAddToCart} pending={addingToCart} />
           </div>
         </div>
         <RelatedProducts productId={product.id} categoryId={product.category.id} categorySlug={product.category.slug} />

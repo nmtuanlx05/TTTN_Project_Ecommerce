@@ -5,6 +5,8 @@ import { useToast } from "@/components/ui/toast"
 import { STORE } from "@/lib/store-info"
 import { cn } from "@/lib/utils"
 import type { CatalogProductListItem } from "../types"
+import { useQuickAdd } from "../use-quick-add"
+import { QuickAddDialog } from "./quick-add-dialog"
 
 /**
  * Kiểu chung của hai nút nổi trên ảnh: nền kính mờ (token), hover đảo màu do variant `secondary` trong `.soft-ui`, vòng focus HAI LỚP (`ring` mực + outline `canvas`)
@@ -20,14 +22,15 @@ const FLOATING_BUTTON = [
 ].join(" ")
 
 /**
- * Hai nút GIẢ trên ảnh thẻ (trái tim ở góc trên phải, "Thêm nhanh" ở đáy): chỉ hiện thông báo "sẽ sớm có mặt", không đổi trạng thái, không lưu, không thêm vào giỏ,
- * KHÔNG qua cổng đăng nhập (khi làm thật mới thêm). Lớp phủ dùng cùng tỉ lệ với khung ảnh (`PRODUCT_IMAGE_ASPECT`), `pointer-events-none` để chỉ hai nút bắt chuột;
+ * Hai nút trên ảnh thẻ: trái tim ở góc trên phải (GIAO DIỆN GIẢ: chỉ hiện toast "sẽ sớm có mặt", không đổi trạng thái, không qua cổng đăng nhập) và "Thêm nhanh" ở đáy
+ * (THẬT, xem `useQuickAdd`: qua cổng đăng nhập, thêm thẳng hoặc mở hộp thoại chọn phân loại, rồi mở ngăn kéo giỏ; khóa và hiện vòng quay trong lúc tải chi tiết). Lớp phủ dùng cùng tỉ lệ với khung ảnh (`PRODUCT_IMAGE_ASPECT`), `pointer-events-none` để chỉ hai nút bắt chuột;
  * nằm NGOÀI thẻ `<a>` nên bấm không điều hướng. Thẻ hẹp (< 16rem, đo bằng container query của thẻ): nút nhỏ lại và vùng bấm vẫn đủ 44px nhờ `before:`.
  * Hết hàng thì không có "Thêm nhanh".
  */
 function QuickActions({ product }: { product: CatalogProductListItem }) {
   const toast = useToast()
   const notify = (title: string) => toast.add({ title, data: { tone: "info" } })
+  const quickAdd = useQuickAdd(product.slug)
 
   return (
     <div className={cn("pointer-events-none absolute inset-x-0 top-0", PRODUCT_IMAGE_ASPECT)}>
@@ -49,7 +52,8 @@ function QuickActions({ product }: { product: CatalogProductListItem }) {
           type="button"
           variant="secondary"
           aria-label={`Thêm nhanh ${product.name} vào giỏ hàng`}
-          onClick={() => notify(STORE.comingSoon.quickAdd)}
+          loading={quickAdd.loading}
+          onClick={quickAdd.start}
           className={cn(
             FLOATING_BUTTON,
             "absolute inset-x-3 bottom-3 rounded-4xl text-overline uppercase @max-3xs:inset-x-2 @max-3xs:bottom-2 @max-3xs:h-9 @max-3xs:before:absolute @max-3xs:before:-inset-y-1",
@@ -59,6 +63,7 @@ function QuickActions({ product }: { product: CatalogProductListItem }) {
           Thêm nhanh
         </Button>
       ) : null}
+      {quickAdd.dialog.product ? <QuickAddDialog {...quickAdd.dialog} product={quickAdd.dialog.product} /> : null}
     </div>
   )
 }

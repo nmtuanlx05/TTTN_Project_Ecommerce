@@ -9,8 +9,7 @@ import { useAuthStore } from "./auth-store"
  * - ADMIN/STAFF: toast "Tài khoản quản trị không dùng để mua hàng".
  * - CUSTOMER: chạy `onCustomer`.
  *
- * TẠM (nhánh giỏ hàng sẽ thay): chưa có giỏ hàng nên `onCustomer` mặc định chỉ hiện toast "Giỏ hàng sẽ sớm có mặt".
- * Khi có giỏ hàng thật, truyền hành động thật vào `onCustomer` ở nơi gọi và xóa nhánh mặc định này.
+ * `onCustomer` là hành động thật (mở giỏ, thêm vào giỏ...) do nơi gọi truyền vào.
  */
 export function useRequireLogin() {
   const user = useAuthStore((state) => state.user)
@@ -18,7 +17,7 @@ export function useRequireLogin() {
   const navigate = useNavigate()
   const toast = useToast()
 
-  return (onCustomer?: () => void) => {
+  return (onCustomer: () => void) => {
     if (!user) {
       const from = `${location.pathname}${location.search}${location.hash}`
       navigate("/login", { state: { from } })
@@ -28,7 +27,6 @@ export function useRequireLogin() {
       toast.add({ title: "Tài khoản quản trị không dùng để mua hàng", data: { tone: "info" } })
       return
     }
-    if (onCustomer) onCustomer()
-    else toast.add({ title: "Giỏ hàng sẽ sớm có mặt", data: { tone: "info" } })
+    onCustomer()
   }
 }

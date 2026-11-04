@@ -10,10 +10,6 @@ export const EAGER_IMAGE_COUNT = 4
 
 export const PRICE_MAX = 2147483647
 
-/** Số lượng một lần thêm vào giỏ: 1–99. Giới hạn thật do server quyết ở bước giỏ hàng. */
-export const QUANTITY_MIN = 1
-export const QUANTITY_MAX = 99
-
 export const SORT_OPTIONS: ReadonlyArray<{
   value: CatalogSort
   label: string

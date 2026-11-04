@@ -16,6 +16,7 @@ function StickyBuyBar({
   price,
   variantLabel,
   soldOut,
+  pending = false,
   onAdd,
 }: {
   visible: boolean
@@ -23,6 +24,8 @@ function StickyBuyBar({
   /** "Màu · Size" đang chọn. */
   variantLabel: string
   soldOut: boolean
+  /** Đang gửi yêu cầu thêm vào giỏ: nút khóa và hiện vòng quay. */
+  pending?: boolean
   onAdd: () => void
 }) {
   return (
@@ -39,7 +42,7 @@ function StickyBuyBar({
           <span className="text-body-sm font-semibold text-ink">{formatVnd(price)}</span>
           <span className="truncate text-body-sm text-ink-muted">{variantLabel}</span>
         </div>
-        <Button size="lg" disabled={soldOut} onClick={onAdd} className="press shrink-0">
+        <Button size="lg" disabled={soldOut} loading={pending} onClick={onAdd} className="press shrink-0">
           {soldOut ? "Hết hàng" : "Thêm vào giỏ"}
         </Button>
       </div>

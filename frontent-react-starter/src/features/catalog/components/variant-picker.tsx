@@ -4,8 +4,10 @@ import { STORE } from "@/lib/store-info"
 import type { CatalogVariant } from "../types"
 import {
   colorHexOf,
+  describeInStockOption,
   describeOption,
   optionValues,
+  selectInStockOption,
   selectOption,
   type Axis,
   type VariantChoice,
@@ -19,16 +21,19 @@ const AXES: ReadonlyArray<{ axis: Axis; label: string }> = [
 
 /**
  * Hai nhóm chọn: màu (chấm màu theo `colorHex` của biến thể; chưa có mã thì nút chữ) rồi size (pill). Nhãn nhóm ghi kèm giá trị đang chọn.
+ * `inStockOnly` (hộp thoại "Thêm nhanh"): giá trị hết hàng bị mờ và không chọn được, lựa chọn luôn rơi vào biến thể còn hàng.
  * Link "Hướng dẫn chọn size" là STUB: chỉ hiện toast "chưa có tính năng" (docs/storefront-design.md mục 13), không bịa bảng số đo.
  */
 function VariantPicker({
   variants,
   choice,
   onChange,
+  inStockOnly = false,
 }: {
   variants: CatalogVariant[]
   choice: VariantChoice
   onChange: (choice: VariantChoice) => void
+  inStockOnly?: boolean
 }) {
   const id = useId()
   const toast = useToast()
@@ -62,10 +67,10 @@ function VariantPicker({
             selected={choice[axis]}
             options={optionValues(variants, axis).map((value) => ({
               value,
-              ...describeOption(variants, choice, axis, value),
+              ...(inStockOnly ? describeInStockOption(variants, axis, value) : describeOption(variants, choice, axis, value)),
               swatch: axis === "color" ? colorHexOf(variants, value) : undefined,
             }))}
-            onSelect={(value) => onChange(selectOption(variants, choice, axis, value))}
+            onSelect={(value) => onChange((inStockOnly ? selectInStockOption : selectOption)(variants, choice, axis, value))}
           />
         </div>
       ))}
