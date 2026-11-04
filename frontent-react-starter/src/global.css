@@ -224,6 +224,10 @@
      --sp-section (80) vì trang đăng nhập và trang chủ hiện tại đang dùng.
      --header-h: chiều cao header dính, dùng cho scroll-margin và vị trí dính.
      --announcement-h: chiều cao thanh thông báo chạy chữ phía trên header (không dính).
+     --sticky-gap: khoảng đệm 24px giữa header và phần tử dính, và giữa phần tử dính với đáy màn hình.
+     --sticky-top: vị trí `top` của phần tử dính dưới header = `--header-h` + `--sticky-gap` (tự theo breakpoint vì `--header-h` đổi từ `md`).
+     --sticky-max-h: chiều cao tối đa của phần tử dính để luôn nằm gọn trong vùng nhìn = 100dvh trừ `--sticky-top` và `--sticky-gap`.
+     Dùng cho thẻ thông tin ở trang chi tiết sản phẩm (từ `lg`): ô lưới dính, thẻ tự cuộn bên trong khi cửa sổ quá thấp.
      --motion-marquee: thời gian chạy hết MỘT nửa dải chữ (thanh thông báo); dài hơn = chậm hơn.
      --container-max: bề rộng tối đa của khung nội dung (= `max-w-7xl`); header, footer và `PageContainer` dùng cùng giá trị này.
      --container-inset: lề trái của khung nội dung tính từ mép màn hình (gutter, hoặc phần dư hai bên khi màn rộng hơn khung). Dùng
@@ -235,6 +239,9 @@
   --sp-block: 56px;
   --header-h: 64px;
   --announcement-h: 40px;
+  --sticky-gap: 24px;
+  --sticky-top: calc(var(--header-h) + var(--sticky-gap));
+  --sticky-max-h: calc(100dvh - var(--sticky-top) - var(--sticky-gap));
   --motion-marquee: 60s;
   --container-max: 80rem;
   --container-inset: max(var(--sp-gutter), calc((100cqw - var(--container-max)) / 2 + var(--sp-gutter)));
@@ -626,10 +633,11 @@
   }
 }
 
-/* Thanh cuộn mảnh, bo tròn theo token (danh sách cuộn ngang). Tên `scrollbar-soft` vì `scrollbar-thin` là tiện ích có sẵn của Tailwind (đặt `scrollbar-width: thin`, làm Chrome bỏ qua `::-webkit-scrollbar`). Chrome/Safari/Edge dùng `::-webkit-scrollbar` (thumb mực bo tròn, track là đường kẻ mảnh);
+/* Thanh cuộn mảnh, bo tròn theo token (danh sách cuộn ngang và thẻ thông tin cuộn dọc ở trang chi tiết; `width` cho thanh dọc, `height` cho thanh ngang, chỉ chiếm chỗ khi có tràn). Tên `scrollbar-soft` vì `scrollbar-thin` là tiện ích có sẵn của Tailwind (đặt `scrollbar-width: thin`, làm Chrome bỏ qua `::-webkit-scrollbar`). Chrome/Safari/Edge dùng `::-webkit-scrollbar` (thumb mực bo tròn, track là đường kẻ mảnh);
    khi đã khai báo `scrollbar-width/color` chuẩn thì Chrome bỏ qua pseudo-element nên bản chuẩn chỉ dành cho Firefox (`@supports not selector(...)`). */
 @utility scrollbar-soft {
   &::-webkit-scrollbar {
+    width: 8px;
     height: 8px;
   }
   &::-webkit-scrollbar-track {
