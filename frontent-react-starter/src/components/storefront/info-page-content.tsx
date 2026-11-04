@@ -3,6 +3,7 @@ import { FileText } from "lucide-react"
 import { StateMessage } from "@/components/storefront/state-message"
 import { buttonVariants } from "@/components/ui/button"
 import type { InfoPage } from "@/lib/info-pages"
+import { PageContainer } from "@/components/storefront/page-container"
 
 /**
  * Nội dung một trang thông tin (chính sách, hướng dẫn...): đúng một `h1` (viết hoa như các trang khác) rồi các đoạn văn.
@@ -12,7 +13,7 @@ function InfoPageContent({ page }: { page: InfoPage }) {
   const paragraphs = page.paragraphs ?? []
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-gutter pt-8 pb-block lg:pt-16">
+    <PageContainer className="pt-8 pb-block lg:pt-16">
       <h1 className="mb-8 text-h1 text-ink uppercase">{page.title}</h1>
       {paragraphs.length > 0 ? (
         <div className="flex max-w-prose flex-col gap-stack">
@@ -34,7 +35,7 @@ function InfoPageContent({ page }: { page: InfoPage }) {
           }
         />
       )}
-    </div>
+    </PageContainer>
   )
 }
 

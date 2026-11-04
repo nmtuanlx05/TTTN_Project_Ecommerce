@@ -2,6 +2,7 @@ import { Link } from "react-router-dom"
 import { SearchX } from "lucide-react"
 import { StateMessage } from "@/components/storefront/state-message"
 import { buttonVariants } from "@/components/ui/button"
+import { PageContainer } from "@/components/storefront/page-container"
 
 /**
  * Nội dung 404 của khu khách (một `h1`, hai lối đi tiếp). Dùng chung cho mọi URL không khớp route và cho slug lạ của trang
@@ -9,7 +10,7 @@ import { buttonVariants } from "@/components/ui/button"
  */
 function NotFoundContent() {
   return (
-    <div className="mx-auto w-full max-w-7xl px-gutter">
+    <PageContainer>
       <StateMessage
         icon={SearchX}
         titleAs="h1"
@@ -26,7 +27,7 @@ function NotFoundContent() {
           </div>
         }
       />
-    </div>
+    </PageContainer>
   )
 }
 

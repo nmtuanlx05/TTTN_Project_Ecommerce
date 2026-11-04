@@ -11,6 +11,7 @@ import { ProductGallery } from "./product-gallery"
 import { ProductNotFound } from "./product-not-found"
 import { PurchasePanel, type AddToCartInput } from "./purchase-panel"
 import { RelatedProducts } from "./related-products"
+import { PageContainer } from "@/components/storefront/page-container"
 
 /**
  * Trang /products/:slug. Breadcrumb dựng chuỗi danh mục cha từ cây danh mục; cây chưa có/lỗi thì dùng danh mục của chính
@@ -83,10 +84,10 @@ function ProductDetailContent({
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-gutter pt-4 pb-block lg:pt-6">
+    <PageContainer className="pt-4 pb-block lg:pt-6">
       {body}
       <div ref={setBarSlot} className="sticky bottom-0 z-30 h-0 md:hidden" />
-    </div>
+    </PageContainer>
   )
 }
 
