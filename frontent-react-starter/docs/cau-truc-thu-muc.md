@@ -78,8 +78,8 @@ features/catalog/
 ├─ variant-options.ts   (logic thuần; nhãn khoảng giá `priceRangeLabel` nằm trong active-filter-chips)
 └─ components/   danh sách: catalog-content (+ tiêu đề trang `CatalogHeading` là hàm nội bộ), catalog-results, catalog-states, catalog-filters, category-filter,
                  price-filter, filter-link, filter-drawer, sort-select, active-filter-chips, product-grid(+skeleton), product-card
-                 chi tiết: product-detail-content (+skeleton, not-found), product-gallery, purchase-panel, variant-picker,
-                 option-chip-group, quantity-stepper, sticky-buy-bar, related-products
+                 chi tiết: product-detail-content (+skeleton, not-found), product-info-card (thẻ thông tin bên phải), product-gallery + gallery-thumbs, purchase-panel, variant-picker,
+                 option-chip-group (variant chip|swatch|pill), quantity-stepper (prop pill), sticky-buy-bar, related-products ("Có thể bạn cũng thích")
                  trang chủ (`components/home/`, có dữ liệu; dựng trên `home-section` của components/storefront/home): home-best-sellers (hook TẠM `useBestSellerProducts`), home-new-arrivals (3 tab + cuộn ngang), product-strip-skeleton; khối lỗi dùng lại `CatalogError` của catalog-states
                  thẻ sản phẩm: product-card + product-stock-badge (huy hiệu "Hết hàng" / "Sắp hết")
 ````

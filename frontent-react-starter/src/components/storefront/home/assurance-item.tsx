@@ -1,6 +1,7 @@
 import { Headset, ShieldCheck, Truck, Undo2, type LucideIcon } from "lucide-react"
 import type { AssuranceIcon, HomeAssurance } from "@/lib/home-content"
 
+/** Bảng icon dùng chung (cả dòng cam kết ở trang chi tiết sản phẩm). */
 const ICONS: Record<AssuranceIcon, LucideIcon> = {
   truck: Truck,
   return: Undo2,
@@ -20,4 +21,4 @@ function AssuranceItem({ item }: { item: HomeAssurance }) {
   )
 }
 
-export { AssuranceItem }
+export { AssuranceItem, ICONS as ASSURANCE_ICONS }

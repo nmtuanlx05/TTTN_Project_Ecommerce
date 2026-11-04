@@ -19,6 +19,7 @@ function ProductImage({
   alt,
   eager = false,
   zoomOnHover = false,
+  radius = "card",
   onLoaded,
   onFailed,
   className,
@@ -27,6 +28,8 @@ function ProductImage({
   alt: string
   eager?: boolean
   zoomOnHover?: boolean
+  /** Bo góc: `card` (18px, mặc định) hoặc `panel` (28px, ảnh chính trang chi tiết). `cn()` không biết hai token này xung đột nên chọn bằng prop, không ghi đè bằng `className`. */
+  radius?: "card" | "panel"
   /** Ảnh đã tải xong / không tải được (vd. chỉ bật nút xem ảnh lớn khi ảnh thật sự hiện ra). */
   onLoaded?: () => void
   onFailed?: () => void
@@ -42,7 +45,8 @@ function ProductImage({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-card",
+        "relative overflow-hidden",
+        radius === "panel" ? "rounded-panel" : "rounded-card",
         PRODUCT_IMAGE_ASPECT,
         showImage && !loaded ? "shimmer" : "bg-surface-sunken",
         className,
