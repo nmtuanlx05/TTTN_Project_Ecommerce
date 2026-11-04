@@ -3,14 +3,10 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { FormProvider, useForm, type UseFormReturn } from "react-hook-form"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import {
-  createProductSchema,
-  updateProductSchema,
-  type ProductFormValues,
-} from "../schemas"
+import { createProductSchema, updateProductSchema, type ProductFormValues } from "../schemas"
 import type { ProductDetail, ProductVariant } from "../types"
 import { ProductBasicFields } from "./product-basic-fields"
-import { ProductImageField } from "./product-image-field"
+import { ProductImagesField } from "./product-images-field"
 import { FormSection } from "./form-section"
 import { ProductVariantsField } from "./product-variants-field"
 
@@ -77,7 +73,7 @@ function ProductForm({
         <ProductBasicFields mode={mode} idPrefix={`${idPrefix}-basic`} />
 
         <FormSection title="Ảnh">
-          <ProductImageField id={`${idPrefix}-image`} onUploadingChange={setImageUploading} />
+          <ProductImagesField id={`${idPrefix}-image`} onUploadingChange={setImageUploading} />
         </FormSection>
 
         <ProductVariantsField
