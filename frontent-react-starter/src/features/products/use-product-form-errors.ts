@@ -3,7 +3,7 @@ import type { UseFormReturn } from "react-hook-form"
 import { useToast } from "@/components/ui/toast"
 import type { ApiError } from "@/lib/api-error"
 import { applyServerErrors } from "@/lib/form-errors"
-import { formFieldPaths, remapVariantErrors } from "./form-mapping"
+import { collapseImageErrors, formFieldPaths, remapVariantErrors } from "./server-error-mapping"
 import type { ProductFormValues } from "./schemas"
 
 /**
@@ -22,12 +22,16 @@ export function useProductFormErrors() {
     rowIndexes?: number[],
   ) {
     if (error.statusCode === 403) {
-      toast.add({ title: "Không đủ quyền", description: error.message, data: { tone: "danger" } })
+      toast.add({
+        title: "Không đủ quyền",
+        description: error.message,
+        data: { tone: "danger" },
+      })
       return
     }
 
     if (error.statusCode === 400) {
-      const mapped = rowIndexes ? remapVariantErrors(error, rowIndexes) : error
+      const mapped = collapseImageErrors(rowIndexes ? remapVariantErrors(error, rowIndexes) : error)
       const variantCount = form.getValues("variants").length
       setFormError(applyServerErrors(mapped, form.setError, formFieldPaths(variantCount)))
       return

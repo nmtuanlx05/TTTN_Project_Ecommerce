@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { useImageLoad } from "@/hooks/use-image-load"
 import { STORE } from "@/lib/store-info"
 import { cn } from "@/lib/utils"
@@ -13,12 +14,14 @@ export const PRODUCT_IMAGE_ASPECT = "aspect-[3/4]"
  * Trong lúc tải là skeleton có vệt sáng lướt; tải xong thì ảnh mờ dần vào. Thiếu ảnh hoặc ảnh lỗi: chữ cái đầu của thương hiệu
  * trên nền trung tính. `alt` luôn là tên sản phẩm. `eager`: ảnh nằm ngay màn hình đầu thì tải ngay (không lazy).
  * `zoomOnHover`: phóng nhẹ khi rê chuột vào phần tử cha có class `group/card` (chỉ khi người dùng không giảm chuyển động).
+ * `overlay`: lớp phủ trong khung (vd. ảnh thứ hai của thẻ sản phẩm, `ProductHoverImage`), nằm trên ảnh chính và bị cắt theo khung.
  */
 function ProductImage({
   src,
   alt,
   eager = false,
   zoomOnHover = false,
+  overlay,
   radius = "card",
   onLoaded,
   onFailed,
@@ -28,6 +31,7 @@ function ProductImage({
   alt: string
   eager?: boolean
   zoomOnHover?: boolean
+  overlay?: ReactNode
   /** Bo góc: `card` (18px, mặc định) hoặc `panel` (28px, ảnh chính trang chi tiết). `cn()` không biết hai token này xung đột nên chọn bằng prop, không ghi đè bằng `className`. */
   radius?: "card" | "panel"
   /** Ảnh đã tải xong / không tải được (vd. chỉ bật nút xem ảnh lớn khi ảnh thật sự hiện ra). */
@@ -68,13 +72,11 @@ function ProductImage({
           )}
         />
       ) : (
-        <div
-          aria-hidden="true"
-          className="grid size-full place-items-center font-display text-display text-ink-muted"
-        >
+        <div aria-hidden="true" className="grid size-full place-items-center font-display text-display text-ink-muted">
           {STORE.name.charAt(0)}
         </div>
       )}
+      {overlay}
     </div>
   )
 }

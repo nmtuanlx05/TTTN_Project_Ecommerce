@@ -19,12 +19,21 @@ export interface ProductListItem {
   activeVariantCount: number
 }
 
+/** Một ảnh trong chi tiết admin; `sortOrder` tăng dần, ảnh đầu là ảnh đại diện. */
+export interface ProductImageItem {
+  id: number
+  url: string
+  sortOrder: number
+}
+
 /** Biến thể trong chi tiết admin. `stock`, `reserved`, `minStock` chỉ đọc: module Kho quản lý. */
 export interface ProductVariant {
   id: number
   sku: string
   size: string
   color: string
+  /** `#RRGGBB` in hoa; null khi chưa nhập mã màu. */
+  colorHex: string | null
   isActive: boolean
   stock: number
   reserved: number
@@ -38,7 +47,9 @@ export interface ProductDetail {
   slug: string
   description: string | null
   price: number
+  /** Deprecated: chỉ để tương thích (= ảnh đầu); form chỉ đọc `images`. */
   imageUrl: string | null
+  images: ProductImageItem[]
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -62,16 +73,22 @@ export interface CreateVariantInput {
   sku: string
   size: string
   color: string
+  colorHex?: string | null
   isActive?: boolean
 }
 
-/** Bỏ `slug`, `description`, `imageUrl` = không có (slug thì backend tự sinh). Không gửi `isActive`. */
+/** Ảnh gửi lên theo đúng thứ tự hiển thị. */
+export interface ImageInput {
+  url: string
+}
+
+/** Bỏ `slug`, `description` = không có (slug thì backend tự sinh). Không gửi `isActive` và không gửi `imageUrl` (deprecated, dùng `images`). */
 export interface CreateProductInput {
   name: string
   slug?: string
   description?: string
   price: number
-  imageUrl?: string
+  images: ImageInput[]
   categoryId: number
   variants: CreateVariantInput[]
 }
@@ -85,11 +102,13 @@ export interface UpdateVariantInput {
   sku?: string
   size?: string
   color?: string
+  /** Không gửi = giữ nguyên; `null` = xóa mã màu. */
+  colorHex?: string | null
   isActive?: boolean
 }
 
 /**
- * Trường không gửi thì giữ nguyên. `description` và `imageUrl` gửi `null` để xóa giá trị.
+ * Trường không gửi thì giữ nguyên. `description` gửi `null` để xóa giá trị. `images` có gửi thì thay CẢ MẢNG (`[]` = xóa hết ảnh).
  * Biến thể không nằm trong `variants` thì được giữ nguyên (không bao giờ bị xóa).
  */
 export interface UpdateProductInput {
@@ -97,7 +116,7 @@ export interface UpdateProductInput {
   slug?: string
   description?: string | null
   price?: number
-  imageUrl?: string | null
+  images?: ImageInput[]
   categoryId?: number
   variants?: UpdateVariantInput[]
 }

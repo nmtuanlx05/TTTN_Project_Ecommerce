@@ -1,71 +1,14 @@
 import { Link } from "react-router-dom"
-import { Heart, ShoppingBag } from "lucide-react"
-import { ProductImage, PRODUCT_IMAGE_ASPECT } from "@/components/storefront/product-image"
-import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/toast"
+import { useState } from "react"
+import { ProductImage } from "@/components/storefront/product-image"
+import { ProductHoverImage } from "@/components/storefront/product-hover-image"
 import { formatVnd } from "@/lib/format"
-import { STORE } from "@/lib/store-info"
 import { cn } from "@/lib/utils"
 import { usePrefetchCatalogProduct } from "../queries"
 import type { CatalogProductListItem } from "../types"
+import { ProductCardColors } from "./product-card-colors"
+import { QuickActions } from "./product-card-quick-actions"
 import { ProductStockBadge } from "./product-stock-badge"
-
-/**
- * Kiểu chung của hai nút nổi trên ảnh: nền kính mờ (token), hover đảo màu do variant `secondary` trong `.soft-ui`, vòng focus HAI LỚP (`ring` mực + outline `canvas`)
- * để thấy rõ trên ảnh sáng lẫn tối. Ở thiết bị có hover thì ẩn cho tới khi rê chuột vào thẻ hoặc focus bàn phím vào thẻ/nút (hiện bằng mờ dần + trượt nhẹ, trượt chỉ khi
- * không giảm chuyển động); thiết bị cảm ứng (`hover: none`) luôn thấy chúng, nên ẩn bằng `[@media(hover:hover)]` chứ không bằng `hover:` (xem docs/storefront-design.md mục 6).
- */
-const FLOATING_BUTTON = [
-  "pointer-events-auto bg-canvas/80 backdrop-blur-sm transition-[opacity,transform,color,background-color,border-color]",
-  "focus-visible:ring-2 focus-visible:ring-ink focus-visible:outline-canvas",
-  "[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:motion-safe:translate-y-1",
-  "[@media(hover:hover)]:group-hover/card:opacity-100 [@media(hover:hover)]:group-focus-within/card:opacity-100",
-  "[@media(hover:hover)]:motion-safe:group-hover/card:translate-y-0 [@media(hover:hover)]:motion-safe:group-focus-within/card:translate-y-0",
-].join(" ")
-
-/**
- * Hai nút GIẢ trên ảnh thẻ (trái tim ở góc trên phải, "Thêm nhanh" ở đáy): chỉ hiện thông báo "sẽ sớm có mặt", không đổi trạng thái, không lưu, không thêm vào giỏ,
- * KHÔNG qua cổng đăng nhập (khi làm thật mới thêm). Lớp phủ dùng cùng tỉ lệ với khung ảnh (`PRODUCT_IMAGE_ASPECT`), `pointer-events-none` để chỉ hai nút bắt chuột;
- * nằm NGOÀI thẻ `<a>` nên bấm không điều hướng. Thẻ hẹp (< 16rem, đo bằng container query của thẻ): nút nhỏ lại và vùng bấm vẫn đủ 44px nhờ `before:`.
- * Hết hàng thì không có "Thêm nhanh".
- */
-function QuickActions({ product }: { product: CatalogProductListItem }) {
-  const toast = useToast()
-  const notify = (title: string) => toast.add({ title, data: { tone: "info" } })
-
-  return (
-    <div className={cn("pointer-events-none absolute inset-x-0 top-0", PRODUCT_IMAGE_ASPECT)}>
-      <Button
-        type="button"
-        variant="secondary"
-        size="icon"
-        aria-label={`Thêm ${product.name} vào yêu thích`}
-        onClick={() => notify(STORE.comingSoon.wishlist)}
-        className={cn(
-          FLOATING_BUTTON,
-          "absolute top-3 right-3 rounded-4xl @max-3xs:top-2 @max-3xs:right-2 @max-3xs:size-9 @max-3xs:before:absolute @max-3xs:before:-inset-1",
-        )}
-      >
-        <Heart aria-hidden="true" />
-      </Button>
-      {product.inStock ? (
-        <Button
-          type="button"
-          variant="secondary"
-          aria-label={`Thêm nhanh ${product.name} vào giỏ hàng`}
-          onClick={() => notify(STORE.comingSoon.quickAdd)}
-          className={cn(
-            FLOATING_BUTTON,
-            "absolute inset-x-3 bottom-3 rounded-4xl text-overline uppercase @max-3xs:inset-x-2 @max-3xs:bottom-2 @max-3xs:h-9 @max-3xs:before:absolute @max-3xs:before:-inset-y-1",
-          )}
-        >
-          <ShoppingBag aria-hidden="true" />
-          Thêm nhanh
-        </Button>
-      ) : null}
-    </div>
-  )
-}
 
 /**
  * Thẻ sản phẩm: cả thẻ là MỘT liên kết tới trang chi tiết. Rê chuột hoặc focus vào thẻ thì tải trước chi tiết
@@ -76,6 +19,10 @@ function QuickActions({ product }: { product: CatalogProductListItem }) {
  * `quickActions` (mặc định TẮT; chỉ "Best sellers" và "Sản phẩm mới về" ở trang chủ bật): thêm nút trái tim và "Thêm nhanh" (GIAO DIỆN GIẢ, xem `QuickActions`). Khi bật, thẻ
  * `<a>` được bọc trong `div.group/card` để hover/focus vào BẤT KỲ chỗ nào của thẻ (kể cả hai nút) vừa hiện nút vừa phóng ảnh, chuột đi từ ảnh sang nút không bị thu rồi phóng lại; thẻ
  * `<a>` khi đó không tự làm `group/card`. Thẻ hẹp thì huy hiệu tồn kho dời xuống dưới hàng nút trái tim. Khi tắt, cây DOM giữ nguyên như cũ.
+ *
+ * Ảnh thứ hai (`secondImageUrl`): vùng `group/card` (vùng bọc ngoài) bật `armed` ở lần rê chuột/focus đầu tiên, CHỈ trên thiết bị có hover (`matchMedia`), rồi mới dựng
+ * `ProductHoverImage` (bắt đầu tải lúc đó, nên lưới không tải ảnh thừa). Có ảnh thứ hai thì crossfade thay cho hiệu ứng phóng; không có thì giữ phóng 1,03.
+ * Chấm màu (`ProductCardColors`) nằm bên phải giá.
  */
 function ProductCard({
   product,
@@ -88,12 +35,23 @@ function ProductCard({
 }) {
   const prefetch = usePrefetchCatalogProduct()
   const warm = () => prefetch(product.slug)
+  const [armed, setArmed] = useState(false)
+  const second = product.secondImageUrl
+  const arm = () => {
+    if (second && !armed && window.matchMedia("(hover: hover)").matches) setArmed(true)
+  }
+  const armProps = { onMouseEnter: arm, onFocus: arm }
+  // Có quickActions thì vùng bọc ngoài lo việc `arm`; không thì chính thẻ `<a>` là vùng `group/card`.
+  const onEnter = () => {
+    warm()
+    if (!quickActions) arm()
+  }
 
   const link = (
     <Link
       to={`/products/${encodeURIComponent(product.slug)}`}
-      onMouseEnter={warm}
-      onFocus={warm}
+      onMouseEnter={onEnter}
+      onFocus={onEnter}
       className={cn(!quickActions && "group/card", "flex flex-col gap-3")}
     >
       <div className="relative">
@@ -101,7 +59,8 @@ function ProductCard({
           src={product.imageUrl}
           alt={product.name}
           eager={eager}
-          zoomOnHover
+          zoomOnHover={!second}
+          overlay={armed && second ? <ProductHoverImage src={second} /> : undefined}
           className={product.inStock ? undefined : "opacity-60"}
         />
         <ProductStockBadge
@@ -120,7 +79,10 @@ function ProductCard({
         >
           {product.name}
         </span>
-        <span className="text-body-sm text-ink-muted">{formatVnd(product.price)}</span>
+        <div className="flex items-center justify-between gap-2">
+          <span className="shrink-0 text-body-sm text-ink-muted">{formatVnd(product.price)}</span>
+          <ProductCardColors colors={product.colors} />
+        </div>
       </div>
     </Link>
   )
@@ -128,7 +90,7 @@ function ProductCard({
   if (!quickActions) return link
 
   return (
-    <div className="group/card @container relative">
+    <div className="group/card @container relative" {...armProps}>
       {link}
       <QuickActions product={product} />
     </div>

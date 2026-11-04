@@ -8,7 +8,7 @@ interface ChipOption {
   /** Không có tổ hợp này: không chọn được (`aria-disabled`). */
   disabled: boolean
   /** Chỉ dùng với `variant="swatch"`: mã màu của chấm. Không có thì ô đó rơi về nút chữ. */
-  swatch?: { hex: string; light?: boolean }
+  swatch?: string
 }
 
 type ChipVariant = "chip" | "swatch" | "pill"
@@ -83,13 +83,18 @@ function OptionChipGroup({
 
         if (kind === "swatch" && option.swatch) {
           return (
-            <button key={option.value} {...common} title={option.value} className={cn("press relative grid size-11 place-items-center rounded-4xl", FOCUS)}>
+            <button
+              key={option.value}
+              {...common}
+              title={option.value}
+              className={cn("press relative grid size-11 place-items-center rounded-4xl", FOCUS)}
+            >
               <span
                 aria-hidden="true"
-                style={{ backgroundColor: option.swatch.hex }}
+                style={{ backgroundColor: option.swatch }}
                 className={cn(
                   "relative size-7 overflow-hidden rounded-4xl transition-opacity duration-(--motion-fast) ease-smooth",
-                  option.swatch.light && "border border-border-control",
+                  "border border-ink/15",
                   checked && "outline-2 outline-offset-2 outline-ink",
                   unavailable && "opacity-50",
                 )}
@@ -119,7 +124,9 @@ function OptionChipGroup({
           >
             {option.value}
             {kind === "pill" ? (
-              unavailable ? <span className={STRIKE} /> : null
+              unavailable ? (
+                <span className={STRIKE} />
+              ) : null
             ) : option.state === "available" ? null : (
               <span className="text-caption">Hết hàng</span>
             )}

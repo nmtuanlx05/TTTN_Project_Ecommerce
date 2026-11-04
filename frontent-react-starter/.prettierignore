@@ -1,0 +1,7 @@
+# Không định dạng: build, thư viện, file khóa, mã sinh/chép từ shadcn (không sửa tay components/ui)
+dist
+dist-ssr
+node_modules
+package-lock.json
+src/components/ui
+src/generated

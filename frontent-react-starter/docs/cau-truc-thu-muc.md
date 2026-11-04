@@ -18,7 +18,7 @@ src/
 │                 redirect-if-authenticated), use-avatar-saved ✓ (cập nhật phiên + cache sau khi đổi ảnh đại diện)
 ├─ pages/         MỎNG: chỉ ghép
 │   ├─ auth/        login ✓, register ✓
-│   ├─ admin/       dashboard ✓, users ✓, categories ✓, products ✓ (index, new, edit), orders,
+│   ├─ admin/       dashboard ✓, users ✓, categories ✓, products ✓ (index, new, edit; form có danh sách nhiều ảnh `product-images-field` + vùng kéo-thả file `product-image-dropzone` (dùng `use-file-drop` chung) + hàng đợi tải `use-multi-image-upload`, mã màu hex của biến thể `variant-color-hex-field`), orders,
 │   │               inventory ✓, vouchers, placeholder ✓
 │   ├─ styleguide/  ✓ trang nội bộ cho dev (route /styleguide: index + color-data — dữ liệu bảng màu), không thuộc admin
 │   ├─ forbidden.tsx ✓ (403), not-found.tsx ✓ (404)
@@ -78,7 +78,7 @@ features/catalog/
 ├─ variant-options.ts   (logic thuần; nhãn khoảng giá `priceRangeLabel` nằm trong active-filter-chips)
 └─ components/   danh sách: catalog-content (+ tiêu đề trang `CatalogHeading` là hàm nội bộ), catalog-results, catalog-states, catalog-filters, category-filter,
                  price-filter, filter-link, filter-drawer, sort-select, active-filter-chips, product-grid(+skeleton), product-card
-                 chi tiết: product-detail-content (+skeleton, not-found), product-info-card (thẻ thông tin bên phải), product-gallery + gallery-thumbs, purchase-panel, variant-picker,
+                 chi tiết: product-detail-content (+skeleton, not-found), product-info-card (thẻ thông tin bên phải), product-gallery + gallery-thumbs (+ `gallery-images.ts`: images, dự phòng imageUrl), product-card-colors (chấm màu), product-card-quick-actions, purchase-panel, variant-picker,
                  option-chip-group (variant chip|swatch|pill), quantity-stepper (prop pill), sticky-buy-bar, related-products ("Có thể bạn cũng thích")
                  trang chủ (`components/home/`, có dữ liệu; dựng trên `home-section` của components/storefront/home): home-best-sellers (hook TẠM `useBestSellerProducts`), home-new-arrivals (3 tab + cuộn ngang), product-strip-skeleton; khối lỗi dùng lại `CatalogError` của catalog-states
                  thẻ sản phẩm: product-card + product-stock-badge (huy hiệu "Hết hàng" / "Sắp hết")

@@ -12,7 +12,8 @@ export const DEFAULT_SORT = { sortBy: "createdAt", order: "desc" } as const
 export const NAME_MAX_LENGTH = 191
 export const SLUG_MAX_LENGTH = 191
 export const DESCRIPTION_MAX_LENGTH = 10000
-export const IMAGE_URL_MAX_LENGTH = 191
+export const IMAGE_URL_MAX_LENGTH = 500
+export const MAX_PRODUCT_IMAGES = 6
 export const PRICE_MAX = 2147483647
 export const SKU_MAX_LENGTH = 64
 export const SIZE_MAX_LENGTH = 50
@@ -25,6 +26,12 @@ export const SLUG_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/
 /** SKU: backend tự đổi sang chữ in hoa nên form nhận cả chữ thường. */
 export const SKU_REGEX = /^[A-Za-z0-9._-]+$/
 
+/** Mã màu `#RRGGBB`, không phân biệt hoa thường (backend chuẩn hóa in hoa). */
+export const COLOR_HEX_REGEX = /^#[0-9a-f]{6}$/i
+
 export const IMAGE_URL_REGEX = /^https?:\/\/\S+$/i
 
-export const VISIBILITY_LABEL = { visible: "Đang hiện", hidden: "Đang ẩn" } as const
+export const VISIBILITY_LABEL = {
+  visible: "Đang hiện",
+  hidden: "Đang ẩn",
+} as const

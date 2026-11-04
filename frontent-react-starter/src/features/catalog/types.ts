@@ -8,6 +8,12 @@ export interface CatalogCategoryRef {
   slug: string
 }
 
+/** Màu của một sản phẩm trong danh sách; `hex` (#RRGGBB in hoa) là null khi admin chưa nhập mã màu. */
+export interface CatalogColor {
+  name: string
+  hex: string | null
+}
+
 /** Một thẻ trong danh sách (GET /products). */
 export interface CatalogProductListItem {
   id: number
@@ -15,7 +21,12 @@ export interface CatalogProductListItem {
   slug: string
   /** VND, số nguyên. */
   price: number
+  /** Ảnh đầu (ảnh đại diện). */
   imageUrl: string | null
+  /** Ảnh thứ hai (hiện khi rê chuột); null nếu sản phẩm chỉ có một ảnh. Chỉ có ở danh sách. */
+  secondImageUrl: string | null
+  /** Các màu của sản phẩm, chỉ có ở danh sách. */
+  colors: CatalogColor[]
   category: CatalogCategoryRef
   /** Còn ít nhất một biến thể đang bán có tồn khả dụng. */
   inStock: boolean
@@ -29,12 +40,16 @@ export interface CatalogVariant {
   sku: string
   size: string
   color: string
+  /** `#RRGGBB` in hoa; null khi chưa có mã màu (ô chọn màu rơi về nút chữ). */
+  colorHex: string | null
   inStock: boolean
 }
 
 /** Chi tiết (GET /products/:slug). Không có `lowStock`: huy hiệu "Sắp hết" chỉ hiện ở thẻ trong danh sách. */
-export interface CatalogProductDetail extends Omit<CatalogProductListItem, "lowStock"> {
+export interface CatalogProductDetail extends Omit<CatalogProductListItem, "lowStock" | "secondImageUrl" | "colors"> {
   description: string | null
+  /** Ảnh đã sắp xếp, tối đa 6. Rỗng thì dự phòng bằng `imageUrl`. */
+  images: { url: string }[]
   variants: CatalogVariant[]
 }
 

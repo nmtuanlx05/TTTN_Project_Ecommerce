@@ -1,9 +1,11 @@
 import { z } from "zod"
 import {
+  COLOR_HEX_REGEX,
   COLOR_MAX_LENGTH,
   DESCRIPTION_MAX_LENGTH,
   IMAGE_URL_MAX_LENGTH,
   IMAGE_URL_REGEX,
+  MAX_PRODUCT_IMAGES,
   MAX_VARIANTS,
   NAME_MAX_LENGTH,
   PRICE_MAX,
@@ -14,6 +16,7 @@ import {
   SLUG_REGEX,
 } from "./constants"
 import { parsePriceInput } from "./price-input"
+import { checkDuplicateImages, checkDuplicateVariants } from "./schema-checks"
 
 /**
  * Quy tắc phản chiếu CreateProductDto / CreateVariantDto của backend (docs/api/products.md, mục Validate).
@@ -40,7 +43,9 @@ const categoryId = z
   .nullable()
   // Khai báo `: boolean` để TS không suy ra type predicate, nếu không kiểu form bị thu hẹp về `number`
   // và giá trị ban đầu `null` (chưa chọn) không hợp lệ.
-  .refine((value): boolean => value !== null, { message: "Chọn danh mục cho sản phẩm." })
+  .refine((value): boolean => value !== null, {
+    message: "Chọn danh mục cho sản phẩm.",
+  })
 
 // Giá là chuỗi trong form (để gõ "199.000"); lúc gửi mới ép sang số nguyên.
 const price = z
@@ -68,13 +73,16 @@ const description = z
   .trim()
   .max(DESCRIPTION_MAX_LENGTH, `Mô tả tối đa ${DESCRIPTION_MAX_LENGTH} ký tự. Rút gọn mô tả lại.`)
 
-const imageUrl = z
-  .string()
-  .trim()
-  .max(IMAGE_URL_MAX_LENGTH, `Đường dẫn ảnh tối đa ${IMAGE_URL_MAX_LENGTH} ký tự. Dùng đường dẫn ngắn hơn.`)
-  .refine((value) => value === "" || IMAGE_URL_REGEX.test(value), {
-    message: "Đường dẫn ảnh phải bắt đầu bằng http:// hoặc https://.",
-  })
+const imageItem = z.object({
+  url: z
+    .string()
+    .trim()
+    .min(1, "Đường dẫn ảnh không được để trống.")
+    .max(IMAGE_URL_MAX_LENGTH, `Đường dẫn ảnh tối đa ${IMAGE_URL_MAX_LENGTH} ký tự. Dùng đường dẫn ngắn hơn.`)
+    .regex(IMAGE_URL_REGEX, "Đường dẫn ảnh phải bắt đầu bằng http:// hoặc https://."),
+})
+
+const images = z.array(imageItem).max(MAX_PRODUCT_IMAGES, `Mỗi sản phẩm tối đa ${MAX_PRODUCT_IMAGES} ảnh. Xóa bớt ảnh.`)
 
 const variant = z.object({
   /** Có = biến thể đã lưu (không xóa được, chỉ sửa hoặc ẩn); không có = hàng mới thêm. */
@@ -85,16 +93,19 @@ const variant = z.object({
     .min(1, "Nhập SKU, ví dụ ATB-S-TRANG.")
     .max(SKU_MAX_LENGTH, `SKU tối đa ${SKU_MAX_LENGTH} ký tự. Rút gọn SKU lại.`)
     .regex(SKU_REGEX, "SKU chỉ gồm chữ cái không dấu, số và các ký tự . _ - (không có khoảng trắng)."),
-  size: z
-    .string()
-    .trim()
-    .min(1, "Nhập size, ví dụ M.")
-    .max(SIZE_MAX_LENGTH, `Size tối đa ${SIZE_MAX_LENGTH} ký tự.`),
+  size: z.string().trim().min(1, "Nhập size, ví dụ M.").max(SIZE_MAX_LENGTH, `Size tối đa ${SIZE_MAX_LENGTH} ký tự.`),
   color: z
     .string()
     .trim()
     .min(1, "Nhập màu, ví dụ Trắng.")
     .max(COLOR_MAX_LENGTH, `Màu tối đa ${COLOR_MAX_LENGTH} ký tự.`),
+  /** Rỗng = chưa có mã màu (storefront rơi về nút chữ). */
+  colorHex: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || COLOR_HEX_REGEX.test(value), {
+      message: "Mã màu phải có dạng #RRGGBB, ví dụ #FFFFFF hoặc #1A1A1A.",
+    }),
   isActive: z.boolean(),
 })
 
@@ -105,67 +116,23 @@ const variants = z
   .min(1, "Sản phẩm cần ít nhất 1 biến thể. Thêm một biến thể (size và màu).")
   .max(MAX_VARIANTS, `Mỗi sản phẩm tối đa ${MAX_VARIANTS} biến thể.`)
 
-/**
- * So khóa không phân biệt hoa/thường và dấu như collation của DB ("Trắng" và "trang" là một),
- * để báo trùng ngay trong form thay vì chờ backend trả 400.
- */
-export function foldKey(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/\s+/g, " ")
+const baseShape = { name, description, price, images, categoryId, variants }
+
+function checkForm(value: z.infer<z.ZodObject<typeof baseShape>>, ctx: z.RefinementCtx) {
+  checkDuplicateImages(value, ctx)
+  checkDuplicateVariants(value, ctx)
 }
 
-/** Chặn trùng SKU và trùng cặp (size, màu) trong cùng form; lỗi gắn vào ô của hàng đứng sau. */
-function checkDuplicateVariants(
-  value: { variants: { sku: string; size: string; color: string }[] },
-  ctx: z.RefinementCtx,
-) {
-  const skuRows = new Map<string, number>()
-  const pairRows = new Map<string, number>()
-  value.variants.forEach((row, index) => {
-    if (row.sku.trim() !== "") {
-      const key = foldKey(row.sku)
-      const first = skuRows.get(key)
-      if (first === undefined) skuRows.set(key, index)
-      else {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["variants", index, "sku"],
-          message: `SKU này đã dùng ở biến thể ${first + 1}. Mỗi SKU chỉ dùng một lần, hãy đổi SKU.`,
-        })
-      }
-    }
-    if (row.size.trim() !== "" && row.color.trim() !== "") {
-      const key = `${foldKey(row.size)}|${foldKey(row.color)}`
-      const first = pairRows.get(key)
-      if (first === undefined) pairRows.set(key, index)
-      else {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["variants", index, "size"],
-          message: `Size và màu này đã có ở biến thể ${first + 1}. Đổi size hoặc màu.`,
-        })
-      }
-    }
-  })
-}
-
-const baseShape = { name, description, price, imageUrl, categoryId, variants }
-
-export const createProductSchema = z
-  .object({ ...baseShape, slug })
-  .superRefine(checkDuplicateVariants)
+export const createProductSchema = z.object({ ...baseShape, slug }).superRefine(checkForm)
 
 /** Khi sửa, slug không được để trống: backend từ chối chuỗi rỗng (400). */
 export const updateProductSchema = z
   .object({
     ...baseShape,
-    slug: slug.refine((value) => value !== "", { message: "Nhập slug, hoặc giữ nguyên slug cũ." }),
+    slug: slug.refine((value) => value !== "", {
+      message: "Nhập slug, hoặc giữ nguyên slug cũ.",
+    }),
   })
-  .superRefine(checkDuplicateVariants)
+  .superRefine(checkForm)
 
 export type ProductFormValues = z.infer<typeof createProductSchema>
