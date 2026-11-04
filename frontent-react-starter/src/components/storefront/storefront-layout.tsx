@@ -1,9 +1,20 @@
 import type { ReactNode } from "react"
 import { Outlet, useLocation } from "react-router-dom"
 import { AnnouncementBar } from "@/components/storefront/announcement-bar"
-import { SkipLink } from "@/components/storefront/skip-link"
 import { StorefrontFooter } from "@/components/storefront/storefront-footer"
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration"
+
+/** Liên kết đầu tiên của trang: người dùng bàn phím nhảy thẳng tới nội dung. Chỉ hiện khi được focus. */
+function SkipLink() {
+  return (
+    <a
+      href="#main-content"
+      className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-60 focus:rounded-xs focus:bg-primary focus:px-4 focus:py-3 focus:text-body-sm focus:text-primary-fg"
+    >
+      Bỏ qua tới nội dung
+    </a>
+  )
+}
 
 /**
  * Khung của khu khách: liên kết bỏ qua, thanh thông báo chạy chữ (không dính, trượt đi khi cuộn), header và footer (do container nối phiên và danh mục rồi truyền vào),

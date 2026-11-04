@@ -6,9 +6,22 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { formatNumber } from "@/lib/format"
-import { inventoryLinkOf } from "../inventory-link"
 import type { ProductFormValues } from "../schemas"
 import type { ProductVariant } from "../types"
+
+/**
+ * Liên kết sang trang Kho đã lọc theo SKU của biến thể. Chỉ là chuỗi đường dẫn (features không import lẫn
+ * nhau). Bật `includeHidden` khi sản phẩm đang ẩn hoặc biến thể ngừng bán, nếu không kho không hiện hàng đó
+ * (`isHidden = !variant.isActive || !product.isActive`). Dùng dữ liệu đã lưu trên server, không dùng ô đang sửa.
+ */
+function inventoryLinkOf(
+  variant: Pick<ProductVariant, "sku" | "isActive">,
+  productIsActive: boolean,
+): string {
+  const params = new URLSearchParams({ q: variant.sku })
+  if (!productIsActive || !variant.isActive) params.set("includeHidden", "true")
+  return `/admin/inventory?${params.toString()}`
+}
 
 /**
  * Một hàng biến thể. `saved` có = biến thể đã lưu: không xóa được (chỉ sửa hoặc ngừng bán). Không có = hàng

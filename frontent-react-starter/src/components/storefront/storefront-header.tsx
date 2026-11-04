@@ -1,16 +1,26 @@
 import { useMemo } from "react"
+import { ShoppingBag } from "lucide-react"
 import { BrandLogo } from "@/components/shared/brand-logo"
 import { useInView } from "@/hooks/use-in-view"
 import type { CategoryTree } from "@/lib/category-tree"
 import { resolveNavItems } from "@/lib/nav-items"
 import { STORE } from "@/lib/store-info"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { CartButton } from "./cart-button"
 import { HeaderAccount } from "./header-account"
 import { HeaderNav } from "./header-nav"
 import type { HeaderSession } from "./header-session"
 import { MobileNavDrawer } from "./mobile-nav-drawer"
 import { SearchPanel } from "./search-panel"
+
+/** Biểu tượng giỏ hàng ở header. Là nút (không phải liên kết): giỏ chưa có trang, và khách phải qua cổng đăng nhập. */
+function CartButton({ onClick }: { onClick?: () => void }) {
+  return (
+    <Button variant="ghost" size="icon" aria-label="Giỏ hàng" onClick={onClick} className="press">
+      <ShoppingBag className="size-5" />
+    </Button>
+  )
+}
 
 /**
  * Header cửa hàng, dính khi cuộn. Ở đầu trang nền liền với trang; cuộn quá vài px thì nền mờ nhẹ và hiện đường kẻ mảnh

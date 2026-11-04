@@ -1,12 +1,12 @@
-import { Link } from "react-router-dom";
-import { buttonVariants } from "@/components/ui/button";
-import { PageContainer } from "@/components/storefront/page-container";
-import { Reveal } from "@/components/storefront/reveal";
-import { StaticImage } from "@/components/storefront/static-image";
-import { HOME } from "@/lib/home-content";
-import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom"
+import { buttonVariants } from "@/components/ui/button"
+import { PageContainer } from "@/components/storefront/page-container"
+import { Reveal } from "@/components/storefront/reveal"
+import { StaticImage } from "@/components/storefront/static-image"
+import { HOME } from "@/lib/home-content"
+import { cn } from "@/lib/utils"
 
-const { eyebrow, title, description, cta, image } = HOME.story;
+const { eyebrow, title, description, cta, image } = HOME.story
 
 /**
  * "Câu chuyện thương hiệu": dải tối toàn chiều rộng. Phạm vi `dark` + `surface-sunken` (như chân trang) nên tối cố định; ảnh nền tĩnh phủ
@@ -16,36 +16,22 @@ const { eyebrow, title, description, cta, image } = HOME.story;
 function BrandStory() {
   return (
     <Reveal className="mt-block">
-      <section
-        aria-labelledby="home-story"
-        className="dark relative isolate overflow-hidden bg-surface-sunken text-ink"
-      >
-        <StaticImage
-          src={image.src}
-          alt={image.alt}
-          objectPosition={image.objectPosition}
-          fallbackLetter={false}
-        />
+      <section aria-labelledby="home-story" className="dark relative isolate overflow-hidden bg-surface-sunken text-ink">
+        <StaticImage src={image.src} alt={image.alt} objectPosition={image.objectPosition} fallbackLetter={false} />
         <div aria-hidden="true" className="absolute inset-0 bg-scrim/70" />
         <PageContainer className="relative flex min-h-96 flex-col items-start justify-center gap-stack py-block">
           <p className="text-overline uppercase text-ink">{eyebrow}</p>
-          <h2
-            id="home-story"
-            className="max-w-3xl font-serif text-display font-normal text-balance italic"
-          >
+          <h2 id="home-story" className="max-w-3xl font-serif text-display font-normal text-balance italic">
             {title}
           </h2>
           <p className="max-w-prose text-body text-ink">{description}</p>
-          <Link
-            to="/products"
-            className={cn(buttonVariants({ size: "lg" }), "press mt-2")}
-          >
+          <Link to="/products" className={cn(buttonVariants({ size: "lg" }), "press mt-2")}>
             {cta}
           </Link>
         </PageContainer>
       </section>
     </Reveal>
-  );
+  )
 }
 
-export { BrandStory };
+export { BrandStory }

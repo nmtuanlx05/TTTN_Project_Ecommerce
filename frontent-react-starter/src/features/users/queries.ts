@@ -13,7 +13,6 @@ import type {
 } from "./types"
 import {
   createUser,
-  getUser,
   listUsers,
   setUserStatus,
   updateUser,
@@ -23,7 +22,6 @@ export const userKeys = {
   /** Tiền tố chung: làm mới mọi danh sách và chi tiết user. */
   all: ["users"] as const,
   list: (params: UserListParams) => ["users", params] as const,
-  detail: (id: number) => ["users", "detail", id] as const,
 }
 
 /** Danh sách user. Giữ dữ liệu trang cũ trong lúc tải trang mới để bảng không giật. */
@@ -32,14 +30,6 @@ export function useUsers(params: UserListParams) {
     queryKey: userKeys.list(params),
     queryFn: ({ signal }) => listUsers(params, signal),
     placeholderData: keepPreviousData,
-  })
-}
-
-export function useUser(id: number | undefined) {
-  return useQuery({
-    queryKey: userKeys.detail(id ?? 0),
-    queryFn: ({ signal }) => getUser(id as number, signal),
-    enabled: id !== undefined,
   })
 }
 

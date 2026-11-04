@@ -5,13 +5,22 @@ import { FormDialogBody } from "@/components/shared/form-dialog"
 import { Alert } from "@/components/ui/alert"
 import { parseQuantityInput } from "../quantity-input"
 import { minStockSchema, type MinStockFormValues } from "../schemas"
-import { stockStatusOf } from "../stock-math"
-import type { InventoryItem } from "../types"
+import type { InventoryItem, StockStatus } from "../types"
 import { IntegerField } from "./integer-field"
 import { StockFormActions } from "./stock-form-actions"
 import { StockPreview } from "./stock-preview"
 import { StockStatusBadge } from "./stock-status-badge"
 import { StockVariantSummary } from "./stock-variant-summary"
+
+/**
+ * Trạng thái tồn theo cùng công thức backend (docs/api/inventory.md). Chỉ dùng để xem trước phía
+ * client (vd. ngưỡng mới); số liệu thật luôn lấy từ `stockStatus` server trả về.
+ */
+function stockStatusOf(available: number, minStock: number): StockStatus {
+  if (available <= 0) return "out"
+  if (available <= minStock) return "low"
+  return "in_stock"
+}
 
 /** Form Đặt ngưỡng cảnh báo. Xem trước trạng thái tồn với ngưỡng mới (công thức giống backend). */
 function MinStockForm({

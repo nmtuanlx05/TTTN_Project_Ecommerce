@@ -1,4 +1,6 @@
-import { NEWSLETTER_UNAVAILABLE_MESSAGE } from "./constants"
+/** TẠM: câu hiện khi bấm đăng ký, vì backend chưa có endpoint nhận tin. Xóa cùng nhánh TẠM bên dưới khi có backend. */
+const NEWSLETTER_UNAVAILABLE_MESSAGE =
+  "Tính năng đăng ký nhận tin đang được hoàn thiện. Bạn vui lòng quay lại sau."
 
 /** Kết quả của một lần gửi đăng ký. Hiện chỉ có "chưa khả dụng"; giao diện hiện `message` nguyên văn. */
 export interface NewsletterResult {

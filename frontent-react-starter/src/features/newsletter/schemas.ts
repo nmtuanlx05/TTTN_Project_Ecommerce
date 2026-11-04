@@ -1,5 +1,7 @@
 import { z } from "zod"
-import { EMAIL_MAX_LENGTH } from "./constants"
+
+/** Độ dài email tối đa (cột `email` của backend là VARCHAR(191)). */
+const EMAIL_MAX_LENGTH = 191
 
 /** Kiểm tra phía client; thông điệp nói rõ sai ở đâu và sửa thế nào. */
 export const newsletterSchema = z.object({

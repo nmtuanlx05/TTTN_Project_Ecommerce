@@ -3,9 +3,20 @@ import { buttonVariants } from "@/components/ui/button"
 import { StaticImage } from "@/components/storefront/static-image"
 import type { CategoryTree } from "@/lib/category-tree"
 import { homeHref } from "@/lib/home-links"
-import type { HeroSlide as HeroSlideContent } from "@/lib/home-content"
+import type { HeroSlideContent } from "@/lib/home-content"
 import { cn } from "@/lib/utils"
-import { HERO_IMAGE_MOBILE_CLASS, HERO_SPLIT_CLASS } from "./hero-layout"
+
+/**
+ * Từ `lg`: cột chữ 46%, cột ảnh 54% (ảnh tràn sát mép phải màn hình, cột chữ canh theo container). Số 46 phải khớp `HERO_TEXT_WIDTH_CLASS`
+ * ở `hero-layout.ts` (bề rộng hàng điều khiển nằm đè đúng cột chữ). Ghi đủ chuỗi class vì Tailwind chỉ nhận class viết nguyên văn trong mã.
+ */
+const HERO_SPLIT_CLASS = "lg:grid-cols-[46fr_54fr]"
+
+/**
+ * Di động: ảnh vuông nhưng cao tối đa 40% chiều cao màn hình (`svh`), để tiêu đề và nút chính còn trong màn hình đầu ở 375×667 (đã đo). Màn hình đủ cao
+ * (≥ ~940px ở bề rộng 375) thì vẫn vuông; thấp hơn thì ảnh cắt bớt chiều cao (`object-cover`, vùng giữ lại theo `objectPosition`).
+ */
+const HERO_IMAGE_MOBILE_CLASS = "aspect-square max-h-[40svh]"
 
 /**
  * Một slide của hero: cột chữ (nhãn có đường kẻ ngắn, tiêu đề, phụ đề, mô tả, hai nút) và cột ảnh có khung viền mảnh lùi vào trong.

@@ -1,7 +1,17 @@
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { priceRangeLabel } from "../price-range"
+import { formatVnd } from "@/lib/format"
+import { PRICE_RANGES } from "../constants"
 import type { CatalogSearch } from "../use-catalog-search-params"
+
+/** Nhãn khoảng giá: khoảng nhanh thì dùng nhãn của nó, giá tùy ý trên URL thì tự ghép ("Từ …", "Đến …", "… – …"). */
+function priceRangeLabel(min: number | undefined, max: number | undefined): string {
+  const preset = PRICE_RANGES.find((range) => range.min === min && range.max === max)
+  if (preset) return preset.label
+  if (min !== undefined && max !== undefined) return `${formatVnd(min)} – ${formatVnd(max)}`
+  if (min !== undefined) return `Từ ${formatVnd(min)}`
+  return `Đến ${formatVnd(max ?? 0)}`
+}
 
 /**
  * Chip các bộ lọc đang áp dụng: bấm để bỏ, kèm "Xóa tất cả". `onRemoved` gọi sau khi bỏ một chip (chip biến mất nên
