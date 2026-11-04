@@ -52,7 +52,7 @@ Prisma chưa hỗ trợ CHECK trực tiếp, nên các CHECK dưới đây đư�
 | product_variants | `chk_product_variants_color_hex` | `colorHex IS NULL` hoặc đúng `#RRGGBB` in hoa (migration `add_product_images_color_hex`) |
 | product_images | `chk_product_images_sort_order` | `sortOrder >= 0` (migration `add_product_images_color_hex`) |
 | products | `chk_products_price` | `price >= 0` |
-| cart_items | `chk_cart_items_quantity` | `quantity > 0` |
+| cart_items | `chk_cart_items_quantity` | `quantity > 0` (mức tối đa 10 mỗi dòng chỉ kiểm ở ứng dụng, không có CHECK để đổi hằng số không cần migration) |
 | order_items | `chk_order_items_quantity` | `quantity > 0` |
 | order_items | `chk_order_items_price` | `price >= 0` |
 | orders | `chk_orders_total_amount` | `totalAmount >= 0` |

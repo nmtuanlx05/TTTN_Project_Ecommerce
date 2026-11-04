@@ -92,6 +92,11 @@ COMPLETED`, với `CANCELLED` và `RETURNED` là các nhánh phụ tách ra từ
   coi như `images = [imageUrl]`, gửi `null`/`""` thì xóa hết ảnh. Việc bỏ cột để đợt dọn dẹp sau. Màu: `ProductVariant.colorHex`
   (`#RRGGBB` in hoa, tùy chọn, CHECK ở DB), **không** có bảng `Color`; cùng tên màu trong một sản phẩm phải cùng `colorHex`. Bảng tra
   tên màu → hex ở `src/products/color-hex.ts`, migration SQL lặp lại và có test đối chiếu.
+- **Giỏ hàng** (`src/cart/`, API ở `docs/api/cart.md`): lưu trong DB, chỉ `CUSTOMER` (ADMIN/STAFF 403 "Tài khoản quản trị không dùng để mua hàng"
+  qua `@RolesMessage`); giỏ Guest và gộp giỏ để V2. Một giỏ/user, tạo khi thêm món đầu; mỗi dòng một biến thể, số lượng 1..10
+  (`MAX_QUANTITY_PER_ITEM`, không CHECK ở DB) và không vượt `stock - reserved`; thêm trùng biến thể thì cộng dồn. Giỏ không giữ hàng và
+  **không lưu giá** (đọc giá hiện tại; đơn hàng chụp giá lúc đặt). Ghi trong `$transaction` có `SELECT ... FOR UPDATE` dòng `carts`; dòng đã
+  hết hàng/ẩn vẫn hiện kèm `purchasable`/`inStock`, `subtotal`/`itemCount` chỉ tính dòng mua được. Dòng của người khác trả 404.
 - Xóa mềm bằng `isActive` cho `Product`/`ProductVariant`/`User`/`Voucher`; `Order` và `OrderItem`
   không bao giờ xóa cứng (hủy đơn bằng `CANCELLED`).
 
