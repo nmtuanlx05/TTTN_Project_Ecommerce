@@ -6,6 +6,7 @@ import {
   toPublicDetail,
   toPublicListItem,
 } from './products.mapper';
+import { getStockStatus } from '../inventory/inventory.mapper';
 
 type PublicDetailInput = Parameters<typeof toPublicDetail>[0];
 
@@ -19,6 +20,19 @@ const INTERNAL_FIELDS = [
   'updatedAt',
 ];
 
+// Mọi tổ hợp stock/reserved/minStock trong 0..max, gồm cả reserved > stock (dữ liệu lệch)
+function levelCombinations(max = 6) {
+  const levels: { stock: number; reserved: number; minStock: number }[] = [];
+  for (let stock = 0; stock <= max; stock++) {
+    for (let reserved = 0; reserved <= max; reserved++) {
+      for (let minStock = 0; minStock <= max; minStock++) {
+        levels.push({ stock, reserved, minStock });
+      }
+    }
+  }
+  return levels;
+}
+
 describe('products.mapper', () => {
   const category = { id: 2, name: 'Áo thun', slug: 'ao-thun' };
 
@@ -31,8 +45,14 @@ describe('products.mapper', () => {
       imageUrl: null,
       category,
     };
-    const inStockOf = (variants: { stock: number; reserved: number }[]) =>
-      toPublicListItem({ ...base, variants }).inStock;
+    type ListVariant = { stock: number; reserved: number; minStock?: number };
+    const listOf = (variants: ListVariant[]) =>
+      toPublicListItem({
+        ...base,
+        variants: variants.map((v) => ({ minStock: 0, ...v })),
+      });
+    const inStockOf = (variants: ListVariant[]) => listOf(variants).inStock;
+    const lowStockOf = (variants: ListVariant[]) => listOf(variants).lowStock;
 
     it('inStock = true khi có biến thể còn tồn khả dụng (stock - reserved > 0)', () => {
       expect(
@@ -86,6 +106,7 @@ describe('products.mapper', () => {
           'id',
           'imageUrl',
           'inStock',
+          'lowStock',
           'name',
           'price',
           'slug',
@@ -93,6 +114,132 @@ describe('products.mapper', () => {
       );
       expect(Object.keys(item.category).sort()).toEqual(['id', 'name', 'slug']);
       expect(item).not.toHaveProperty('variants');
+    });
+
+    it('lowStock chỉ là boolean, không lọt số liệu tồn dù nằm lẫn trong JSON', () => {
+      const item = listOf([{ stock: 9, reserved: 1, minStock: 10 }]);
+      expect(typeof item.lowStock).toBe('boolean');
+      const json = JSON.stringify(item);
+      for (const field of ['stock', 'reserved', 'minStock', 'isActive']) {
+        expect(json).not.toContain(`"${field}"`);
+      }
+    });
+
+    describe('lowStock', () => {
+      it('một biến thể sắp hết (0 < available <= minStock) → true', () => {
+        expect(lowStockOf([{ stock: 3, reserved: 0, minStock: 5 }])).toBe(true);
+      });
+
+      it('biên: available đúng bằng minStock → true', () => {
+        expect(lowStockOf([{ stock: 5, reserved: 0, minStock: 5 }])).toBe(true);
+        expect(lowStockOf([{ stock: 8, reserved: 3, minStock: 5 }])).toBe(true);
+      });
+
+      it('biên: available = minStock + 1 → false', () => {
+        expect(lowStockOf([{ stock: 6, reserved: 0, minStock: 5 }])).toBe(
+          false,
+        );
+        expect(lowStockOf([{ stock: 9, reserved: 3, minStock: 5 }])).toBe(
+          false,
+        );
+      });
+
+      it('minStock = 0 → không bao giờ sắp hết (còn 1 cái vẫn là in_stock)', () => {
+        expect(lowStockOf([{ stock: 1, reserved: 0, minStock: 0 }])).toBe(
+          false,
+        );
+        expect(lowStockOf([{ stock: 100, reserved: 0, minStock: 0 }])).toBe(
+          false,
+        );
+      });
+
+      it('một biến thể sắp hết nhưng biến thể khác còn nhiều → false', () => {
+        expect(
+          lowStockOf([
+            { stock: 2, reserved: 0, minStock: 5 },
+            { stock: 50, reserved: 0, minStock: 5 },
+          ]),
+        ).toBe(false);
+      });
+
+      it('mọi biến thể còn hàng đều sắp hết → true', () => {
+        expect(
+          lowStockOf([
+            { stock: 2, reserved: 0, minStock: 5 },
+            { stock: 4, reserved: 1, minStock: 5 },
+          ]),
+        ).toBe(true);
+      });
+
+      it('biến thể hết hàng cộng biến thể sắp hết → true (hết hàng không tính)', () => {
+        expect(
+          lowStockOf([
+            { stock: 0, reserved: 0, minStock: 5 },
+            { stock: 3, reserved: 0, minStock: 5 },
+          ]),
+        ).toBe(true);
+        // available âm cũng là hết hàng
+        expect(
+          lowStockOf([
+            { stock: 2, reserved: 3, minStock: 5 },
+            { stock: 3, reserved: 0, minStock: 5 },
+          ]),
+        ).toBe(true);
+      });
+
+      it('mọi biến thể hết hàng → false (không phải "sắp hết")', () => {
+        expect(
+          lowStockOf([
+            { stock: 0, reserved: 0, minStock: 5 },
+            { stock: 3, reserved: 3, minStock: 5 },
+          ]),
+        ).toBe(false);
+      });
+
+      it('không có biến thể (hoặc mọi biến thể ẩn nên select trả rỗng) → false', () => {
+        expect(lowStockOf([])).toBe(false);
+      });
+
+      it('mỗi biến thể dùng minStock riêng của nó', () => {
+        expect(
+          lowStockOf([
+            { stock: 4, reserved: 0, minStock: 5 }, // low
+            { stock: 4, reserved: 0, minStock: 3 }, // in_stock
+          ]),
+        ).toBe(false);
+      });
+
+      it('lowStock = true kéo theo inStock = true (quét nhiều tổ hợp)', () => {
+        for (const level of levelCombinations()) {
+          const item = listOf([level]);
+          if (item.lowStock) expect(item.inStock).toBe(true);
+        }
+        for (const a of levelCombinations(3)) {
+          for (const b of levelCombinations(3)) {
+            const item = listOf([a, b]);
+            if (item.lowStock) expect(item.inStock).toBe(true);
+          }
+        }
+      });
+
+      // Hai nơi định nghĩa "còn hàng": isAvailable (products.mapper) và getStockStatus (inventory.mapper).
+      // Test này chặn hai công thức lệch nhau: nếu ai sửa một bên, inStock của danh sách công khai và
+      // trạng thái 'low' ở trang kho sẽ không còn nhất quán, và test đỏ.
+      it('inStock (products) khớp getStockStatus !== "out" (inventory) với mọi tổ hợp stock/reserved/minStock', () => {
+        for (const level of levelCombinations()) {
+          expect(inStockOf([level])).toBe(
+            getStockStatus({ minStock: 0, ...level }) !== 'out',
+          );
+        }
+      });
+
+      it('lowStock của một biến thể khớp getStockStatus === "low" (inventory)', () => {
+        for (const level of levelCombinations()) {
+          expect(lowStockOf([level])).toBe(
+            getStockStatus({ minStock: 0, ...level }) === 'low',
+          );
+        }
+      });
     });
   });
 
@@ -233,7 +380,7 @@ describe('products.mapper', () => {
       );
       expect(
         Object.keys(publicProductListSelect.variants.select).sort(),
-      ).toEqual(['reserved', 'stock']);
+      ).toEqual(['minStock', 'reserved', 'stock']);
       expect(Object.keys(publicProductDetailSelect).sort()).toEqual(
         [
           'category',

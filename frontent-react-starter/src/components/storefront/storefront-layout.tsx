@@ -1,11 +1,12 @@
 import type { ReactNode } from "react"
 import { Outlet, useLocation } from "react-router-dom"
+import { AnnouncementBar } from "@/components/storefront/announcement-bar"
 import { SkipLink } from "@/components/storefront/skip-link"
 import { StorefrontFooter } from "@/components/storefront/storefront-footer"
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration"
 
 /**
- * Khung của khu khách: liên kết bỏ qua, header và footer (do container nối phiên và danh mục rồi truyền vào),
+ * Khung của khu khách: liên kết bỏ qua, thanh thông báo chạy chữ (không dính, trượt đi khi cuộn), header và footer (do container nối phiên và danh mục rồi truyền vào),
  * nội dung. Nằm ngoài `.density-admin` nên dùng mật độ storefront.
  *
  * Easing: đặt `--default-transition-timing-function` về `--motion-ease` ngay trên phần tử gốc của khung này, nên mọi `transition-*`
@@ -28,6 +29,7 @@ function StorefrontLayout({
   return (
     <div className="flex min-h-dvh flex-col bg-canvas [--default-transition-timing-function:var(--motion-ease)]">
       <SkipLink />
+      <AnnouncementBar />
       {header}
       <main id="main-content" tabIndex={-1} className="flex-1 scroll-mt-header outline-none">
         <div key={pathname} className="motion-safe:animate-page-enter">

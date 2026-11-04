@@ -88,11 +88,18 @@ Tiền là VND, số nguyên (JSON number). Thời gian là chuỗi ISO 8601.
   "price": 199000,
   "imageUrl": "https://picsum.photos/seed/ao-thun-basic-co-tron/600/800",
   "category": { "id": 3, "name": "Áo thun", "slug": "ao-thun" },
-  "inStock": true
+  "inStock": true,
+  "lowStock": false
 }
 ```
 
 - `inStock`: `true` khi có ít nhất một biến thể đang bán còn tồn khả dụng (`stock - reserved > 0`).
+- `lowStock`: `true` (hiện huy hiệu "Sắp hết") khi sản phẩm còn hàng **và mọi biến thể đang bán còn hàng đều ở trạng thái `low`**
+  của module Kho (`0 < available <= minStock`, xem `docs/api/inventory.md`). Biến thể đã hết hàng không tính; chỉ một biến thể
+  còn nhiều hàng là `lowStock = false`. Không có biến thể đang bán thì `false`.
+  - Phụ thuộc ngưỡng `minStock` do admin/staff đặt ở trang kho; `minStock` mặc định **0** nên khi chưa đặt ngưỡng thì
+    `lowStock` không bao giờ `true`. `lowStock = true` luôn kéo theo `inStock = true`.
+  - Chỉ có cờ boolean: không trả `stock`, `reserved`, `minStock` hay số lượng nào. `GET /products/:slug` **không** có `lowStock`.
 
 ### Public: chi tiết (`GET /products/:slug`)
 
@@ -183,7 +190,7 @@ Ví dụ `GET /products?categoryId=1&sortBy=price&order=asc&page=1&limit=2`:
     {
       "id": 9, "name": "Quần short kaki", "slug": "quan-short-kaki", "price": 249000,
       "imageUrl": "https://picsum.photos/seed/quan-short-kaki/600/800",
-      "category": { "id": 6, "name": "Quần short", "slug": "quan-short" }, "inStock": true
+      "category": { "id": 6, "name": "Quần short", "slug": "quan-short" }, "inStock": true, "lowStock": false
     }
   ],
   "meta": { "page": 1, "limit": 2, "total": 6, "totalPages": 3 }

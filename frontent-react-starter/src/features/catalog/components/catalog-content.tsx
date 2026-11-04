@@ -10,6 +10,7 @@ import { CatalogHeading } from "./catalog-heading"
 import { CatalogResults } from "./catalog-results"
 import { FilterDrawer } from "./filter-drawer"
 import { SortSelect } from "./sort-select"
+import { PageContainer } from "@/components/storefront/page-container"
 
 /**
  * Trang /products. Đọc bộ lọc từ URL, tra slug danh mục sang id (backend chỉ nhận `categoryId`), gọi danh sách và ghép
@@ -45,16 +46,16 @@ function CatalogContent() {
 
   if (categoryMissing) {
     return (
-      <div className="mx-auto w-full max-w-7xl px-gutter pt-8 pb-block lg:pt-12">
+      <PageContainer className="pt-8 pb-block lg:pt-12">
         <CategoryNotFound />
-      </div>
+      </PageContainer>
     )
   }
   if (categoryUnresolved && treeError) {
     return (
-      <div className="mx-auto w-full max-w-7xl px-gutter pt-8 pb-block lg:pt-12">
+      <PageContainer className="pt-8 pb-block lg:pt-12">
         <CatalogError asPage onRetry={refetch} />
-      </div>
+      </PageContainer>
     )
   }
 
@@ -63,7 +64,7 @@ function CatalogContent() {
   const filters = <CatalogFilters tree={tree} treePending={treePending} search={search} />
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-gutter pt-8 pb-block lg:pt-12">
+    <PageContainer className="pt-8 pb-block lg:pt-12">
       <CatalogHeading title={title} total={total} />
       <div className="mt-8 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-12">
         <aside aria-label="Bộ lọc" className="hidden lg:block">
@@ -89,7 +90,7 @@ function CatalogContent() {
           <CatalogResults query={products} search={search} onPageNavigate={focusResults} />
         </section>
       </div>
-    </div>
+    </PageContainer>
   )
 }
 

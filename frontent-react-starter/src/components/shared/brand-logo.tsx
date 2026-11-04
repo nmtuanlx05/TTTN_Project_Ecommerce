@@ -17,7 +17,7 @@ function BrandLogo({ to, className }: { to?: string; className?: string }) {
       aria-label={`${STORE.name}, về trang chủ`}
       className={cn(
         WORDMARK,
-        "inline-flex min-h-control items-center rounded-xs outline-none",
+        "inline-flex min-h-control items-center rounded-xs",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         className
       )}

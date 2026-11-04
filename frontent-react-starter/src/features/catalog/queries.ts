@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { ApiError } from "@/lib/api-error"
 import { getCatalogProduct, listCatalogProducts } from "./api"
+import { HOME_BEST_SELLERS } from "./home-constants"
 import type { CatalogListParams, CatalogProductDetail } from "./types"
 
 /**
@@ -21,6 +22,14 @@ export function useCatalogProducts(params: CatalogListParams, { enabled = true }
     placeholderData: keepPreviousData,
     enabled,
   })
+}
+
+/**
+ * TẠM: thay bằng dữ liệu bán chạy khi có đơn hàng. Hiện lấy các sản phẩm tạo SỚM NHẤT (`createdAt` tăng dần) chỉ để khối "Best sellers" có nội dung;
+ * đây KHÔNG phải sản phẩm bán chạy. Mọi chỗ cần danh sách này đều đi qua hook này nên đổi nguồn chỉ sửa một nơi.
+ */
+export function useBestSellerProducts() {
+  return useCatalogProducts({ sortBy: "createdAt", order: "asc", limit: HOME_BEST_SELLERS })
 }
 
 export function useCatalogProduct(slug: string) {

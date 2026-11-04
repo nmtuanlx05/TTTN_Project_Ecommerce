@@ -1,6 +1,8 @@
+import type { InfoPageSlug } from "@/lib/info-pages"
+
 /**
  * Nội dung cửa hàng: MỘT file duy nhất. Header, footer, tiêu đề tab, logo chữ đều đọc từ đây,
- * không viết lại tên hay khẩu hiệu ở nơi khác.
+ * không viết lại tên hay khẩu hiệu ở nơi khác. Nội dung riêng của trang chủ (slide hero, khối, cam kết, đường dẫn ảnh) ở `lib/home-content.ts`.
  */
 
 interface StoreContact {
@@ -28,18 +30,38 @@ export interface StoreLocation {
   mapUrl?: string
 }
 
-interface StoreHeroImage {
-  /** Đường dẫn ảnh tĩnh đặt trong `public/`, vd. "/hero/1.jpg" (khung 3:4). */
-  src: string
-  alt: string
+/** Liên kết "Trang chủ" đứng đầu cột đường dẫn nhanh (header không có mục này vì logo đã về trang chủ). */
+interface StoreFooterLink {
+  label: string
+  href: string
 }
 
-/** Nhãn các khối trang chủ. */
-interface StoreHomeLabels {
-  cta: string
-  categoriesTitle: string
-  newArrivalsTitle: string
-  viewAll: string
+/** Liên kết nhỏ ở dòng cuối chân trang: nhãn riêng, trỏ tới một trang thông tin. */
+interface StoreLegalLink {
+  label: string
+  slug: InfoPageSlug
+}
+
+/** Nội dung chân trang. Các cột đường dẫn nhanh lấy từ `navItems`; cột chính sách lấy tiêu đề từ `lib/info-pages.ts`. */
+interface StoreFooter {
+  /** NỘI DUNG MẪU, chờ xác nhận — có cam kết về chất liệu và form (xem bảng cam kết ở docs/storefront-design.md mục 13). */
+  description: string
+  quickLinksTitle: string
+  quickLinksLead: StoreFooterLink
+  policiesTitle: string
+  /** Slug các trang chính sách ở cột 3, theo thứ tự hiển thị. */
+  policySlugs: InfoPageSlug[]
+  legalLinks: StoreLegalLink[]
+}
+
+/** Chữ của form đăng ký nhận tin ở chân trang. Thông báo "đang hoàn thiện" nằm cạnh hàm gửi, ở `features/newsletter/constants.ts`. */
+interface StoreNewsletter {
+  title: string
+  /** NỘI DUNG MẪU, chờ xác nhận — có cam kết ưu đãi 10% đơn đầu. */
+  description: string
+  /** Nhãn của ô nhập (ẩn bằng chữ cho trình đọc màn hình) và cũng là placeholder. */
+  emailLabel: string
+  submitLabel: string
 }
 
 interface StoreInfo {
@@ -48,15 +70,13 @@ interface StoreInfo {
   tagline: string
   /** NỘI DUNG MẪU, dùng tạm — chờ chủ cửa hàng xác nhận. */
   description: string
-  /** NỘI DUNG MẪU, dùng tạm — câu tuyên bố ở cuối trang chủ, chờ chủ cửa hàng xác nhận. Không viết cam kết kinh doanh vào đây. */
-  statement: string
-  /** NỘI DUNG MẪU — nhãn các khối trang chủ, chờ chủ cửa hàng xác nhận. */
-  home: StoreHomeLabels
   /**
-   * Ảnh tĩnh cho hero (tối đa 3, khung 3:4). Để rỗng thì hero dùng ảnh của tối đa 3 sản phẩm mới nhất.
-   * Có ảnh thì hero dùng đúng các ảnh này và không phải đợi dữ liệu sản phẩm.
+   * NỘI DUNG MẪU, chờ xác nhận — thanh thông báo chạy chữ phía trên header; mỗi phần tử là một thông điệp. Có cam kết kinh doanh
+   * (miễn phí vận chuyển, đổi trả): chỉ giữ khi hệ thống làm thật, xem bảng cam kết ở docs/storefront-design.md mục 13.
    */
-  heroImages: StoreHeroImage[]
+  announcements: string[]
+  footer: StoreFooter
+  newsletter: StoreNewsletter
   /** Thứ tự và nội dung thanh điều hướng (header từ `xl`, ngăn kéo dưới `xl`). */
   navItems: StoreNavItem[]
   /** Danh sách cửa hàng cho trang /dia-chi. ĐỂ RỖNG cho tới khi chủ cửa hàng cung cấp thông tin thật. */
@@ -70,14 +90,24 @@ export const STORE: StoreInfo = {
   name: "MONO STUDIO",
   tagline: "Thời trang tối giản cho mọi ngày",
   description: "Những thiết kế đơn sắc, dễ phối.",
-  statement: "Ít màu. Ít chi tiết. Nhiều chỗ cho chính bạn.",
-  home: {
-    cta: "Khám phá cửa hàng",
-    categoriesTitle: "Mua theo danh mục",
-    newArrivalsTitle: "Sản phẩm mới",
-    viewAll: "Xem tất cả",
+  announcements: ["MIỄN PHÍ VẬN CHUYỂN CHO ĐƠN HÀNG TỪ 500.000₫", "ĐỔI TRẢ TRONG 30 NGÀY"],
+  footer: {
+    description: "Thời trang tối giản cho mọi ngày. Chất liệu thoáng mát, form chuẩn, dễ phối.",
+    quickLinksTitle: "Đường dẫn nhanh",
+    quickLinksLead: { label: "Trang chủ", href: "/" },
+    policiesTitle: "Chính sách khách hàng",
+    policySlugs: ["doi-tra", "van-chuyen", "huong-dan-chon-size", "bao-mat"],
+    legalLinks: [
+      { label: "Điều khoản", slug: "dieu-khoan" },
+      { label: "Bảo mật", slug: "bao-mat" },
+    ],
   },
-  heroImages: [],
+  newsletter: {
+    title: "Đăng ký nhận tin",
+    description: "Nhận ngay ưu đãi 10% cho đơn hàng đầu tiên và cập nhật bộ sưu tập mới.",
+    emailLabel: "Email của bạn",
+    submitLabel: "ĐĂNG KÝ",
+  },
   // Slug "phu-kien" và "qua-tang" là slug mà backend sẽ sinh từ tên danh mục; mục chỉ hiện khi danh mục đó có trong GET /categories.
   navItems: [
     { label: "Tất cả sản phẩm", href: "/products" },

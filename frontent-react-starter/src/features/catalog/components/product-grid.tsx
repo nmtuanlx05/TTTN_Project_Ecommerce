@@ -3,10 +3,11 @@ import { EAGER_IMAGE_COUNT } from "../constants"
 import type { CatalogProductListItem } from "../types"
 import { ProductCard } from "./product-card"
 
-/** Số cột: 2 (di động), 3 (từ 768px). `beside-filters`: có cột lọc bên trái nên chỉ 4 cột từ `xl`; `full`: 4 cột từ `lg`. */
+/** Số cột: 2 (di động), 3 (từ 768px). `beside-filters`: có cột lọc bên trái nên chỉ 4 cột từ `xl`; `full`: 4 cột từ `lg`; `four-up`: đúng 4 sản phẩm của trang chủ, 4 cột từ `md`. */
 const GRID_CLASS = {
   "beside-filters": "grid-cols-2 md:grid-cols-3 xl:grid-cols-4",
   full: "grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
+  "four-up": "grid-cols-2 md:grid-cols-4",
 } as const
 
 type GridLayout = keyof typeof GRID_CLASS

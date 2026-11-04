@@ -10,15 +10,18 @@ import { cn } from "@/lib/utils"
  * - ghost       không viền, chỉ đổi nền khi hover.
  * - destructive màu danger, chỉ cho hành động xóa/hủy.
  *
+ * Màu viền do TỪNG variant khai báo (không đặt `border-transparent` ở lớp nền): cva không gộp class xung đột như `cn`, nên khi `border-transparent` nằm
+ * ở nền thì nó thắng `border-border-strong` của `secondary` và nút viền mất viền (nhất là khi dùng `buttonVariants()` cho `<Link>`).
+ *
  * "default" và "outline" là tên cũ của shadcn, giữ lại để component có sẵn
  * (sidebar, dropdown…) không vỡ.
  */
 const buttonVariants = cva(
   [
     "group/button relative inline-flex shrink-0 items-center justify-center gap-inline",
-    "rounded-xs border border-transparent whitespace-nowrap select-none",
+    "rounded-xs border whitespace-nowrap select-none",
     "font-medium transition-colors",
-    "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
     "disabled:pointer-events-none disabled:opacity-45",
     "data-[loading=true]:pointer-events-none",
     "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -27,17 +30,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-primary text-primary-fg hover:bg-primary-hover active:bg-primary-active",
+          "border-transparent bg-primary text-primary-fg hover:bg-primary-hover active:bg-primary-active",
         secondary:
           "border-border-strong bg-transparent text-ink hover:bg-surface-hover active:bg-surface-active",
         ghost:
-          "bg-transparent text-ink hover:bg-surface-hover active:bg-surface-active",
+          "border-transparent bg-transparent text-ink hover:bg-surface-hover active:bg-surface-active",
         destructive:
-          "bg-danger-solid text-danger-solid-fg hover:bg-danger-solid-hover active:bg-danger-solid",
-        link: "text-ink underline underline-offset-4 hover:text-ink-muted",
+          "border-transparent bg-danger-solid text-danger-solid-fg hover:bg-danger-solid-hover active:bg-danger-solid",
+        link: "border-transparent text-ink underline underline-offset-4 hover:text-ink-muted",
         // Tên cũ của shadcn
         default:
-          "bg-primary text-primary-fg hover:bg-primary-hover active:bg-primary-active",
+          "border-transparent bg-primary text-primary-fg hover:bg-primary-hover active:bg-primary-active",
         outline:
           "border-border-strong bg-transparent text-ink hover:bg-surface-hover active:bg-surface-active",
       },

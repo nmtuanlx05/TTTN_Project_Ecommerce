@@ -233,18 +233,21 @@ describe('Products API (e2e, service giả)', () => {
   describe('public: GET /products, GET /products/:slug', () => {
     it('không cần token, danh sách bọc { success, data, meta }', async () => {
       productsService.findAllPublic.mockResolvedValue(
-        new Paginated([{ id: 1, slug: 'ao-thun', inStock: true }], {
-          page: 1,
-          limit: 12,
-          total: 1,
-        }),
+        new Paginated(
+          [{ id: 1, slug: 'ao-thun', inStock: true, lowStock: false }],
+          {
+            page: 1,
+            limit: 12,
+            total: 1,
+          },
+        ),
       );
 
       const res = await request(server()).get('/products').expect(200);
 
       expect(res.body).toEqual({
         success: true,
-        data: [{ id: 1, slug: 'ao-thun', inStock: true }],
+        data: [{ id: 1, slug: 'ao-thun', inStock: true, lowStock: false }],
         meta: { page: 1, limit: 12, total: 1, totalPages: 1 },
       });
     });

@@ -57,6 +57,12 @@ export const BASE_SWATCHES: Swatch[] = [
     dark: "#767370",
     note: "Input, checkbox",
   },
+  {
+    token: "--color-scrim",
+    light: "#11100E",
+    dark: "#11100E",
+    note: "Lớp tối phủ trên ảnh (luôn tối), dùng với độ mờ",
+  },
   { token: "--color-primary", light: "#171614", dark: "#EEEDE9", note: "Nút chính" },
 ]
 

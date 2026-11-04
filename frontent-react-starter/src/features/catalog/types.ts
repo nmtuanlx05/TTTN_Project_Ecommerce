@@ -19,6 +19,8 @@ export interface CatalogProductListItem {
   category: CatalogCategoryRef
   /** Còn ít nhất một biến thể đang bán có tồn khả dụng. */
   inStock: boolean
+  /** Còn hàng nhưng mọi biến thể còn hàng đều sắp hết (ngưỡng `minStock` do kho đặt). `true` luôn kéo theo `inStock`. Chỉ có ở danh sách. */
+  lowStock: boolean
 }
 
 /** Biến thể đang bán. Có `sku` nhưng giao diện khách không hiển thị. */
@@ -30,8 +32,8 @@ export interface CatalogVariant {
   inStock: boolean
 }
 
-/** Chi tiết (GET /products/:slug). */
-export interface CatalogProductDetail extends CatalogProductListItem {
+/** Chi tiết (GET /products/:slug). Không có `lowStock`: huy hiệu "Sắp hết" chỉ hiện ở thẻ trong danh sách. */
+export interface CatalogProductDetail extends Omit<CatalogProductListItem, "lowStock"> {
   description: string | null
   variants: CatalogVariant[]
 }
