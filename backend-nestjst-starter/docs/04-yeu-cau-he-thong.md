@@ -14,9 +14,9 @@ Hệ thống có 38 yêu cầu chức năng chia theo 11 module và 25 yêu cầ
 | | FR-06 | Phân trang, tìm kiếm, lọc, sắp xếp danh sách sản phẩm |
 | | FR-07 | Upload và lưu ảnh, giới hạn dung lượng và định dạng |
 | | FR-08 | Sản phẩm ẩn (`isActive = false`) không hiển thị phía khách |
-| Giỏ hàng | FR-09 | Thêm, sửa, xóa item; kiểm tra `stock - reserved` ≥ số lượng yêu cầu |
-| | FR-10 | Gộp giỏ tạm của Guest vào giỏ tài khoản khi đăng nhập |
-| | FR-11 | Khi mở giỏ, cảnh báo item đã hết hàng hoặc đổi giá |
+| Giỏ hàng | FR-09 | Thêm, sửa, xóa item (chỉ Customer đăng nhập); kiểm tra `stock - reserved` ≥ số lượng yêu cầu và tối đa 10 mỗi dòng |
+| | FR-10 | **V2** (bỏ khỏi MVP): gộp giỏ tạm của Guest vào giỏ tài khoản khi đăng nhập; backend không đổi, frontend gọi `POST /cart/items` từng món |
+| | FR-11 | Khi mở giỏ, cảnh báo item đã hết hàng hoặc đã ẩn (`purchasable`, `inStock`, `unavailableCount`). Phần "đổi giá" **bỏ** vì giỏ không lưu giá nên không có mốc so sánh |
 | Đặt hàng | FR-12 | Validate dữ liệu checkout (tên, số điện thoại hợp lệ, địa chỉ bắt buộc) |
 | | FR-13 | Kiểm tra lại tồn và giá lúc đặt; tạo Order và OrderItem trong một transaction |
 | | FR-14 | Sinh mã đơn duy nhất; snapshot giá, tên, size, màu vào OrderItem |

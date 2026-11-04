@@ -11,7 +11,7 @@ const isAvailable = (v: { stock: number; reserved: number }) =>
 
 // Ảnh luôn sắp theo sortOrder (id làm khóa phụ cho ổn định). Ảnh đầu là ảnh đại diện.
 // Product.imageUrl là cột DEPRECATED: chỉ dùng dự phòng khi sản phẩm chưa có dòng ProductImage nào.
-const imageOrder: Prisma.ProductImageOrderByWithRelationInput[] = [
+export const imageOrder: Prisma.ProductImageOrderByWithRelationInput[] = [
   { sortOrder: 'asc' },
   { id: 'asc' },
 ];

@@ -72,3 +72,29 @@ export function selectOption(
 export function colorHexOf(variants: CatalogVariant[], color: string): string | undefined {
   return variants.find((variant) => variant.color === color && variant.colorHex)?.colorHex ?? undefined
 }
+
+/**
+ * Hộp thoại "Thêm nhanh": một giá trị chỉ chọn được khi còn ít nhất một biến thể CÒN HÀNG mang giá trị đó; không thì chip mờ và vô hiệu (khác trang chi tiết,
+ * nơi hết hàng vẫn chọn được để xem trạng thái).
+ */
+export function describeInStockOption(
+  variants: CatalogVariant[],
+  axis: Axis,
+  value: string,
+): { state: OptionState; disabled: boolean } {
+  const has = variants.some((variant) => variant[axis] === value && variant.inStock)
+  return { state: has ? "available" : "soldout", disabled: !has }
+}
+
+/** Như `selectOption` nhưng kết quả luôn là biến thể còn hàng (nhảy sang biến thể còn hàng đầu tiên của giá trị vừa chọn nếu tổ hợp hiện tại hết hàng). */
+export function selectInStockOption(
+  variants: CatalogVariant[],
+  choice: VariantChoice,
+  axis: Axis,
+  value: string,
+): VariantChoice {
+  const next = selectOption(variants, choice, axis, value)
+  if (findVariant(variants, next)?.inStock) return next
+  const target = variants.find((variant) => variant[axis] === value && variant.inStock)
+  return target ? { color: target.color, size: target.size } : choice
+}

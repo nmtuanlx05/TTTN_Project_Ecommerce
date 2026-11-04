@@ -10,7 +10,7 @@ Dự án xây dựng website thương mại điện tử bán hàng cho một br
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
 | Tách biến thể sản phẩm               | `ProductVariant` (size + màu + SKU) tách khỏi `Product`; tồn kho tính theo biến thể                                   |
 | Giữ hàng                             | Cơ chế `reserved`: tăng khi khách đặt đơn, giảm khi Staff xuất kho hoặc đơn bị hủy; tồn khả dụng = `stock - reserved` |
-| Thêm vào giỏ                         | Không trừ, không giữ tồn kho; chỉ kiểm tra tồn khi thêm giỏ và khi đặt đơn                                            |
+| Thêm vào giỏ                         | Không trừ, không giữ tồn kho; chỉ kiểm tra tồn khi thêm giỏ và khi đặt đơn. Giỏ lưu trong DB, chỉ Customer đã đăng nhập; giỏ Guest để V2 |
 | Nhập kho                             | Staff tự nhập kho, không cần Admin duyệt; cộng trực tiếp vào `ProductVariant.stock`, mỗi lần đổi tồn ghi một dòng lịch sử (`StockMovement`) |
 | Khách mua hàng                       | Cho phép guest checkout (không cần đăng ký)                                                                           |
 | Thanh toán                           | COD và một cổng thanh toán online                                                                                     |
@@ -26,7 +26,7 @@ MVP gồm 10 model dữ liệu và ba nhóm người dùng: Customer (kèm Guest
 
 |            | MVP                                                                                                                 | Để V2                                                             |
 | ---------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Khách hàng | Xem, tìm, lọc sản phẩm; giỏ hàng; guest checkout; đặt đơn COD/online; áp mã giảm giá; theo dõi và tự hủy đơn | Sổ địa chỉ, đổi/trả, đánh giá, wishlist                           |
+| Khách hàng | Xem, tìm, lọc sản phẩm; giỏ hàng (cần đăng nhập, giỏ tạm của Guest để V2); guest checkout; đặt đơn COD/online; áp mã giảm giá; theo dõi và tự hủy đơn | Sổ địa chỉ, đổi/trả, đánh giá, wishlist                           |
 | Staff      | CRUD sản phẩm, biến thể, danh mục; nhập kho, điều chỉnh tồn, xem lịch sử kho; xử lý đơn; tra cứu khách                           | Phiếu nhập theo nhà cung cấp, phân quyền chi tiết theo nhóm Staff |
 | Admin      | Quản lý Staff, khóa khách, dashboard, báo cáo doanh thu, duyệt hoàn tiền, quản lý voucher, cấu hình hệ thống | Nhật ký thao tác, khuyến mãi tự động, banner, báo cáo lợi nhuận   |
 | Dữ liệu    | User, Category, Product, ProductVariant, Cart, CartItem, Order, OrderItem, Voucher, StockMovement | Address, Supplier, Review, AuditLog |

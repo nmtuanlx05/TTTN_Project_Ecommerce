@@ -7,7 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import type { Role } from '../../generated/prisma/enums';
-import { ROLES_KEY } from '../decorators/roles.decorator';
+import { ROLES_KEY, ROLES_MESSAGE_KEY } from '../decorators/roles.decorator';
 import type { AuthUser } from '../auth.types';
 
 // Phải chạy SAU JwtAuthGuard (cần req.user). Endpoint không gắn @Roles thì chỉ cần đã đăng nhập.
@@ -28,7 +28,13 @@ export class RolesGuard implements CanActivate {
       .switchToHttp()
       .getRequest<Request & { user?: AuthUser }>();
     if (!user || !requiredRoles.includes(user.role)) {
-      throw new ForbiddenException('Bạn không có quyền thực hiện thao tác này');
+      const message = this.reflector.getAllAndOverride<string | undefined>(
+        ROLES_MESSAGE_KEY,
+        [context.getHandler(), context.getClass()],
+      );
+      throw new ForbiddenException(
+        message ?? 'Bạn không có quyền thực hiện thao tác này',
+      );
     }
     return true;
   }

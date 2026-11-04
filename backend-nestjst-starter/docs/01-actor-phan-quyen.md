@@ -6,7 +6,7 @@ Hệ thống có 4 nhóm người dùng và 2 hệ thống bên ngoài. Nguyên 
 
 | Actor | Loại | Vai trò trong hệ thống |
 | --- | --- | --- |
-| Guest | Người dùng | Khách chưa đăng nhập: xem sản phẩm, tìm kiếm, giữ giỏ tạm, guest checkout |
+| Guest | Người dùng | Khách chưa đăng nhập: xem sản phẩm, tìm kiếm, guest checkout (giỏ tạm ở trình duyệt để V2) |
 | Customer | Người dùng | Khách có tài khoản (role `CUSTOMER`): mua hàng, theo dõi và hủy đơn, quản lý hồ sơ |
 | Staff | Nội bộ | Nhân viên vận hành (role `STAFF`): sản phẩm, kho, đơn hàng, hỗ trợ khách |
 | Admin | Nội bộ | Quản trị (role `ADMIN`): nhân sự, phân quyền, tài chính, báo cáo, cấu hình |
@@ -39,6 +39,7 @@ Admin có mọi quyền của Staff. Bảng dưới chỉ ra ranh giới giữa 
 
 ## Điều chỉnh so với bản nháp ban đầu
 
-- Tách `Guest` khỏi `Customer` vì khách xem hàng và bỏ giỏ trước khi đăng ký rất phổ biến.
+- Tách `Guest` khỏi `Customer` vì khách xem hàng trước khi đăng ký rất phổ biến. Giỏ hàng lưu ở DB và bắt đăng nhập, nên MVP không có giỏ Guest; giỏ tạm ở trình duyệt và gộp khi đăng nhập để V2.
+- API giỏ hàng chỉ cho `CUSTOMER`: Admin và Staff nhận 403 "Tài khoản quản trị không dùng để mua hàng".
 - Đổi "Staff quản lý user" thành "Staff hỗ trợ khách hàng" (chỉ xem). Khóa tài khoản và quản lý nhân sự thuộc Admin để Staff không tự nâng quyền.
 - Admin chịu trách nhiệm các thao tác liên quan đến tiền (duyệt hoàn tiền, báo cáo doanh thu).

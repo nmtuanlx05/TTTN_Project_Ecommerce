@@ -13,11 +13,32 @@ import type { HeaderSession } from "./header-session"
 import { MobileNavDrawer } from "./mobile-nav-drawer"
 import { SearchPanel } from "./search-panel"
 
-/** Biểu tượng giỏ hàng ở header. Là nút (không phải liên kết): giỏ chưa có trang, và khách phải qua cổng đăng nhập. */
-function CartButton({ onClick }: { onClick?: () => void }) {
+/** Huy hiệu số lượng trên biểu tượng giỏ: "9+" khi quá 9. Chỉ trang trí (`aria-hidden`); số đọc qua `aria-label` của nút. */
+const MAX_BADGE_COUNT = 9
+
+/**
+ * Biểu tượng giỏ hàng ở header. Là nút (không phải liên kết): mở ngăn kéo giỏ, và khách phải qua cổng đăng nhập.
+ * `count` là số sản phẩm mua được trong giỏ; 0 hoặc chưa biết (chưa đăng nhập, không phải CUSTOMER, lỗi mạng) thì không có huy hiệu.
+ */
+function CartButton({ onClick, count = 0 }: { onClick?: () => void; count?: number }) {
   return (
-    <Button variant="ghost" size="icon" aria-label="Giỏ hàng" onClick={onClick} className="press">
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label={count > 0 ? `Giỏ hàng, ${count} sản phẩm` : "Giỏ hàng"}
+      onClick={onClick}
+      className="press"
+    >
       <ShoppingBag className="size-5" />
+      {count > 0 ? (
+        <span
+          key={count}
+          aria-hidden="true"
+          className="motion-safe:animate-badge-bump absolute top-1 right-0.5 grid h-4.5 min-w-4.5 place-items-center rounded-4xl bg-primary px-1 text-[0.6875rem] leading-none font-semibold text-primary-fg"
+        >
+          {count > MAX_BADGE_COUNT ? `${MAX_BADGE_COUNT}+` : count}
+        </span>
+      ) : null}
     </Button>
   )
 }
@@ -28,7 +49,13 @@ function CartButton({ onClick }: { onClick?: () => void }) {
  */
 function WishlistButton({ onClick }: { onClick?: () => void }) {
   return (
-    <Button variant="ghost" size="icon" aria-label="Yêu thích" onClick={onClick} className="press hidden min-[380px]:inline-flex">
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label="Yêu thích"
+      onClick={onClick}
+      className="press hidden min-[380px]:inline-flex"
+    >
       <Heart className="size-5" />
     </Button>
   )
@@ -47,12 +74,15 @@ function StorefrontHeader({
   session,
   categoryTree = null,
   onCartClick,
+  cartCount = 0,
   onWishlistClick,
 }: {
   session: HeaderSession
   /** Cây danh mục. Chưa có (đang tải hoặc lỗi) thì các mục danh mục ẩn, chỉ còn mục liên kết thường. */
   categoryTree?: CategoryTree | null
   onCartClick?: () => void
+  /** Số sản phẩm mua được trong giỏ (huy hiệu trên icon giỏ); 0 hoặc bỏ trống thì ẩn. */
+  cartCount?: number
   /** TẠM: nút "Yêu thích" chỉ là giao diện giả; nơi dựng khung truyền hàm hiện thông báo "chưa có tính năng". */
   onWishlistClick?: () => void
 }) {
@@ -66,9 +96,7 @@ function StorefrontHeader({
       <header
         className={cn(
           "sticky top-0 z-30 border-b transition-[background-color,border-color] duration-(--motion-base) ease-smooth",
-          scrolled
-            ? "border-border-subtle bg-canvas/80 backdrop-blur-md"
-            : "border-transparent bg-canvas",
+          scrolled ? "border-border-subtle bg-canvas/80 backdrop-blur-md" : "border-transparent bg-canvas",
         )}
       >
         <div className="mx-auto flex h-header w-full max-w-7xl items-center gap-2 px-gutter xl:gap-0">
@@ -78,7 +106,7 @@ function StorefrontHeader({
           <div className="ml-auto flex items-center gap-1 xl:ml-10 xl:gap-inline">
             <SearchPanel />
             <WishlistButton onClick={onWishlistClick} />
-            <CartButton onClick={onCartClick} />
+            <CartButton onClick={onCartClick} count={cartCount} />
             <div className="max-xl:hidden">
               <HeaderAccount session={session} />
             </div>

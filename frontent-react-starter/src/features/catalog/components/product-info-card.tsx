@@ -22,10 +22,12 @@ function ProductInfoCard({
   product,
   barSlot,
   onAddToCart,
+  pending,
 }: {
   product: CatalogProductDetail
   barSlot: HTMLElement | null
   onAddToCart: (input: AddToCartInput) => void
+  pending?: boolean
 }) {
   const assurances = HOME.assurances.filter((item) => PRODUCT_ASSURANCE_ICONS.includes(item.icon))
 
@@ -46,7 +48,7 @@ function ProductInfoCard({
         ) : null}
       </div>
 
-      <PurchasePanel key={product.id} product={product} barSlot={barSlot} onAddToCart={onAddToCart} />
+      <PurchasePanel key={product.id} product={product} barSlot={barSlot} onAddToCart={onAddToCart} pending={pending} />
 
       <ul className="flex flex-col gap-3 border-t border-border-subtle pt-6">
         {assurances.map(({ icon, title }) => {

@@ -12,7 +12,7 @@ Schema chốt cho MVP gồm 11 model (10 model gốc cộng `ProductImage` thêm
 | `User` | Không có trạng thái hoạt động | Thêm `isActive` | Admin khóa được tài khoản |
 | Tồn kho | `Product.quantity` | Bỏ; dùng `ProductVariant.stock` và `reserved` | Thời trang tồn theo size và màu |
 | Danh mục | Chưa có | Thêm `Category`, `Product.categoryId` | Lọc và phân nhóm sản phẩm |
-| Giỏ hàng | Quản lý ở frontend | Thêm `Cart`, `CartItem` cho Customer; Guest lưu ở trình duyệt và gộp khi đăng nhập | Không mất giỏ khi đổi thiết bị |
+| Giỏ hàng | Quản lý ở frontend | Thêm `Cart`, `CartItem` cho Customer đăng nhập; giỏ tạm của Guest ở trình duyệt và gộp khi đăng nhập để V2 | Không mất giỏ khi đổi thiết bị |
 | `OrderStatus` | 5 giá trị | Thêm PACKING, RETURNED (tổng 7) | Có bước đóng gói và nhánh hoàn hàng |
 | `Order` | Thông tin giao hàng, tổng tiền, trạng thái | Thêm mã đơn, phí ship, giảm giá (`voucherId`, `discountAmount`), phương thức và trạng thái thanh toán, mã giao dịch, hạn thanh toán, lý do hủy, `handledById` | Thanh toán online, voucher và xử lý đơn |
 | `OrderItem` | Trỏ tới `Product`, snapshot giá | Trỏ tới `ProductVariant`, snapshot thêm tên, SKU, size, màu | Đơn cũ không đổi khi sản phẩm bị sửa |
@@ -208,6 +208,13 @@ model CartItem {
   @@map("cart_items")
 }
 ```
+
+Quy tắc giỏ hàng (API: `docs/api/cart.md`):
+
+- Giỏ tạo khi thêm món đầu tiên; chỉ Customer dùng được. Mỗi dòng là một biến thể và số lượng, duy nhất theo (`cartId`, `variantId`).
+- Số lượng mỗi dòng từ 1 đến 10 (`MAX_QUANTITY_PER_ITEM` ở `src/cart/cart.constants.ts`), đồng thời không vượt `stock - reserved` tại thời điểm ghi. DB chỉ có CHECK `quantity > 0`; mức 10 chỉ kiểm ở ứng dụng.
+- Giỏ **không giữ hàng** (`reserved` không đổi) và **không lưu giá**: tên, ảnh, giá đọc từ `Product`/`ProductVariant` hiện tại khi đọc giỏ. Đơn hàng mới chụp giá lúc đặt.
+- Dòng đã nằm trong giỏ mà sau đó hết hàng hoặc bị ẩn vẫn hiện, kèm cờ `purchasable`/`inStock`; không tự xóa hay đổi số lượng.
 
 ### Voucher
 

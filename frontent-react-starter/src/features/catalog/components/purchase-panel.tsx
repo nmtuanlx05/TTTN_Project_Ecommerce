@@ -1,13 +1,14 @@
 import { useState } from "react"
 import { createPortal } from "react-dom"
 import { Heart, ShoppingBag } from "lucide-react"
+import { QuantityStepper } from "@/components/storefront/quantity-stepper"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { ABOVE_ONLY_MARGIN, useInView } from "@/hooks/use-in-view"
+import { MAX_QUANTITY_PER_ITEM } from "@/lib/cart-rules"
 import { STORE } from "@/lib/store-info"
 import type { CatalogProductDetail } from "../types"
 import { defaultChoice, findVariant, type VariantChoice } from "../variant-options"
-import { QuantityStepper } from "./quantity-stepper"
 import { StickyBuyBar } from "./sticky-buy-bar"
 import { VariantPicker } from "./variant-picker"
 
@@ -16,17 +17,19 @@ type AddToCartInput = { variantId: number; quantity: number }
 /**
  * Chọn màu/size, số lượng, nút "Thêm vào giỏ" (ghi "Hết hàng" và khóa khi tổ hợp đang chọn hết hàng) và nút tim (STUB: chỉ hiện toast). Mặc định chọn biến thể còn
  * hàng đầu tiên. Dựng với `key={product.id}` ở nơi dùng nên đổi sản phẩm là đặt lại lựa chọn. `onAddToCart` do trang truyền
- * vào (qua cổng đăng nhập); panel không biết giỏ hàng. Thanh mua dính đáy (di động) hiện khi nút chính đã cuộn lên khỏi
+ * vào (qua cổng đăng nhập); panel không biết giỏ hàng. `pending`: đang gửi yêu cầu thêm, khóa hai nút thêm. Số lượng chặn sớm ở `MAX_QUANTITY_PER_ITEM`. Thanh mua dính đáy (di động) hiện khi nút chính đã cuộn lên khỏi
  * màn hình; nó được portal vào `barSlot` (ô dính ở cuối trang) nhưng state vẫn thuộc panel này.
  */
 function PurchasePanel({
   product,
   barSlot,
   onAddToCart,
+  pending = false,
 }: {
   product: CatalogProductDetail
   barSlot: HTMLElement | null
   onAddToCart: (input: AddToCartInput) => void
+  pending?: boolean
 }) {
   const { variants } = product
   const [choice, setChoice] = useState<VariantChoice | null>(() => defaultChoice(variants))
@@ -54,7 +57,7 @@ function PurchasePanel({
       {/* Thẻ rộng từ 24rem: một hàng (số lượng, nút, tim); hẹp hơn: số lượng + tim ở hàng trên, nút full-width ở hàng dưới. */}
       <div ref={buttonRef} className="flex flex-wrap items-center gap-3">
         <div className="order-1">
-          <QuantityStepper pill value={quantity} onChange={setQuantity} />
+          <QuantityStepper pill max={MAX_QUANTITY_PER_ITEM} value={quantity} onChange={setQuantity} />
         </div>
         <Button
           type="button"
@@ -69,6 +72,7 @@ function PurchasePanel({
         <Button
           size="lg"
           disabled={!available}
+          loading={pending}
           onClick={add}
           className="press order-3 w-full rounded-4xl @[24rem]:order-2 @[24rem]:w-auto @[24rem]:flex-1"
         >
@@ -84,6 +88,7 @@ function PurchasePanel({
               price={product.price}
               variantLabel={`${choice.color} · ${choice.size}`}
               soldOut={!available}
+              pending={pending}
               onAdd={add}
             />,
             barSlot,

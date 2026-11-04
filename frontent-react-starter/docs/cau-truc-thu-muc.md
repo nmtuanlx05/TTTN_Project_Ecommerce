@@ -27,14 +27,15 @@ src/
 ├─ features/      mỗi thực thể một thư mục theo khuôn mục 3
 │   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/ ✓ catalog/ ✓ (dữ liệu công khai của storefront: danh sách và chi tiết sản phẩm)
 │   │  newsletter/ ✓ (form đăng ký nhận tin ở chân trang — mới có giao diện, chưa có backend)
-│   └─ cart/ checkout/ orders/ vouchers/ payments/ account/
+│   ├─ cart/ ✓ (giỏ hàng của CUSTOMER: types, api, queries (useCart, useAddToCart, useUpdateCartItem, useRemoveCartItem, useClearCart); components/: cart-drawer (+ header, footer, states), cart-line (+ cart-line-list), free-shipping-bar, checkout-button (STUB), cart-page-content (+ cart-summary, clear-cart-confirm))
+│   └─ checkout/ orders/ vouchers/ payments/ account/
 ├─ components/
 │   ├─ ui/          shadcn, KHÔNG sửa ✓ (ngoại lệ: được THÊM lớp `soft:` vào variant của button.tsx, một commit riêng)
 │   ├─ admin/       khung admin và thứ dùng chung nhiều tính năng ✓ (admin-layout, admin-sidebar, admin-topbar, nav-items, page-header, table-pagination, search-input — ô tìm kiếm debounce, confirm-dialog; category-select ✓ — ô chọn danh mục dạng cây thụt lề, dùng ở products và inventory)
 │   ├─ storefront/  ✓ khung khách và phần dựng sẵn dùng ở nhiều trang storefront: storefront-layout, storefront-header
 │   │                 (+ header-session, header-account, header-nav (+ header-nav-link, header-nav-panel: bảng toàn chiều rộng, header-nav-styles — thanh điều hướng và mega menu từ `xl`),
 │   │                 mobile-nav-drawer (+ mobile-nav-list, mobile-nav-accordion, mobile-nav-styles — ngăn kéo dưới `xl`), mobile-account, search-panel;
-│   │                 nút giỏ hàng `CartButton` là hàm nội bộ trong storefront-header), storefront-footer, storefront-drawer (ngăn kéo/khung trượt dựng trên Base UI Dialog),
+│   │                 nút giỏ hàng `CartButton` (kèm huy hiệu số lượng) là hàm nội bộ trong storefront-header; cart-ui-context.ts — cầu nối giỏ hàng cho trang/thẻ sản phẩm, quantity-stepper (props pill/compact/min/max/disabled), storefront-dialog — hộp thoại nhỏ ở giữa màn hình), storefront-footer, storefront-drawer (ngăn kéo/khung trượt dựng trên Base UI Dialog),
 │   │                 (liên kết bỏ qua `SkipLink` là hàm nội bộ trong storefront-layout),
 │   │                 breadcrumbs, pagination (số trang, dạng liên kết), product-image (khung 3:4, shimmer, fade, ảnh dự phòng),
 │   │                 reveal (hiện dần khi cuộn), state-message (rỗng/lỗi/404), section-heading (nhãn + tiêu đề + mô tả + liên kết phụ; dùng qua home-section), page-container (khung nội dung `max-w-7xl` + gutter),
@@ -79,7 +80,7 @@ features/catalog/
 └─ components/   danh sách: catalog-content (+ tiêu đề trang `CatalogHeading` là hàm nội bộ), catalog-results, catalog-states, catalog-filters, category-filter,
                  price-filter, filter-link, filter-drawer, sort-select, active-filter-chips, product-grid(+skeleton), product-card
                  chi tiết: product-detail-content (+skeleton, not-found), product-info-card (thẻ thông tin bên phải), product-gallery + gallery-thumbs (+ `gallery-images.ts`: images, dự phòng imageUrl), product-card-colors (chấm màu), product-card-quick-actions, purchase-panel, variant-picker,
-                 option-chip-group (variant chip|swatch|pill), quantity-stepper (prop pill), sticky-buy-bar, related-products ("Có thể bạn cũng thích")
+                 option-chip-group (variant chip|swatch|pill), quick-add-dialog + use-quick-add ("Thêm nhanh" ở thẻ), sticky-buy-bar, related-products ("Có thể bạn cũng thích")
                  trang chủ (`components/home/`, có dữ liệu; dựng trên `home-section` của components/storefront/home): home-best-sellers (hook TẠM `useBestSellerProducts`), home-new-arrivals (3 tab + cuộn ngang), product-strip-skeleton; khối lỗi dùng lại `CatalogError` của catalog-states
                  thẻ sản phẩm: product-card + product-stock-badge (huy hiệu "Hết hàng" / "Sắp hết")
 ````
@@ -94,7 +95,7 @@ features/newsletter/
 Chân trang (`components/storefront/storefront-footer`) nhận form qua slot `newsletter`; `routes/storefront-layout-container.tsx` dựng `<NewsletterForm />`
 rồi truyền xuống, vì components/ không import features/.
 Cổng đăng nhập cho hành động mua nằm ở `features/auth/use-require-login.ts`; trang (`pages/`) và `routes/storefront-layout-container.tsx`
-lấy hook rồi truyền xuống bằng props, vì features không import lẫn nhau.
+lấy hook rồi truyền xuống bằng props, vì features không import lẫn nhau. Riêng giỏ hàng: `routes/storefront-layout-container.tsx` cung cấp `CartUiContext` (cổng đăng nhập + thêm vào giỏ + mở ngăn kéo) cho trang chi tiết và thẻ sản phẩm (`useCartUi()`), cũng vì features/catalog không import features/cart.
 
 ## 3. Khuôn của một feature
 ````
@@ -168,7 +169,8 @@ Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 4
 | Auth ✓ | features/auth/, routes/, pages/auth/ |
 | Danh mục ✓, sản phẩm ✓ | features/categories/ ✓, features/products/ ✓ |
 | Kho ✓ | features/inventory/ ✓ |
-| Giỏ hàng, đơn hàng, voucher | features/cart/, orders/, vouchers/ |
+| Giỏ hàng ✓ | features/cart/, pages/storefront/cart, components/storefront/cart-ui-context.ts, lib/cart-rules.ts |
+| Đơn hàng, voucher | features/orders/, vouchers/ |
 | Storefront khung + catalog ✓ | components/storefront/, pages/storefront/catalog + product-detail, features/catalog/ |
 | Storefront: thanh thông báo, thẻ sản phẩm mới, chân trang, trang thông tin ✓ | features/newsletter/, pages/storefront/info/ |
 | Storefront: làm lại trang chủ ✓ | components/storefront/home/, features/catalog/components/home/, public/home/ |
@@ -196,7 +198,7 @@ Việc cần làm → file cần mở. Nội dung chữ không nằm trong compo
 | Đổi hero: bố cục slide / nút điều khiển / thanh tiến trình / hành vi carousel | `components/storefront/home/hero-slide.tsx` / `hero-controls.tsx` / `hero-progress.tsx` / `home-hero.tsx` (+ `hooks/use-carousel.ts`, `hooks/use-swipe.ts`); tỉ lệ cột chữ 46%: `hero-layout.ts` và `HERO_SPLIT_CLASS` trong `hero-slide.tsx` phải khớp nhau |
 | Thêm, bớt hoặc đổi thứ tự khối trang chủ | `pages/storefront/home/index.tsx`; khung chung của khối có tiêu đề: `components/storefront/home/home-section.tsx` |
 | Đổi nguồn dữ liệu Best sellers / số thẻ ở các khối trang chủ | `features/catalog/queries.ts` (`useBestSellerProducts`) / `features/catalog/home-constants.ts` |
-| Đổi thẻ sản phẩm (ảnh, tên, giá, huy hiệu; hai nút giả trái tim / "Thêm nhanh" là hàm `QuickActions` trong cùng file, chữ thông báo ở `STORE.comingSoon` trong `lib/store-info.ts`) | `features/catalog/components/product-card.tsx`, `product-stock-badge.tsx`; ảnh: `components/storefront/product-image.tsx` |
+| Đổi thẻ sản phẩm (ảnh, tên, giá, huy hiệu; hai nút trên ảnh là hàm `QuickActions` trong `product-card-quick-actions.tsx`: trái tim giả, chữ toast ở `STORE.comingSoon`; "Thêm nhanh" thật qua `use-quick-add.ts`) | `features/catalog/components/product-card.tsx`, `product-stock-badge.tsx`; ảnh: `components/storefront/product-image.tsx` |
 | Đổi lưới sản phẩm (số cột) | `features/catalog/components/product-grid.tsx` |
 | Đổi trang danh sách và bộ lọc / khoảng giá, kiểu sắp xếp, số sản phẩm mỗi trang | `features/catalog/components/catalog-*.tsx`, `catalog-filters.tsx` / `features/catalog/constants.ts` |
 | Đổi trang chi tiết sản phẩm | `features/catalog/components/product-detail-content.tsx`, `purchase-panel.tsx`, `variant-picker.tsx` |

@@ -217,6 +217,13 @@
   --motion-slow: 400ms; /* ngăn kéo, hiện dần khi cuộn */
   --motion-image: 500ms; /* ảnh sản phẩm phóng nhẹ, fade ảnh */
   --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Ngăn kéo và hộp thoại của storefront (chỉ transform/opacity): mở chậm dần, đóng nhanh hơn. Lớp nền chỉ đổi opacity (không animate độ mờ). */
+  --motion-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --motion-drawer-in: 300ms;
+  --motion-drawer-out: 220ms;
+  --motion-scrim: 200ms;
+  --motion-dialog-in: 180ms;
+  --motion-dialog-out: 120ms;
 
   /* ========================================================================
      4c. KHOẢNG CÁCH RIÊNG CỦA STOREFRONT
@@ -564,6 +571,8 @@
 
   /* Chuyển động: ease-smooth, animate-page-enter, animate-marquee */
   --ease-smooth: var(--motion-ease);
+  --ease-drawer: var(--motion-ease-drawer);
+  --animate-badge-bump: badge-bump 300ms var(--motion-ease-drawer);
   --animate-page-enter: page-enter var(--motion-base) var(--motion-ease) both;
   --animate-marquee: marquee var(--motion-marquee) linear infinite;
 
@@ -586,6 +595,19 @@
 /* ==========================================================================
    6b. HIỆU ỨNG DÙNG CHUNG CỦA STOREFRONT
    ========================================================================== */
+
+/* Huy hiệu giỏ nảy nhẹ khi số đổi (gắn bằng `motion-safe:animate-badge-bump`, phần tử đặt lại `key` theo số). */
+@keyframes badge-bump {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 
 @keyframes page-enter {
   from {

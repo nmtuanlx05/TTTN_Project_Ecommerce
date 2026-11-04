@@ -9,7 +9,8 @@ Yêu cầu chia theo ba phía: người dùng, Admin, Staff. Ưu tiên **MVP** l
 | BR-U-01 | Xem trang chủ, danh mục, danh sách sản phẩm | MVP |
 | BR-U-02 | Tìm kiếm theo tên; lọc theo danh mục, size, màu, khoảng giá; sắp xếp | MVP |
 | BR-U-03 | Xem chi tiết sản phẩm: ảnh, mô tả, bảng size, tình trạng còn/hết theo từng biến thể | MVP |
-| BR-U-04 | Thêm, sửa số lượng, xóa sản phẩm trong giỏ; Guest giữ giỏ tạm và gộp vào giỏ tài khoản khi đăng nhập | MVP |
+| BR-U-04 | Customer đã đăng nhập thêm, sửa số lượng, xóa sản phẩm trong giỏ (giỏ lưu ở DB, tối đa 10 mỗi dòng, không giữ hàng) | MVP |
+| BR-U-04b | Guest giữ giỏ tạm ở trình duyệt và gộp vào giỏ tài khoản khi đăng nhập | V2 |
 | BR-U-05 | Đăng ký, đăng nhập, đăng xuất, quên và đổi mật khẩu | MVP |
 | BR-U-06 | Đặt hàng: nhập tên, số điện thoại, địa chỉ; chọn COD hoặc online; xem lại đơn trước khi xác nhận | MVP |
 | BR-U-07 | Guest checkout (mua không cần đăng ký) | MVP |
