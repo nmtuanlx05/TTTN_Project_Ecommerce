@@ -18,6 +18,7 @@ export class UpdateProductDto extends PartialType(
     'description',
     'price',
     'imageUrl',
+    'images',
     'categoryId',
   ] as const),
 ) {

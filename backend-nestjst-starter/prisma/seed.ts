@@ -8,6 +8,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { Role } from '../src/generated/prisma/enums';
 import { ENV_FILE } from '../src/config/env-file';
+import { COLOR_HEX_MAP } from '../src/products/color-hex';
 
 config({ path: ENV_FILE, quiet: true });
 
@@ -21,7 +22,11 @@ const CATEGORIES = [
   { name: 'Quần short', slug: 'quan-short', parent: 'quan' },
 ];
 
+// Số ảnh mẫu mỗi sản phẩm (picsum, seed khác nhau: <slug>-1, <slug>-2...)
+const SEED_IMAGE_COUNT = 4;
+
 // Sản phẩm mẫu: mỗi sản phẩm sinh biến thể = sizes × colors. Chỉ tạo khi slug chưa có.
+// Mỗi tên màu phải có trong COLOR_HEX_MAP (src/products/color-hex.ts) để biến thể có colorHex.
 const PRODUCTS = [
   {
     name: 'Áo thun basic cổ tròn',
@@ -126,6 +131,14 @@ const colorCode = (color: string) =>
     .replace(/[^A-Za-z0-9]+/g, '')
     .toUpperCase();
 
+const colorHexOf = (color: string) => {
+  const hex = COLOR_HEX_MAP[color];
+  if (!hex) {
+    throw new Error(`Màu "${color}" chưa có trong COLOR_HEX_MAP`);
+  }
+  return hex;
+};
+
 async function seedAdmin(
   prisma: PrismaClient,
   email: string,
@@ -184,7 +197,12 @@ async function seedCatalog(prisma: PrismaClient) {
         sku: `${product.code}-${size}-${colorCode(color)}`,
         size,
         color,
+        colorHex: colorHexOf(color),
       })),
+    );
+    const imageUrls = Array.from(
+      { length: SEED_IMAGE_COUNT },
+      (_, i) => `https://picsum.photos/seed/${product.slug}-${i + 1}/600/800`,
     );
     await prisma.product.create({
       data: {
@@ -192,7 +210,11 @@ async function seedCatalog(prisma: PrismaClient) {
         slug: product.slug,
         description: `${product.name}. Chất liệu thoáng mát, form chuẩn, dễ phối đồ.`,
         price: product.price,
-        imageUrl: `https://picsum.photos/seed/${product.slug}/600/800`,
+        // imageUrl là cột deprecated, giữ đồng bộ với ảnh đầu như API
+        imageUrl: imageUrls[0],
+        images: {
+          create: imageUrls.map((url, sortOrder) => ({ url, sortOrder })),
+        },
         isActive: product.isActive ?? true,
         categoryId: categoryIds.get(product.category)!,
         variants: {

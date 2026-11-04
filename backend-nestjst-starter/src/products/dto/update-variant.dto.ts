@@ -1,5 +1,10 @@
 import { IsBoolean, IsInt, IsOptional, Min, ValidateIf } from 'class-validator';
-import { VariantColor, VariantSize, VariantSku } from './create-variant.dto';
+import {
+  VariantColor,
+  VariantColorHex,
+  VariantSize,
+  VariantSku,
+} from './create-variant.dto';
 
 // Một phần tử trong `variants` của PATCH sản phẩm:
 // - có `id`: cập nhật biến thể đó, các trường còn lại tùy chọn;
@@ -28,6 +33,10 @@ export class UpdateVariantDto {
   )
   @VariantColor()
   color?: string;
+
+  // Không gửi = giữ nguyên; null hoặc "" = xóa mã màu
+  @VariantColorHex()
+  colorHex?: string | null;
 
   // Ẩn/hiện biến thể: chỉ đổi khi client gửi tường minh
   @IsOptional()

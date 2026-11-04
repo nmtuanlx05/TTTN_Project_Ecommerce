@@ -83,16 +83,31 @@ model Product {
   slug        String           @unique
   description String?          @db.Text
   price       Int // giá niêm yết, VND
-  imageUrl    String?
+  imageUrl    String? // DEPRECATED: chỉ để tương thích, nguồn thật là images (imageUrl = ảnh đầu, đồng bộ khi ghi)
   isActive    Boolean          @default(true)
   categoryId  Int
   category    Category         @relation(fields: [categoryId], references: [id])
   variants    ProductVariant[]
+  images      ProductImage[]
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
   @@index([categoryId, isActive])
   @@map("products")
+}
+
+// Ảnh sản phẩm, tối đa 6 ảnh/sản phẩm (kiểm ở service). sortOrder nhỏ nhất là ảnh đại diện.
+// Ngoại lệ với quy ước "không cấu hình onDelete": ảnh là bảng con thuần túy nên xóa theo sản phẩm (Cascade).
+model ProductImage {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String   @db.VarChar(500)
+  sortOrder Int
+  createdAt DateTime @default(now())
+
+  @@index([productId, sortOrder])
+  @@map("product_images")
 }
 
 model ProductVariant {
@@ -102,6 +117,7 @@ model ProductVariant {
   sku            String          @unique
   size           String
   color          String
+  colorHex       String?         @db.VarChar(7) // "#RRGGBB" in hoa hoặc NULL; CHECK ở migration (chk_product_variants_color_hex)
   stock          Int             @default(0) // tồn thực tế trong kho
   reserved       Int             @default(0) // đang giữ cho đơn chưa xuất kho
   minStock       Int             @default(0) // ngưỡng cảnh báo sắp hết

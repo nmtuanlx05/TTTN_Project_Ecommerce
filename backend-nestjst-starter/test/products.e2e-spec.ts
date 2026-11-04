@@ -1105,4 +1105,170 @@ describe('Products API (e2e, service giả)', () => {
       await patchStatus({ isActive: true }).expect(404);
     });
   });
+  describe('images và colorHex (validate ở tầng HTTP)', () => {
+    const post = (body: object) =>
+      as('ADMIN')(request(server()).post('/admin/products')).send(body);
+    const patch = (body: object) =>
+      as('STAFF')(request(server()).patch('/admin/products/4')).send(body);
+    const urls = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({
+        url: `https://picsum.photos/seed/a-${i}/600/800`,
+      }));
+
+    beforeEach(() => {
+      productsService.create.mockResolvedValue({ id: 5 });
+      productsService.update.mockResolvedValue({ id: 4 });
+    });
+
+    it('images hợp lệ (tối đa 6) → 201; trim url, giữ thứ tự', async () => {
+      await post({
+        ...validCreate,
+        images: [
+          { url: '  https://picsum.photos/seed/b/600/800 ' },
+          ...urls(5),
+        ],
+      }).expect(201);
+      const { images } = productsService.create.mock.lastCall[0] as {
+        images: { url: string }[];
+      };
+      expect(images).toHaveLength(6);
+      expect(images[0]).toEqual({
+        url: 'https://picsum.photos/seed/b/600/800',
+      });
+    });
+
+    it('quá 6 ảnh → 400 với message tiếng Việt', async () => {
+      const res = await post({ ...validCreate, images: urls(7) }).expect(400);
+      expect(errorsOf(res)).toContainEqual({
+        field: 'images',
+        message: 'Mỗi sản phẩm tối đa 6 ảnh',
+      });
+    });
+
+    it('url ảnh: cho phép URL ngoài và localhost, tối đa 500 ký tự', async () => {
+      await post({
+        ...validCreate,
+        images: [
+          { url: 'http://localhost:3000/uploads/products/x.webp' },
+          { url: `https://cdn.example.com/${'a'.repeat(470)}` },
+        ],
+      }).expect(201);
+    });
+
+    it('url ảnh sai → 400 theo từng phần tử (images.0.url)', async () => {
+      const cases: [string, string][] = [
+        [
+          'abc',
+          'Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://',
+        ],
+        [
+          'ftp://x.com/a.jpg',
+          'Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://',
+        ],
+        [
+          `https://x.com/${'a'.repeat(500)}`,
+          'Đường dẫn ảnh không được vượt quá 500 ký tự',
+        ],
+        ['', 'Đường dẫn ảnh không được để trống'],
+      ];
+      for (const [url, message] of cases) {
+        const res = await post({ ...validCreate, images: [{ url }] }).expect(
+          400,
+        );
+        expect(errorsOf(res)).toContainEqual({
+          field: 'images.0.url',
+          message,
+        });
+      }
+    });
+
+    it('images không phải mảng hoặc phần tử thừa trường → 400', async () => {
+      await post({ ...validCreate, images: 'abc' }).expect(400);
+      const res = await post({
+        ...validCreate,
+        images: [{ url: 'https://x.com/a.jpg', sortOrder: 3 }],
+      }).expect(400);
+      expect(fieldsOf(res)).toContain('images.0.sortOrder');
+    });
+
+    it('PATCH images: [] → 200 (xóa hết ảnh); service nhận mảng rỗng', async () => {
+      await patch({ images: [] }).expect(200);
+      expect(productsService.update).toHaveBeenCalledWith(4, { images: [] });
+    });
+
+    it('PATCH images quá 6 ảnh → 400', async () => {
+      const res = await patch({ images: urls(7) }).expect(400);
+      expect(fieldsOf(res)).toContain('images');
+    });
+
+    it('colorHex hợp lệ: chữ thường được chuẩn hóa thành in hoa', async () => {
+      await post({
+        ...validCreate,
+        variants: [{ ...validVariant, colorHex: ' #1f3a5f ' }],
+      }).expect(201);
+      expect(productsService.create.mock.lastCall[0].variants[0].colorHex).toBe(
+        '#1F3A5F',
+      );
+    });
+
+    it('colorHex "" hoặc null → null (không có mã màu)', async () => {
+      for (const colorHex of ['', null]) {
+        await post({
+          ...validCreate,
+          variants: [{ ...validVariant, colorHex }],
+        }).expect(201);
+        expect(
+          productsService.create.mock.lastCall[0].variants[0].colorHex,
+        ).toBeNull();
+      }
+    });
+
+    it('colorHex sai định dạng → 400 với message tiếng Việt (variants.0.colorHex)', async () => {
+      for (const colorHex of [
+        '#zzzzzz',
+        '#FFF',
+        'FFFFFF',
+        '#FFFFFFF',
+        'red',
+        123,
+      ]) {
+        const res = await post({
+          ...validCreate,
+          variants: [{ ...validVariant, colorHex }],
+        }).expect(400);
+        expect(fieldsOf(res)).toContain('variants.0.colorHex');
+      }
+      const res = await post({
+        ...validCreate,
+        variants: [{ ...validVariant, colorHex: '#zzzzzz' }],
+      }).expect(400);
+      expect(errorsOf(res)).toContainEqual({
+        field: 'variants.0.colorHex',
+        message: 'Mã màu phải có dạng #RRGGBB (ví dụ #FFFFFF)',
+      });
+    });
+
+    it('PATCH biến thể: colorHex chuẩn hóa; null xóa mã; sai định dạng → 400', async () => {
+      await patch({ variants: [{ id: 10, colorHex: '#abcdef' }] }).expect(200);
+      expect(productsService.update.mock.lastCall[1].variants[0]).toEqual({
+        id: 10,
+        colorHex: '#ABCDEF',
+      });
+      await patch({ variants: [{ id: 10, colorHex: null }] }).expect(200);
+      expect(
+        productsService.update.mock.lastCall[1].variants[0].colorHex,
+      ).toBeNull();
+      const res = await patch({
+        variants: [{ id: 10, colorHex: 'xyz' }],
+      }).expect(400);
+      expect(fieldsOf(res)).toContain('variants.0.colorHex');
+    });
+
+    it('imageUrl cũ vẫn được nhận (tương thích)', async () => {
+      await post({
+        ...validCreate,
+        imageUrl: 'https://picsum.photos/seed/x/600/800',
+      }).expect(201);
+    });
+  });
 });

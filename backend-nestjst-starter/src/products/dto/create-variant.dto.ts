@@ -9,6 +9,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Trim } from '../../common/transforms/trim';
+import { COLOR_HEX_REGEX } from '../color-hex';
 
 // SKU gồm chữ in hoa không dấu, số và các ký tự . _ -
 export const SKU_REGEX = /^[A-Z0-9._-]+$/;
@@ -44,6 +45,21 @@ export const VariantColor = () =>
     MaxLength(50, { message: 'Màu sắc không được vượt quá 50 ký tự' }),
   );
 
+// Mã màu "#RRGGBB": trim, chuỗi rỗng = null (xóa mã), chuẩn hóa in hoa trước khi kiểm.
+export const VariantColorHex = () =>
+  applyDecorators(
+    IsOptional(),
+    Transform(({ value }: { value: unknown }) => {
+      if (typeof value !== 'string') return value;
+      const trimmed = value.trim();
+      return trimmed === '' ? null : trimmed.toUpperCase();
+    }),
+    IsString({ message: 'Mã màu phải là chuỗi' }),
+    Matches(COLOR_HEX_REGEX, {
+      message: 'Mã màu phải có dạng #RRGGBB (ví dụ #FFFFFF)',
+    }),
+  );
+
 // Biến thể khi tạo sản phẩm. Không nhận stock/reserved/minStock (thuộc module Kho, mặc định 0).
 export class CreateVariantDto {
   @VariantSku()
@@ -54,6 +70,10 @@ export class CreateVariantDto {
 
   @VariantColor()
   color: string;
+
+  // Bỏ trống hoặc null = chưa có mã màu. Cùng màu trong một sản phẩm phải cùng mã (service kiểm).
+  @VariantColorHex()
+  colorHex?: string | null;
 
   // Bỏ trống = đang bán
   @IsOptional()

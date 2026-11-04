@@ -7,8 +7,8 @@ File này cung cấp hướng dẫn cho Claude Code (claude.ai/code) khi làm vi
 Đây là một NestJS starter cho backend e-commerce thời trang. Cây thư mục `src/` hiện tại chỉ là
 scaffold mặc định của Nest (`AppModule`/`AppController`/`AppService` trả về "Hello World") — các module
 nghiệp vụ chưa được xây dựng. Đã có `docker-compose.yml` (service MySQL 8), `.env.development`/`.env.production` và `prisma.config.ts`
-(Prisma 7: URL kết nối khai báo ở đây, không nằm trong schema). `prisma/schema.prisma` (10 model) đã khớp
-`docs/05` và `docs/06`; migration `init_ecommerce` và `add_stock_movements` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
+(Prisma 7: URL kết nối khai báo ở đây, không nằm trong schema). `prisma/schema.prisma` (11 model) đã khớp
+`docs/05` và `docs/06`; migration `init_ecommerce`, `add_user_avatar_url`, `add_stock_movements` và `add_product_images_color_hex` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
 xây dựng dựa trên đó; coi nó là nguồn thông tin chính khi triển khai tính năng, không phải code `src/`
 hiện tại. Nếu `docs/05` lệch với `prisma/schema.prisma` thì schema là bản chuẩn.
 
@@ -48,7 +48,7 @@ website e-commerce thời trang gồm khu vực mua sắm cho khách và khu v�
 - `03-yeu-cau-nghiep-vu.md` — yêu cầu nghiệp vụ, mã hóa `BR-U-*` (user), `BR-A-*` (admin),
   `BR-S-*` (staff), mỗi mục gắn nhãn MVP hoặc V2
 - `04-yeu-cau-he-thong.md` — yêu cầu chức năng (`FR-*`) và phi chức năng (`NFR-*`)
-- `05-data-models.md` — mô tả schema Prisma (10 model, khớp `prisma/schema.prisma`) và quy tắc tồn kho, voucher
+- `05-data-models.md` — mô tả schema Prisma (11 model, khớp `prisma/schema.prisma`) và quy tắc tồn kho, voucher
 - `06-thiet-ke-database.md` — các vấn đề riêng của MySQL: đặt tên bảng (`@@map` sang snake_case),
   index, và các ràng buộc CHECK mà Prisma không hỗ trợ trực tiếp (thêm bằng cách sửa tay migration
   tạo từ `prisma migrate dev --create-only`)
@@ -57,7 +57,7 @@ website e-commerce thời trang gồm khu vực mua sắm cho khách và khu v�
 
 Ba role (`ADMIN`, `STAFF`, `CUSTOMER`) cộng với guest checkout (mua không cần đăng ký). Sơ đồ thực
 thể cốt lõi: `Category → Product → ProductVariant` (tồn kho được tính theo từng biến thể — size ×
-màu — không tính theo sản phẩm), `Cart/CartItem`, `Order/OrderItem`, `Voucher`. Staff nhập kho bằng
+màu — không tính theo sản phẩm; `Product → ProductImage` là ảnh sản phẩm), `Cart/CartItem`, `Order/OrderItem`, `Voucher`. Staff nhập kho bằng
 cách cộng trực tiếp vào `ProductVariant.stock` và mỗi lần đổi `stock` ghi một dòng `StockMovement` (module Kho);
 không có lịch sử đổi trạng thái đơn (để V2). `Order` có hai quan hệ tới `User`: `userId` (`"OrderCustomer"`, khách đặt đơn)
 và `handledById` (`"OrderHandler"`, người phụ trách: Staff hoặc Admin).
@@ -85,6 +85,13 @@ COMPLETED`, với `CANCELLED` và `RETURNED` là các nhánh phụ tách ra từ
   Admin tạo/quản lý. Kiểm tra hiệu lực, đơn tối thiểu, số lượt và tăng `usedCount` trong cùng
   transaction với việc tạo đơn. Đơn `CANCELLED` (kể cả tự hủy sau 30 phút) thì `usedCount - 1`; đơn
   `RETURNED` không hoàn lượt.
+- **Ảnh và màu sản phẩm**: `ProductImage` (tối đa 6 ảnh/sản phẩm, `url` VARCHAR(500), thứ tự theo `sortOrder`, ảnh đầu là ảnh
+  đại diện) gắn theo **sản phẩm**, không theo màu. `PATCH` có gửi `images` thì thay cả mảng trong một `$transaction`. Cột
+  `Product.imageUrl` **deprecated**: chỉ để tương thích, khi ghi được đồng bộ = ảnh đầu (null nếu dài hơn 191 ký tự hoặc không có ảnh);
+  đọc thì ưu tiên ảnh thật, chỉ dự phòng bằng cột cũ khi chưa có dòng `ProductImage` nào; chỉ gửi `imageUrl` cũ (không gửi `images`) thì
+  coi như `images = [imageUrl]`, gửi `null`/`""` thì xóa hết ảnh. Việc bỏ cột để đợt dọn dẹp sau. Màu: `ProductVariant.colorHex`
+  (`#RRGGBB` in hoa, tùy chọn, CHECK ở DB), **không** có bảng `Color`; cùng tên màu trong một sản phẩm phải cùng `colorHex`. Bảng tra
+  tên màu → hex ở `src/products/color-hex.ts`, migration SQL lặp lại và có test đối chiếu.
 - Xóa mềm bằng `isActive` cho `Product`/`ProductVariant`/`User`/`Voucher`; `Order` và `OrderItem`
   không bao giờ xóa cứng (hủy đơn bằng `CANCELLED`).
 
@@ -119,7 +126,7 @@ Quyết định nghiệp vụ quan trọng (không tự ý thay đổi):
 - Voucher: mỗi đơn tối đa một mã, giảm trên `subtotal`, hủy đơn thì hoàn lượt (`usedCount - 1`).
 - Tiền là VND, kiểu Int.
 
-Phạm vi MVP: 10 model (User, Category, Product, ProductVariant, Cart, CartItem,
+Phạm vi MVP: 11 model (User, Category, Product, ProductVariant, ProductImage, Cart, CartItem,
 Order, OrderItem, Voucher, StockMovement).
 Để V2: Address, Review, Supplier, AuditLog.
 
@@ -139,7 +146,10 @@ Order, OrderItem, Voucher, StockMovement).
 - Mỗi lần chỉ làm một module. Trước khi viết, tóm tắt lại điều sẽ làm và hỏi chỗ chưa rõ.
 - Khi code khác tài liệu, hoặc tài liệu chưa rõ, hỏi tôi, không tự đổi nghiệp vụ.
 - Không tự chạy migrate hay xóa dữ liệu khi chưa được đồng ý.
-- Bảng đặt tên snake_case số nhiều bằng `@@map`. Không cấu hình `onDelete` ở giai đoạn này.
+- Bảng đặt tên snake_case số nhiều bằng `@@map`. Không cấu hình `onDelete` ở giai đoạn này, **ngoại lệ duy nhất**: `ProductImage.productId`
+  dùng `onDelete: Cascade` (bảng con thuần túy, không bảng nào tham chiếu tới; vẫn không xóa cứng `Product`).
+- Migration đã áp thì không sửa; CHECK mới thêm bằng migration mới. Không chạy `migrate reset`/`db push --force-reset`; sao lưu DB dev
+  (`mysqldump`) trước khi `migrate deploy`.
 - Comment và tài liệu viết bằng tiếng Việt. Tên biến, hàm, file, commit message viết bằng tiếng Anh.
 
 # BACKEND CONVENTIONS (NESTJS + PRISMA)
@@ -211,6 +221,9 @@ Order, OrderItem, Voucher, StockMovement).
 Tổng `total` đếm theo cùng điều kiện lọc, lấy danh sách và đếm trong một `$transaction`. Sắp xếp dùng
 `sortBy` (whitelist field) + `order` (`asc|desc`), mặc định mới nhất trước. Query boolean (`isActive`) phải
 transform từ chuỗi `"true"/"false"`.
+
+**So khớp chuỗi**: `fold()` (`src/common/utils/fold.ts`) bỏ dấu, hoa/thường và xử lý cả `đ → d` (NFD không tách được `đ`) để khớp
+collation `utf8mb4_unicode_ci` của DB. Dùng nó khi so sánh tên màu/size/SKU trong service và mapper, đừng tự viết lại.
 
 **Param id**: dùng `parseIdPipe` (`src/common/pipes/parse-id.pipe.ts`); id không hợp lệ → 400 "ID không hợp lệ".
 
