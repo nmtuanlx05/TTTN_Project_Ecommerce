@@ -17,7 +17,9 @@ import { PageContainer } from "@/components/storefront/page-container"
 /**
  * Trang /products/:slug. Breadcrumb dựng chuỗi danh mục cha từ cây danh mục; cây chưa có/lỗi thì dùng danh mục của chính
  * sản phẩm. 404 (không tồn tại, ẩn, hết biến thể bán) hiện trang thân thiện; lỗi khác hiện "Thử lại". Cột ảnh/thẻ thông tin
- * chia 6/6 từ `md`, 7/5 từ `lg`; dưới `md` xếp dọc (ảnh rồi thẻ).
+ * chia 6/6 từ `md`, 7/5 từ `lg`; dưới `md` xếp dọc (ảnh rồi thẻ). Từ `lg` ô lưới bọc thẻ `self-start` và `sticky top-(--sticky-top)`: thẻ theo
+ * cuộn dưới header và dừng ở mép dưới cột ảnh (ô lưới cao bằng hàng). Không lớp cha nào được đặt `overflow` (sẽ làm hỏng sticky); xem `ProductInfoCard`
+ * cho phần cuộn bên trong khi cửa sổ thấp.
  */
 function ProductDetailContent({ slug, onAddToCart }: { slug: string; onAddToCart: (input: AddToCartInput) => void }) {
   const query = useCatalogProduct(slug)
@@ -46,7 +48,7 @@ function ProductDetailContent({ slug, onAddToCart }: { slug: string; onAddToCart
           <div className="lg:col-span-7">
             <ProductGallery images={galleryImages(product)} alt={product.name} />
           </div>
-          <div className="lg:col-span-5">
+          <div className="lg:sticky lg:top-(--sticky-top) lg:col-span-5 lg:self-start">
             <ProductInfoCard product={product} barSlot={barSlot} onAddToCart={onAddToCart} />
           </div>
         </div>

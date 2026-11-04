@@ -72,9 +72,10 @@ Tiêu đề trang viết hoa (cùng kiểu hero và đăng nhập); tên sản p
   vì trang đăng nhập và trang chủ cũ đang dùng.
 - Chiều cao thanh thông báo chạy chữ: `--announcement-h` (40px) → `h-announcement`, `top-announcement` (mốc cuộn của header đặt ngay dưới thanh).
 - Chiều cao header: `--header-h` (64px, 80px từ `md`) → `h-header`, `scroll-mt-header` (đích "bỏ qua tới nội dung" và đầu danh sách không bị header dính che).
+- Phần tử dính dưới header: `--sticky-gap` (24px), `--sticky-top` (= `--header-h` + `--sticky-gap`, tự theo breakpoint) và `--sticky-max-h` (= `100dvh − --sticky-top − --sticky-gap`); thẻ thông tin ở trang chi tiết dùng bộ này (mục 10, "Trang chi tiết"). Cột lọc ở `/products` vẫn dùng công thức riêng `header-h + 2rem`.
 - Lưới sản phẩm (`ProductGrid`): **2 cột** (di động), **3 cột** từ `md` (768px), **4 cột** từ `xl` (1280px) khi có cột lọc bên trái (`layout="beside-filters"`);
   nơi không có cột lọc (khối liên quan, trang chủ) dùng `layout="full"`: 4 cột từ `lg`. Khoảng cách `gap-x-4 md:gap-x-6`, `gap-y-10 lg:gap-y-12`.
-- Cột lọc 15rem, sticky dưới header, từ `lg`. Chi tiết: 6/6 từ `md`, **7/5 từ `lg`** (ảnh lớn hơn thông tin; đo từ thiết kế mẫu 350:250), dưới `md` xếp dọc (ảnh rồi thẻ).
+- Cột lọc 15rem, sticky dưới header, từ `lg`. Chi tiết: 6/6 từ `md`, **7/5 từ `lg`** (ảnh lớn hơn thông tin; đo từ thiết kế mẫu 350:250), dưới `md` xếp dọc (ảnh rồi thẻ). Từ `lg` thẻ thông tin dính theo cuộn (mục 10, "Trang chi tiết").
 
 ## 5. Hình khối
 
@@ -205,6 +206,14 @@ tổ hợp: vẫn cho bấm và nhảy sang biến thể gần nhất). Mặc đ
 `OptionChipGroup` có prop `variant` (`chip` mặc định, `swatch`, `pill`). **Màu = `swatch`**: nút 44px chứa chấm 28px (màu theo `colorHex` của biến thể, mục 2), đang chọn có viền hai lớp (outline `ink` cách chấm 2px), mọi chấm có viền mảnh `border-ink/15`; màu có `colorHex` null thì ô đó rơi về nút chữ. **Size = `pill`**: pill tròn cao 44px. Hết hàng (và không có tổ hợp) ở `swatch`/`pill`: mờ đi + gạch chéo (đảo màu theo nền) + `aria-label` "<giá trị>, hết hàng", KHÔNG thêm chữ nên mọi pill cùng chiều cao; chỉ `chip` mới ghi chữ "Hết hàng". Tên màu không phân biệt hoa thường, bỏ khoảng trắng thừa.
 
 **Trang chi tiết** (`ProductInfoCard`): hai cột (7/5 từ `lg`, ảnh 4:5 bo `panel` bên trái, MỘT thẻ `surface-sunken/50` bo `panel` bên phải, cao theo nội dung; dưới `md` xếp dọc). Breadcrumb nhỏ (`subtle`). Thẻ: huy hiệu danh mục + "Còn hàng" (chấm `success-fg`) hoặc "Hết hàng" theo `product.inStock` (API chi tiết chưa có `lowStock` nên không có "Sắp hết"), tên, giá, mô tả, màu, size (link "Hướng dẫn chọn size" là stub, mục 13), hàng thao tác (ô số lượng pill, "Thêm vào giỏ" pill đen có icon túi, trái tim stub), đường kẻ, ba dòng cam kết. Hàng thao tác dùng container query của thẻ: từ 24rem một hàng; hẹp hơn thì số lượng + tim ở hàng trên, nút full-width ở hàng dưới (không tràn ngang ở 375px). Trạng thái còn/hết của tổ hợp đang chọn là vùng `sr-only aria-live`; khi hết hàng nút ghi "Hết hàng" và bị khóa. Khối "Có thể bạn cũng thích": 4 thẻ cùng danh mục, thiếu thì bổ sung bằng MỘT lần gọi `GET /products` (không lọc danh mục, bỏ trùng và bỏ sản phẩm đang xem), "Xem tất cả →" về `/products?category=<slug>`.
+
+**Thẻ thông tin dính (từ `lg`)**: thẻ luôn nằm trong tầm nhìn khi cuộn và dừng đúng mép dưới cột ảnh (ảnh chính + hàng ảnh nhỏ). Làm bằng `position: sticky` thuần CSS, không JavaScript đo cuộn, không thư viện, không chuyển động mới (nên không liên quan `prefers-reduced-motion`).
+- **Ô dính**: ô lưới bọc thẻ (`div.lg:col-span-5`) có `lg:self-start lg:sticky lg:top-(--sticky-top)`. `self-start` để ô không bị kéo giãn bằng chiều cao hàng (nếu bị kéo giãn thì không còn chỗ để chạy); ô lưới cao bằng hàng nên thẻ tự dừng ở mép dưới cột ảnh. Chỉ 1 ảnh thì cột ảnh ngắn hơn, quãng dính ngắn lại (không lỗi); cột ảnh ngắn hơn thẻ thì hàng lưới do thẻ quyết định và thẻ không có chỗ chạy.
+- **Vị trí**: `top = --sticky-top` = chiều cao header (`--header-h`: 64px, 80px từ `md`) + `--sticky-gap` (24px). Thanh thông báo không dính nên không tính. Header đã dính ở `top: 0` nên thẻ dính không chui dưới header và ô trong thẻ không bị header che khi focus.
+- **Không có ngưỡng chiều cao**: sticky LUÔN bật từ `lg`. Chính thẻ là phần tử cuộn: `lg:max-h-(--sticky-max-h) lg:overflow-y-auto` + `scrollbar-soft` (thanh 8px, chỉ chiếm chỗ khi có tràn; không dùng `scrollbar-gutter`). Cửa sổ đủ cao thì thẻ không có thanh cuộn và giữ nguyên hình dạng; cửa sổ quá thấp (vd 1280×720) thì nội dung trong thẻ tự cuộn nên nút "Thêm vào giỏ" luôn tới được (Tab tới ô nào trình duyệt tự cuộn tới ô đó). Nền, bo góc, đệm 32px của thẻ không đổi; vòng focus của ô sát mép nằm trong đệm.
+- **Không `overscroll-contain`**: cuộn hết thẻ thì lăn chuột tiếp tục cuộn trang, người dùng không bị kẹt trong thẻ.
+- **Điều kiện để sticky không hỏng**: không lớp cha nào của ô dính (lưới, `PageContainer`, `<main>`, khung storefront) được đặt `overflow` hidden/auto/scroll. Cần ẩn tràn ngang ở đâu đó thì dùng `overflow-x: clip`, đừng dùng `hidden`. Hiện không lớp nào có `overflow`.
+- Dưới `lg`: không đổi (xếp dọc, thanh mua dính đáy ở mục 12).
 
 ## 11. Truy cập
 
