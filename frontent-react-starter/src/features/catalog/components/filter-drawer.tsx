@@ -28,6 +28,7 @@ function FilterDrawer({
       onOpenChange={setOpen}
       side="right"
       title="Bộ lọc"
+      className="soft-ui"
       trigger={<Button variant="secondary" className="press lg:hidden" />}
       triggerContent={
         <>

@@ -7,7 +7,7 @@ function ProductStripSkeleton({ count }: { count: number }) {
     <ul aria-hidden="true" className="flex gap-4 overflow-hidden pb-4 md:gap-6">
       {Array.from({ length: count }, (_, index) => (
         <li key={index} className={cn("flex shrink-0 flex-col gap-3", STRIP_CARD_WIDTH)}>
-          <div className="shimmer aspect-[3/4]" />
+          <div className="shimmer aspect-[3/4] rounded-card" />
           <div className="flex flex-col gap-2">
             <div className="shimmer h-4 w-4/5" />
             <div className="shimmer h-4 w-1/3" />

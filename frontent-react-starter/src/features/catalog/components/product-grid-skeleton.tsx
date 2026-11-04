@@ -8,7 +8,7 @@ function ProductGridSkeleton({ layout, count = PAGE_SIZE }: { layout: GridLayout
     <ul aria-hidden="true" className={cn(GRID_BASE, GRID_CLASS[layout])}>
       {Array.from({ length: count }, (_, index) => (
         <li key={index} className="flex flex-col gap-3">
-          <div className="shimmer aspect-[3/4]" />
+          <div className="shimmer aspect-[3/4] rounded-card" />
           <div className="flex flex-col gap-2">
             <div className="shimmer h-4 w-4/5" />
             <div className="shimmer h-4 w-1/3" />

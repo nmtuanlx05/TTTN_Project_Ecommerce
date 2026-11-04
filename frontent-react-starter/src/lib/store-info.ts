@@ -64,6 +64,14 @@ interface StoreNewsletter {
   submitLabel: string
 }
 
+/** Thông báo (toast, tone info) của các điểm tương tác GIẢ chưa có tính năng thật; cùng giọng với "Giỏ hàng sẽ sớm có mặt" (docs/storefront-design.md mục 13). */
+interface StoreComingSoon {
+  /** Nút trái tim ở header và trên thẻ sản phẩm. */
+  wishlist: string
+  /** Nút "Thêm nhanh" trên thẻ sản phẩm. */
+  quickAdd: string
+}
+
 interface StoreInfo {
   name: string
   /** NỘI DUNG MẪU, dùng tạm — chờ chủ cửa hàng xác nhận. */
@@ -75,6 +83,7 @@ interface StoreInfo {
   announcements: string[]
   footer: StoreFooter
   newsletter: StoreNewsletter
+  comingSoon: StoreComingSoon
   /** Thứ tự và nội dung thanh điều hướng (header từ `xl`, ngăn kéo dưới `xl`). */
   navItems: StoreNavItem[]
   /** Danh sách cửa hàng cho trang /dia-chi. ĐỂ RỖNG cho tới khi chủ cửa hàng cung cấp thông tin thật. */
@@ -105,6 +114,7 @@ export const STORE: StoreInfo = {
     emailLabel: "Email của bạn",
     submitLabel: "ĐĂNG KÝ",
   },
+  comingSoon: { wishlist: "Yêu thích sẽ sớm có mặt", quickAdd: "Thêm nhanh sẽ sớm có mặt" },
   // Slug "phu-kien" và "qua-tang" là slug mà backend sẽ sinh từ tên danh mục; mục chỉ hiện khi danh mục đó có trong GET /categories.
   navItems: [
     { label: "Tất cả sản phẩm", href: "/products" },

@@ -33,6 +33,9 @@
 }
 
 @custom-variant dark (&:is(.dark *));
+/* Phong cách "mềm" của storefront: chỉ khớp phần tử nằm BÊN TRONG `.soft-ui` (gắn lên <main> và <footer> của khung khách, không gắn lên header). Dùng như
+   `soft:hover:bg-canvas`; độ ưu tiên (class + :is() + :hover) cao hơn `hover:bg-*` thường nên không phụ thuộc thứ tự CSS, và admin/auth không có `.soft-ui` nên không đổi. */
+@custom-variant soft (&:is(.soft-ui *));
 
 /* ==========================================================================
    1. MÀU — đặt tên theo NGỮ NGHĨA, không theo sắc độ
@@ -106,6 +109,9 @@
   --warning-fg: #5a4b28; /* 7.52 */
   --warning-tint: #f3eee1;
   --warning-border: #d4cdbc;
+  /* Chấm hổ phách của huy hiệu "Sắp hết" (lấy từ thiết kế mẫu home-v2). CHỈ dùng cho chấm trang trí này: chữ của huy hiệu đã nói "Sắp hết" nên chấm không cần
+     tương phản chữ; KHÔNG dùng cho chữ hay nền. Vùng tối cố định thừa hưởng giá trị này (huy hiệu chỉ nằm trên thẻ sản phẩm ở trang sáng). */
+  --warning-dot: #e0a21b;
   --danger-fg: #684238; /* 7.67 */
   --danger-tint: #faebe6;
   --danger-border: #ddc9c3;
@@ -193,7 +199,7 @@
      Tham chiếu gần như vuông; chỉ chip/badge mới bo tròn hoàn toàn.
      ======================================================================== */
 
-  --radius-control: 2px; /* input, nút, checkbox */
+  --radius-control: 2px; /* input, nút, checkbox (storefront ghi đè thành 10px trong `.soft-ui`, xem dưới) */
   --radius-surface: 3px; /* card, dialog, bảng */
   --radius-pill: 999px; /* badge, chip, nút tròn */
 
@@ -233,6 +239,25 @@
   --container-max: 80rem;
   --container-inset: max(var(--sp-gutter), calc((100cqw - var(--container-max)) / 2 + var(--sp-gutter)));
   --hero-h: clamp(34rem, calc(100svh - var(--announcement-h) - var(--header-h)), 46rem);
+
+  /* Mức ảnh hero được lòi ra ngoài lề phải của container (thiết kế mẫu ~140px ở màn 1620px) và KHÔNG lòi thêm ở màn rộng hơn.
+     `--hero-image-inset` là khoảng cách từ cạnh phải ảnh tới mép màn hình: màn hẹp thì một gutter; màn rộng thì lề container trừ mức lòi.
+     Dùng `cqw` như `--container-inset` nên phải đặt trong phần tử `@container` toàn chiều rộng (hero). */
+  --hero-bleed: 140px;
+  --hero-image-inset: max(var(--sp-gutter), calc(var(--container-inset) - var(--hero-bleed)));
+  /* Thẻ câu chuyện rộng hơn khung nội dung đúng `--story-bleed` mỗi bên từ `lg` (dưới `lg` thì theo container). Thẻ luôn cách mép màn hình ≥ `--story-edge`
+     nên ở màn 1024–1312px mức lòi bị co về (viewport − 2×edge − nội dung)/2 (16px ở 1280) thay vì tràn khỏi màn; từ 1312px trở lên đúng 32px, không đổi nữa. */
+  --story-bleed: 32px;
+  --story-edge: 8px;
+  --story-max: calc(var(--container-max) - 2 * var(--sp-gutter) + 2 * var(--story-bleed) + 2 * var(--story-edge));
+}
+
+/* Phạm vi "mềm" của storefront (gắn lên <main> và <footer>, KHÔNG gắn lên header, admin hay trang auth): nút, ô nhập, select trong phạm vi bo 10px.
+   Hoạt động vì `@theme inline` giữ nguyên tham chiếu: `rounded-xs` là `border-radius: var(--radius-control)` và biến được đọc tại phần tử
+   (cùng cơ chế với `.density-admin`). Popup render ở Portal nằm ngoài cây nên tự gắn `soft-ui` khi cần. */
+.soft-ui {
+  --radius-control: 10px;
+  --radius-surface: var(--radius-control); /* popup (danh sách chọn) gắn thêm `soft-ui` ở chỗ gọi */
 }
 
 @media (min-width: 768px) {
@@ -439,6 +464,7 @@
   --color-warning-fg: var(--warning-fg);
   --color-warning-tint: var(--warning-tint);
   --color-warning-border: var(--warning-border);
+  --color-warning-dot: var(--warning-dot);
   --color-danger-fg: var(--danger-fg);
   --color-danger-tint: var(--danger-tint);
   --color-danger-border: var(--danger-border);
@@ -543,6 +569,11 @@
   --radius-2xl: 6px;
   --radius-3xl: 8px;
   --radius-4xl: var(--radius-pill);
+
+  /* Bo góc của storefront (đo từ thiết kế mẫu home-v2): card = ảnh sản phẩm và thẻ danh mục, panel = ảnh hero, thẻ câu chuyện và thẻ cam kết.
+     Chỉ storefront dùng (`rounded-card`, `rounded-panel`) nên không cần phạm vi hóa; nút/ô nhập đi theo `--radius-control` trong `.soft-ui`. */
+  --radius-card: 18px;
+  --radius-panel: 28px;
 }
 
 /* ==========================================================================
@@ -595,10 +626,24 @@
   }
 }
 
-/* Thanh cuộn mảnh theo token (danh sách cuộn ngang). Firefox/Chrome mới đọc `scrollbar-*`; thumb là mực, track là đường kẻ mảnh. */
-@utility scrollbar-thin {
-  scrollbar-width: thin;
-  scrollbar-color: var(--ink) var(--border-subtle);
+/* Thanh cuộn mảnh, bo tròn theo token (danh sách cuộn ngang). Tên `scrollbar-soft` vì `scrollbar-thin` là tiện ích có sẵn của Tailwind (đặt `scrollbar-width: thin`, làm Chrome bỏ qua `::-webkit-scrollbar`). Chrome/Safari/Edge dùng `::-webkit-scrollbar` (thumb mực bo tròn, track là đường kẻ mảnh);
+   khi đã khai báo `scrollbar-width/color` chuẩn thì Chrome bỏ qua pseudo-element nên bản chuẩn chỉ dành cho Firefox (`@supports not selector(...)`). */
+@utility scrollbar-soft {
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: var(--border-subtle);
+    border-radius: var(--radius-pill);
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--ink);
+    border-radius: var(--radius-pill);
+  }
+  @supports not selector(::-webkit-scrollbar) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ink) var(--border-subtle);
+  }
 }
 
 /* Phản hồi khi nhấn: thu nhỏ nhẹ. Không áp dụng khi nút bị vô hiệu hóa hoặc người dùng giảm chuyển động. */

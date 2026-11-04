@@ -5,6 +5,10 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
+    <!-- Font serif nghiêng (Newsreader) nay xuất hiện ở phụ đề hero nên nằm trên đường tới màn hình đầu: tải sớm hai tập ký tự cần cho tiếng Việt
+         (latin + vietnamese, ~77 kB) để không nháy đổi font. `crossorigin` bắt buộc cho font dù cùng nguồn. -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource-variable/newsreader/files/newsreader-latin-wght-italic.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/node_modules/@fontsource-variable/newsreader/files/newsreader-vietnamese-wght-italic.woff2" />
     <title>MONO STUDIO</title>
     <meta name="description" content="MONO STUDIO — cửa hàng thời trang trực tuyến." />
   </head>

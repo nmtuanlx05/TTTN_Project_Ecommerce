@@ -70,7 +70,7 @@ function HomeNewArrivals({ tree }: { tree: CategoryTree | null }) {
           <HScrollList label={`${title}, cuộn ngang`} busy={query.isPlaceholderData}>
             {items.map((product) => (
               <li key={product.id} className={STRIP_CARD_WIDTH}>
-                <ProductCard product={product} />
+                <ProductCard product={product} quickActions />
               </li>
             ))}
           </HScrollList>

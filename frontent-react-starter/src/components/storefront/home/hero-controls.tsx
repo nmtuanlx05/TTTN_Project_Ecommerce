@@ -7,11 +7,11 @@ import { HeroProgress } from "./hero-progress"
 /** Hai chữ số cho bộ đếm: 1 → "01". */
 const pad = (value: number) => String(value).padStart(2, "0")
 
-/** Nút viền dùng `border-control` (≥ 3:1, đã đo 3,79) thay cho `border-strong` (2,37) của `secondary`: viền là ranh giới của điều khiển. */
-const ARROW_CLASS = "border-border-control"
+/** Mũi tên tròn (pill). Viền `border-control` (≥ 3:1) và hover đảo màu do variant `secondary` trong phạm vi `soft-ui` lo (xem `ui/button`). */
+const ARROW_CLASS = "rounded-4xl"
 
 /**
- * Hàng điều khiển của hero, nằm đè ở đáy khối: bộ đếm "01 / 03", thanh tiến trình bấm được, hai nút mũi tên vuông 44px. Từ `lg` hàng này chỉ rộng
+ * Hàng điều khiển của hero, nằm đè ở đáy khối: bộ đếm "01 / 03", thanh tiến trình bấm được, hai nút mũi tên tròn 44px. Từ `lg` hàng này chỉ rộng
  * bằng cột chữ (46%) và canh theo mép trái container như chữ. Chỉ đổi slide khi người dùng bấm; không có tự chạy.
  */
 function HeroControls({
