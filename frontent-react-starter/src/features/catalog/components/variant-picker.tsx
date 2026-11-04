@@ -1,9 +1,9 @@
 import { useId } from "react"
 import { useToast } from "@/components/ui/toast"
 import { STORE } from "@/lib/store-info"
-import { findSwatch } from "../constants"
 import type { CatalogVariant } from "../types"
 import {
+  colorHexOf,
   describeOption,
   optionValues,
   selectOption,
@@ -18,7 +18,7 @@ const AXES: ReadonlyArray<{ axis: Axis; label: string }> = [
 ]
 
 /**
- * Hai nhóm chọn: màu (chấm màu; màu chưa có mã thì nút chữ) rồi size (pill). Nhãn nhóm ghi kèm giá trị đang chọn.
+ * Hai nhóm chọn: màu (chấm màu theo `colorHex` của biến thể; chưa có mã thì nút chữ) rồi size (pill). Nhãn nhóm ghi kèm giá trị đang chọn.
  * Link "Hướng dẫn chọn size" là STUB: chỉ hiện toast "chưa có tính năng" (docs/storefront-design.md mục 13), không bịa bảng số đo.
  */
 function VariantPicker({
@@ -44,7 +44,12 @@ function VariantPicker({
             {axis === "size" ? (
               <button
                 type="button"
-                onClick={() => toast.add({ title: STORE.comingSoon.sizeGuide, data: { tone: "info" } })}
+                onClick={() =>
+                  toast.add({
+                    title: STORE.comingSoon.sizeGuide,
+                    data: { tone: "info" },
+                  })
+                }
                 className="inline-flex min-h-control items-center text-caption text-ink-muted underline underline-offset-4 transition-colors duration-(--motion-fast) ease-smooth hover:text-ink"
               >
                 Hướng dẫn chọn size
@@ -58,7 +63,7 @@ function VariantPicker({
             options={optionValues(variants, axis).map((value) => ({
               value,
               ...describeOption(variants, choice, axis, value),
-              swatch: axis === "color" ? findSwatch(value) : undefined,
+              swatch: axis === "color" ? colorHexOf(variants, value) : undefined,
             }))}
             onSelect={(value) => onChange(selectOption(variants, choice, axis, value))}
           />

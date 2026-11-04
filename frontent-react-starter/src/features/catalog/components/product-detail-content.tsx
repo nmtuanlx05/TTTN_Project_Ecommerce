@@ -9,6 +9,7 @@ import { ProductDetailSkeleton } from "./product-detail-skeleton"
 import { ProductGallery } from "./product-gallery"
 import { ProductNotFound } from "./product-not-found"
 import { ProductInfoCard } from "./product-info-card"
+import { galleryImages } from "../gallery-images"
 import type { AddToCartInput } from "./purchase-panel"
 import { RelatedProducts } from "./related-products"
 import { PageContainer } from "@/components/storefront/page-container"
@@ -18,13 +19,7 @@ import { PageContainer } from "@/components/storefront/page-container"
  * sản phẩm. 404 (không tồn tại, ẩn, hết biến thể bán) hiện trang thân thiện; lỗi khác hiện "Thử lại". Cột ảnh/thẻ thông tin
  * chia 6/6 từ `md`, 7/5 từ `lg`; dưới `md` xếp dọc (ảnh rồi thẻ).
  */
-function ProductDetailContent({
-  slug,
-  onAddToCart,
-}: {
-  slug: string
-  onAddToCart: (input: AddToCartInput) => void
-}) {
+function ProductDetailContent({ slug, onAddToCart }: { slug: string; onAddToCart: (input: AddToCartInput) => void }) {
   const query = useCatalogProduct(slug)
   const { tree } = useCategoryTree()
   // Ô dính đáy màn hình ở cuối trang: nơi `PurchasePanel` portal thanh mua (di động) vào.
@@ -49,17 +44,13 @@ function ProductDetailContent({
         <Breadcrumbs items={crumbs} subtle />
         <div className="mt-4 grid gap-8 md:grid-cols-2 md:gap-10 lg:grid-cols-12 lg:gap-16">
           <div className="lg:col-span-7">
-            <ProductGallery images={product.imageUrl ? [product.imageUrl] : []} alt={product.name} />
+            <ProductGallery images={galleryImages(product)} alt={product.name} />
           </div>
           <div className="lg:col-span-5">
             <ProductInfoCard product={product} barSlot={barSlot} onAddToCart={onAddToCart} />
           </div>
         </div>
-        <RelatedProducts
-          productId={product.id}
-          categoryId={product.category.id}
-          categorySlug={product.category.slug}
-        />
+        <RelatedProducts productId={product.id} categoryId={product.category.id} categorySlug={product.category.slug} />
       </>
     )
   } else if (query.isError) {

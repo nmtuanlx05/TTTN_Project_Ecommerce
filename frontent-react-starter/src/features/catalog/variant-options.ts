@@ -40,7 +40,11 @@ export function describeOption(
 ): { state: OptionState; disabled: boolean } {
   const other = otherAxis(axis)
   const variant = findVariant(variants, { ...choice, [axis]: value })
-  if (variant) return { state: variant.inStock ? "available" : "soldout", disabled: false }
+  if (variant)
+    return {
+      state: variant.inStock ? "available" : "soldout",
+      disabled: false,
+    }
 
   const reachable = optionValues(variants, other).some(
     (step) =>
@@ -62,4 +66,9 @@ export function selectOption(
   const matches = variants.filter((variant) => variant[axis] === value)
   const target = matches.find((variant) => variant.inStock) ?? matches[0]
   return target ? { color: target.color, size: target.size } : choice
+}
+
+/** Mã màu `#RRGGBB` của một tên màu: lấy từ biến thể đầu tiên cùng màu có mã (backend đảm bảo cùng màu thì cùng mã); không có thì `undefined`. */
+export function colorHexOf(variants: CatalogVariant[], color: string): string | undefined {
+  return variants.find((variant) => variant.color === color && variant.colorHex)?.colorHex ?? undefined
 }
