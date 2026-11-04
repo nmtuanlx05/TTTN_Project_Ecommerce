@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { ShoppingBag } from "lucide-react"
+import { Heart, ShoppingBag } from "lucide-react"
 import { BrandLogo } from "@/components/shared/brand-logo"
 import { useInView } from "@/hooks/use-in-view"
 import type { CategoryTree } from "@/lib/category-tree"
@@ -23,6 +23,18 @@ function CartButton({ onClick }: { onClick?: () => void }) {
 }
 
 /**
+ * Nút trái tim "Yêu thích" cạnh giỏ hàng: cùng kích thước, kiểu và hover với các nút icon khác, không số đếm. GIAO DIỆN GIẢ (chưa có tính năng yêu thích).
+ * Ẩn dưới 380px vì nhóm icon sẽ chạm logo (sau này đưa vào ngăn kéo di động).
+ */
+function WishlistButton({ onClick }: { onClick?: () => void }) {
+  return (
+    <Button variant="ghost" size="icon" aria-label="Yêu thích" onClick={onClick} className="press hidden min-[380px]:inline-flex">
+      <Heart className="size-5" />
+    </Button>
+  )
+}
+
+/**
  * Header cửa hàng, dính khi cuộn. Ở đầu trang nền liền với trang; cuộn quá vài px thì nền mờ nhẹ và hiện đường kẻ mảnh
  * (phát hiện bằng một phần tử mốc cao 8px, đặt ngay dưới thanh thông báo ở đầu tài liệu — tức đúng chỗ header đang nằm khi chưa dính —
  * không dùng scroll listener).
@@ -35,11 +47,14 @@ function StorefrontHeader({
   session,
   categoryTree = null,
   onCartClick,
+  onWishlistClick,
 }: {
   session: HeaderSession
   /** Cây danh mục. Chưa có (đang tải hoặc lỗi) thì các mục danh mục ẩn, chỉ còn mục liên kết thường. */
   categoryTree?: CategoryTree | null
   onCartClick?: () => void
+  /** TẠM: nút "Yêu thích" chỉ là giao diện giả; nơi dựng khung truyền hàm hiện thông báo "chưa có tính năng". */
+  onWishlistClick?: () => void
 }) {
   const { ref, inView } = useInView<HTMLDivElement>({ initialInView: true })
   const scrolled = !inView
@@ -62,6 +77,7 @@ function StorefrontHeader({
           <HeaderNav items={navItems} className="ml-auto max-xl:hidden xl:flex" />
           <div className="ml-auto flex items-center gap-1 xl:ml-10 xl:gap-inline">
             <SearchPanel />
+            <WishlistButton onClick={onWishlistClick} />
             <CartButton onClick={onCartClick} />
             <div className="max-xl:hidden">
               <HeaderAccount session={session} />

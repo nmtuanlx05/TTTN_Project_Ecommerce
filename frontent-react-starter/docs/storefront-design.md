@@ -154,7 +154,7 @@ Dựng trên Base UI Dialog (`StorefrontDrawer`), không dùng `ui/sheet`. Modal
 
 **Điểm chuyển 1280px (`xl`)**, không phải `lg`. Đã đo: thanh điều hướng đủ 6 mục (Tất cả sản phẩm, Áo, Quần, Phụ kiện, Quà tặng, Địa chỉ) rộng ~613px; cộng logo 147px, khoảng cách 40px, nhóm biểu tượng 348px và lề 48px thì cần tối thiểu ~1195px, nên không vừa ở 1024px (iPad ngang dùng ngăn kéo) và 1280px là mốc Tailwind gần nhất vừa thoải mái. Đổi chữ nhãn hay thêm mục thì đo lại.
 
-**Bố cục từ `xl`**: logo `BrandLogo` bên trái; thanh điều hướng và nhóm biểu tượng (tìm kiếm, giỏ hàng, đăng nhập hoặc `UserMenu`) gom về BÊN PHẢI, thanh điều hướng sát bên trái nhóm biểu tượng, cách đúng 40px (`xl:ml-10`; hàng flex `xl:gap-0`). Dưới `xl`: nút menu, wordmark, tìm kiếm, giỏ hàng, và ngăn kéo (mục 9b-2).
+**Bố cục từ `xl`**: logo `BrandLogo` bên trái; thanh điều hướng và nhóm biểu tượng (tìm kiếm, trái tim "Yêu thích" giả, giỏ hàng, đăng nhập hoặc `UserMenu`) gom về BÊN PHẢI, thanh điều hướng sát bên trái nhóm biểu tượng, cách đúng 40px (`xl:ml-10`; hàng flex `xl:gap-0`). Dưới `xl`: nút menu, wordmark, tìm kiếm, giỏ hàng, và ngăn kéo (mục 9b-2).
 
 **Mục điều hướng** cấu hình ở `STORE.navItems` (`lib/store-info.ts`), theo thứ tự: Tất cả sản phẩm, Áo, Quần, Phụ kiện, Quà tặng, Địa chỉ. Không có "Trang chủ" (logo về trang chủ).
 Mỗi mục là `{ label, href }` (liên kết thường) hoặc `{ label, categorySlug }` (gắn danh mục). Nhãn luôn lấy từ `label`, không từ tên danh mục. Mục danh mục chỉ hiện khi slug có trong cây danh mục
@@ -234,6 +234,8 @@ Các câu dưới đây đang hiện trên giao diện nhưng **hệ thống ch�
 | "Cam kết chất lượng chính hãng — Sản phẩm chính hãng từ MONO STUDIO." | dải cam kết | Cần: chủ cửa hàng xác nhận bằng văn bản về nguồn hàng; chính sách khi phát hiện hàng không chính hãng (hoàn tiền). Không cần code ngoài việc sửa/xóa câu nếu không xác nhận được. |
 | "Bộ sưu tập Thu Đông 2026", nhãn "AW26", nút "XEM BỘ SƯU TẬP" | hero (`HOME.hero`) | Hệ thống KHÔNG có khái niệm bộ sưu tập: nút hiện chỉ trỏ `/products`. Cần: model/trang bộ sưu tập (hoặc nhãn mùa trên sản phẩm) rồi nối nút tới đó; hoặc đổi chữ thành "XEM SẢN PHẨM" và bỏ "Thu Đông 2026/AW26" nếu không có thật. |
 | "Best sellers — XU HƯỚNG HIỆN TẠI — được yêu thích tại MONO STUDIO" | khối best sellers | Dữ liệu hiện là **TẠM**: 4 sản phẩm tạo sớm nhất, KHÔNG phải bán chạy (`useBestSellerProducts`). Cần: có đơn hàng thật, endpoint thống kê sản phẩm bán chạy (đơn `COMPLETED`), đổi nguồn ở đúng một hook đó; trước đó nên đổi nhãn thành chữ không cam kết. |
+| Nút trái tim "Yêu thích" (header, và trên thẻ ở Best sellers + Sản phẩm mới về) | `StorefrontHeader` (`WishlistButton`), `ProductCard` (`quickActions`) | **GIAO DIỆN GIẢ**: bấm chỉ hiện toast "Yêu thích sẽ sớm có mặt" (`STORE.comingSoon.wishlist`), không đổi trạng thái tim, không lưu, không gọi API, KHÔNG qua cổng đăng nhập (khác giỏ hàng). Làm thật: backend wishlist (bảng + `POST/DELETE` theo sản phẩm của khách), cổng đăng nhập như `useRequireLogin` cho khách chưa đăng nhập, `features/wishlist` (trạng thái tim đã chọn trên thẻ và đếm ở header nếu muốn), trang danh sách yêu thích, chuyển nút header vào ngăn kéo di động (hiện ẩn dưới 380px vì nhóm icon chạm logo). |
+| Nút "Thêm nhanh" trên thẻ (Best sellers + Sản phẩm mới về) | `ProductCard` (`quickActions`) | **GIAO DIỆN GIẢ**: bấm chỉ hiện toast "Thêm nhanh sẽ sớm có mặt" (`STORE.comingSoon.quickAdd`), không thêm vào giỏ, không qua cổng đăng nhập. Ẩn khi hết hàng. Làm thật: cần giỏ hàng thật (module cart ở backend); vì sản phẩm có biến thể (size × màu) nên "thêm nhanh" phải mở popup chọn size/màu (chỉ còn hàng mới chọn được) rồi gọi API thêm vào giỏ, kèm cổng đăng nhập (`useRequireLogin`). |
 
 
 `STORE.stores` (`{ name, address, phone?, hours?, mapUrl? }`) cho trang `/dia-chi` (`pages/storefront/stores`): ĐỂ RỖNG cho tới khi chủ cửa hàng cung cấp thông tin thật; rỗng thì hiện `StateMessage` "Thông tin cửa hàng đang được cập nhật". Mỗi cửa hàng là một khối
@@ -258,7 +260,7 @@ Trang `pages/storefront/home` chỉ ghép. Nội dung ở `lib/home-content.ts` 
 
 **Request khi tải trang chủ** (đã đo): đúng 3 lần GET, không trùng: `/products?sortBy=createdAt&order=asc&limit=4` (best sellers), `/products?sortBy=createdAt&order=desc&limit=8` (tab "Tất cả"), `/categories` (chung cache với header). Hero không gọi API. Đổi sang tab danh mục thì thêm một request cho tab đó; quay lại tab đã xem không gọi lại.
 
-Không làm: carousel tự chạy, nút tim, "Thêm nhanh", ảnh thứ hai khi rê chuột, chấm màu dưới tên, chữ giữ chỗ của mẫu.
+Không làm: carousel tự chạy, ảnh thứ hai khi rê chuột, chấm màu dưới tên, chữ giữ chỗ của mẫu. Nút trái tim và "Thêm nhanh" trên thẻ của Best sellers và Sản phẩm mới về chỉ là GIAO DIỆN GIẢ (mục 13, 16).
 
 ## 15. Thanh thông báo chạy chữ
 
@@ -285,7 +287,8 @@ Không làm: carousel tự chạy, nút tim, "Thêm nhanh", ảnh thứ hai khi 
   **Màu chấm**: token `warning-dot` (`#e0a21b`, lấy từ thiết kế mẫu home-v2) CHỈ dùng cho chấm trang trí này; huy hiệu đã có chữ "Sắp hết" nên chấm không cần tương phản chữ. Không dùng `warning-dot` cho chữ hay nền (các token `warning-fg/-tint/-border` đo ở phiên trước đều không đủ vàng).
 - **Hết hàng**: ảnh `opacity-60`, tên `ink-muted` (6,06:1), giá giữ `ink-muted`. Truyền đạt bằng chữ của huy hiệu, không chỉ bằng màu.
 - `lowStock` chỉ có ở `GET /products` (danh sách); `GET /products/:slug` không có nên `CatalogProductDetail` là `Omit<CatalogProductListItem, "lowStock">`. Backend: `lowStock` phụ thuộc `minStock` do kho đặt, `minStock` mặc định 0 nên chưa đặt ngưỡng thì không bao giờ hiện "Sắp hết".
-- Chưa làm (xem mục "việc hoãn"): chấm màu, nút tim, "Thêm nhanh", ảnh thứ hai khi rê chuột.
+- **Hai nút giả trên ảnh** (`quickActions`, mặc định TẮT; chỉ khối Best sellers và mọi tab Sản phẩm mới về bật; danh sách sản phẩm và các nơi khác giữ nguyên DOM): trái tim tròn ở góc trên phải và "Thêm nhanh" dạng viên thuốc ở đáy ảnh, nền kính mờ `canvas/80`, hover đảo màu như nút `secondary` khác. Bấm chỉ hiện toast "chưa có tính năng" (mục 13), không đổi trạng thái. Hai nút nằm NGOÀI thẻ `<a>` (trong `div.group/card` bọc ngoài; lớp phủ `pointer-events-none` cùng tỉ lệ ảnh `PRODUCT_IMAGE_ASPECT`) nên bấm không điều hướng. Thiết bị có hover: ẩn, hiện khi rê chuột/focus vào thẻ hoặc nút (mờ dần + trượt nhẹ, trượt chỉ khi không giảm chuyển động); `hover: none`: luôn hiện (ẩn bằng `[@media(hover:hover)]`). Vòng focus hai lớp (`ring-2 ring-ink` + outline `canvas`) để thấy trên ảnh sáng lẫn tối. Hover bất kỳ chỗ nào của thẻ (kể cả hai nút) giữ ảnh phóng 1,03. Thẻ hẹp (< 16rem, container query): trái tim và pill nhỏ lại (36px, `text-overline`), vùng bấm vẫn 44px nhờ `before:`, huy hiệu tồn kho dời xuống dưới hàng trái tim để không đè nhau. Hết hàng thì không có "Thêm nhanh".
+- Chưa làm (xem mục "việc hoãn"): chấm màu, ảnh thứ hai khi rê chuột, trạng thái tim thật và thêm vào giỏ thật.
 
 ## 17. Chân trang, trang thông tin, nhận tin
 
@@ -307,7 +310,7 @@ Từ `xl` (1280px) ô nhập và nút "ĐĂNG KÝ" cùng một hàng (đã đo �
 
 - **ESLint `jsx-a11y`**: dự án chưa cài plugin (`eslint.config.js` không có), nên lỗi truy cập như mất vòng focus (từng gặp ở thanh thông báo: `outline-none` làm vòng focus không hiện), thiếu nhãn hay `tabIndex` trên phần tử không tương tác không bị bắt tự động. Cần thêm plugin và cấu hình quy tắc (kèm xử lý các cảnh báo có sẵn); hiện chỉ kiểm bằng tay (mục 11).
 - **Nút dừng thanh thông báo cho cảm ứng** (WCAG 2.2.2): hiện chỉ dừng được bằng rê chuột và focus bàn phím; người dùng cảm ứng chưa dừng được (đã có tắt hẳn khi giảm chuyển động).
-- **Thẻ sản phẩm**: chấm màu dưới tên, ảnh thứ hai khi rê chuột, nút tim (yêu thích), nút "Thêm nhanh" — chưa có dữ liệu hay chức năng, sẽ làm ở nhánh khác.
+- **Thẻ sản phẩm**: chấm màu dưới tên, ảnh thứ hai khi rê chuột; nút tim và "Thêm nhanh" mới là giao diện giả (mục 13), chức năng thật làm ở nhánh khác.
 - **Nhận tin thật**: endpoint `POST /newsletter/subscribers`, lưu email, cấp ưu đãi 10% (xem bảng cam kết ở mục 13).
 - **Font serif ở màn hình đầu**: đã preload hai tệp woff2 trong `index.html` nhưng CHƯA đo CLS và thời điểm hiện hero trên mạng chậm trước/sau (hướng đã duyệt: hero chậm hơn rõ rệt thì chỉ preload tệp latin hoặc bỏ); chưa làm `@font-face` dự phòng có `size-adjust` vì không đo được Georgia trên máy dev Linux.
 - **Nội dung trang chính sách** (đổi trả, vận chuyển, chọn size, bảo mật, điều khoản): chủ cửa hàng viết, rồi điền `paragraphs` ở `lib/info-pages.ts`.

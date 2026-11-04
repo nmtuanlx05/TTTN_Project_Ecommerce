@@ -3,6 +3,7 @@ import { NewsletterForm } from "@/features/newsletter/components/newsletter-form
 import { StorefrontFooter } from "@/components/storefront/storefront-footer"
 import { StorefrontHeader, type HeaderSession } from "@/components/storefront/storefront-header"
 import { StorefrontLayout } from "@/components/storefront/storefront-layout"
+import { useToast } from "@/components/ui/toast"
 import { useAuthStore } from "@/features/auth/auth-store"
 import { useLogout } from "@/features/auth/queries"
 import { useRequireLogin } from "@/features/auth/use-require-login"
@@ -24,6 +25,7 @@ function StorefrontLayoutContainer() {
   const onAvatarSaved = useAvatarSaved()
   const { tree } = useCategoryTree()
   const requireLogin = useRequireLogin()
+  const toast = useToast()
   // Cùng nguồn với header (STORE.navItems), nên đường dẫn nhanh ở chân trang luôn khớp thanh điều hướng.
   const quickLinks = useMemo(() => resolveNavItems(STORE.navItems, tree), [tree])
 
@@ -53,6 +55,8 @@ function StorefrontLayoutContainer() {
           categoryTree={tree}
           // TẠM: chưa có giỏ hàng, xem `useRequireLogin`.
           onCartClick={() => requireLogin()}
+          // TẠM: yêu thích chỉ là giao diện giả. Khác giỏ hàng, KHÔNG qua cổng đăng nhập (khi làm thật sẽ thêm cổng này).
+          onWishlistClick={() => toast.add({ title: STORE.comingSoon.wishlist, data: { tone: "info" } })}
         />
       }
       footer={<StorefrontFooter quickLinks={quickLinks} newsletter={<NewsletterForm />} />}

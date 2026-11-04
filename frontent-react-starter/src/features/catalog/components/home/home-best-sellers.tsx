@@ -27,7 +27,7 @@ function HomeBestSellers() {
       action={<ViewAllLink to="/products">{viewAll}</ViewAllLink>}
     >
       {items !== undefined ? (
-        <ProductGrid products={items} layout="four-up" eagerCount={0} />
+        <ProductGrid products={items} layout="four-up" eagerCount={0} quickActions />
       ) : query.isError ? (
         <CatalogError onRetry={() => void query.refetch()} />
       ) : (

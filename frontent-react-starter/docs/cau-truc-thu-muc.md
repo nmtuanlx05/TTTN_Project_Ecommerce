@@ -196,7 +196,7 @@ Việc cần làm → file cần mở. Nội dung chữ không nằm trong compo
 | Đổi hero: bố cục slide / nút điều khiển / thanh tiến trình / hành vi carousel | `components/storefront/home/hero-slide.tsx` / `hero-controls.tsx` / `hero-progress.tsx` / `home-hero.tsx` (+ `hooks/use-carousel.ts`, `hooks/use-swipe.ts`); tỉ lệ cột chữ 46%: `hero-layout.ts` và `HERO_SPLIT_CLASS` trong `hero-slide.tsx` phải khớp nhau |
 | Thêm, bớt hoặc đổi thứ tự khối trang chủ | `pages/storefront/home/index.tsx`; khung chung của khối có tiêu đề: `components/storefront/home/home-section.tsx` |
 | Đổi nguồn dữ liệu Best sellers / số thẻ ở các khối trang chủ | `features/catalog/queries.ts` (`useBestSellerProducts`) / `features/catalog/home-constants.ts` |
-| Đổi thẻ sản phẩm (ảnh, tên, giá, huy hiệu) | `features/catalog/components/product-card.tsx`, `product-stock-badge.tsx`; ảnh: `components/storefront/product-image.tsx` |
+| Đổi thẻ sản phẩm (ảnh, tên, giá, huy hiệu; hai nút giả trái tim / "Thêm nhanh" là hàm `QuickActions` trong cùng file, chữ thông báo ở `STORE.comingSoon` trong `lib/store-info.ts`) | `features/catalog/components/product-card.tsx`, `product-stock-badge.tsx`; ảnh: `components/storefront/product-image.tsx` |
 | Đổi lưới sản phẩm (số cột) | `features/catalog/components/product-grid.tsx` |
 | Đổi trang danh sách và bộ lọc / khoảng giá, kiểu sắp xếp, số sản phẩm mỗi trang | `features/catalog/components/catalog-*.tsx`, `catalog-filters.tsx` / `features/catalog/constants.ts` |
 | Đổi trang chi tiết sản phẩm | `features/catalog/components/product-detail-content.tsx`, `purchase-panel.tsx`, `variant-picker.tsx` |
