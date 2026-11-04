@@ -53,7 +53,7 @@ function CatalogResults({
           query.isPlaceholderData && "opacity-60",
         )}
       >
-        <ProductGrid products={items} layout="beside-filters" />
+        <ProductGrid products={items} layout="beside-filters" quickActions />
       </div>
       <Pagination
         page={meta.page}
