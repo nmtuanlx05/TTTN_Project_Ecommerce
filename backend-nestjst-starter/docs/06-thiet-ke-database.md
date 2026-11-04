@@ -9,6 +9,7 @@ Database gồm 10 bảng với 13 quan hệ khóa ngoại, dành cho MySQL 8 (In
 | Category → Category (cha) | 1-N | `parentId` | Không |
 | Category → Product | 1-N | `categoryId` | Có |
 | Product → ProductVariant | 1-N | `productId` | Có |
+| Product → ProductImage | 1-N | `productId` | Có |
 | User → Cart | 1-1 | `userId` (unique) | Có |
 | Cart → CartItem | 1-N | `cartId` | Có |
 | ProductVariant → CartItem | 1-N | `variantId` | Có |
@@ -30,6 +31,7 @@ Quan hệ nhiều-nhiều giữa Order và ProductVariant được tách thành 
 | Category | `slug` | — |
 | Product | `slug` | (`categoryId`, `isActive`) |
 | ProductVariant | `sku`; (`productId`, `size`, `color`) | — |
+| ProductImage | — | (`productId`, `sortOrder`) |
 | Cart | `userId` | — |
 | CartItem | (`cartId`, `variantId`) | — |
 | Voucher | `code` | — |
@@ -41,12 +43,14 @@ InnoDB tự tạo index cho mọi cột khóa ngoại, nên các cột như `use
 
 ### CHECK constraint
 
-Prisma chưa hỗ trợ CHECK trực tiếp, nên các CHECK dưới đây được thêm tay vào cuối file `prisma/migrations/20261004165301_init_ecommerce/migration.sql` (tạo bằng `prisma migrate dev --create-only`, chỉnh file rồi mới áp). Tên constraint dạng `chk_<bảng>_<ý nghĩa>`.
+Prisma chưa hỗ trợ CHECK trực tiếp, nên các CHECK dưới đây được thêm tay vào file migration (tạo bằng `prisma migrate dev --create-only` hoặc `prisma migrate diff --script`, chỉnh file rồi mới áp). Hầu hết nằm ở `prisma/migrations/20261004165301_init_ecommerce/migration.sql`; hai CHECK cho ảnh và mã màu nằm ở `20261104090000_add_product_images_color_hex`. **Migration đã áp thì không sửa**: CHECK mới luôn thêm bằng migration mới. Tên constraint dạng `chk_<bảng>_<ý nghĩa>`.
 
 | Bảng | Constraint | Điều kiện |
 | --- | --- | --- |
 | product_variants | `chk_product_variants_stock` | `stock >= 0` |
 | product_variants | `chk_product_variants_reserved` | `reserved >= 0 AND reserved <= stock` |
+| product_variants | `chk_product_variants_color_hex` | `colorHex IS NULL` hoặc đúng `#RRGGBB` in hoa (migration `add_product_images_color_hex`) |
+| product_images | `chk_product_images_sort_order` | `sortOrder >= 0` (migration `add_product_images_color_hex`) |
 | products | `chk_products_price` | `price >= 0` |
 | cart_items | `chk_cart_items_quantity` | `quantity > 0` |
 | order_items | `chk_order_items_quantity` | `quantity > 0` |
@@ -102,11 +106,23 @@ ALTER TABLE `vouchers`
     ADD CONSTRAINT `chk_vouchers_dates` CHECK (`expiresAt` > `startsAt`);
 ```
 
+Hai CHECK thêm ở migration `add_product_images_color_hex`:
+
+```sql
+-- REGEXP_LIKE với cờ 'c' = phân biệt hoa thường (collation _ci mặc định sẽ nhận cả chữ thường)
+ALTER TABLE `product_variants`
+    ADD CONSTRAINT `chk_product_variants_color_hex` CHECK (`colorHex` IS NULL OR REGEXP_LIKE(`colorHex`, '^#[0-9A-F]{6}$', 'c'));
+ALTER TABLE `product_images`
+    ADD CONSTRAINT `chk_product_images_sort_order` CHECK (`sortOrder` >= 0);
+```
+
+Migration này cũng chuyển dữ liệu: mỗi sản phẩm có `imageUrl` thành một dòng `product_images` (`sortOrder` 0), và điền `colorHex` cho biến thể cũ từ bảng tra tên màu → hex (SQL `CASE`, không dùng bảng tạm). Bảng tra gốc nằm ở `src/products/color-hex.ts` (`COLOR_HEX_MAP`); SQL tĩnh phải lặp lại nên `color-hex.spec.ts` đối chiếu hai nơi. Prisma **không có migration lùi**: muốn quay về phải khôi phục từ bản sao lưu.
+
 MySQL chỉ thực thi CHECK từ bản 8.0.16 trở lên. Các CHECK này là lớp bảo vệ cuối: dù code có lỗi, database vẫn không cho tồn kho âm, giữ nhiều hơn tồn thực tế, giảm giá vượt tổng tiền hàng hoặc dùng voucher quá số lượt cho phép.
 
 ## 3. Đặt tên bảng
 
-Prisma mặc định tạo bảng theo tên model (`ProductVariant`). MySQL trên Linux phân biệt hoa thường ở tên bảng, nên `ProductVariant` và `productvariant` là hai tên khác nhau. Schema đặt tên bảng snake_case số nhiều bằng `@@map`, để SQL viết tay gọn và không lỗi vì hoa thường: `users`, `categories`, `products`, `product_variants`, `carts`, `cart_items`, `vouchers`, `orders`, `order_items`, `stock_movements`. Tên cột giữ nguyên camelCase như tên field (không dùng `@map` cho cột), nên SQL viết tay phải dùng đúng tên đó, ví dụ `totalAmount`.
+Prisma mặc định tạo bảng theo tên model (`ProductVariant`). MySQL trên Linux phân biệt hoa thường ở tên bảng, nên `ProductVariant` và `productvariant` là hai tên khác nhau. Schema đặt tên bảng snake_case số nhiều bằng `@@map`, để SQL viết tay gọn và không lỗi vì hoa thường: `users`, `categories`, `products`, `product_images`, `product_variants`, `carts`, `cart_items`, `vouchers`, `orders`, `order_items`, `stock_movements`. Tên cột giữ nguyên camelCase như tên field (không dùng `@map` cho cột), nên SQL viết tay phải dùng đúng tên đó, ví dụ `totalAmount`.
 
 ## 4. Kiểu dữ liệu
 
@@ -114,7 +130,7 @@ Prisma mặc định tạo bảng theo tên model (`ProductVariant`). MySQL trê
 | --- | --- | --- | --- |
 | Khóa chính | `Int @default(autoincrement())` | `INT AUTO_INCREMENT` | |
 | Tiền (VND) | `Int` | `INT` | Không có số thập phân; tối đa khoảng 2,1 tỷ mỗi giá trị, đủ cho một đơn. Khi cộng doanh thu cả tháng nên ép sang `BIGINT` trong câu truy vấn tổng hợp |
-| Chuỗi thường | `String` | `VARCHAR(191)` | Giá trị dài hơn 191 ký tự sẽ không lưu được. Schema hiện để mọi `String` ở mức này, kể cả `Order.shippingAddress`, `Order.note`, `Order.cancelReason`, `Product.imageUrl`, `Voucher.description`; cần dài hơn thì dùng `@db.VarChar(n)` hoặc `@db.Text` |
+| Chuỗi thường | `String` | `VARCHAR(191)` | Giá trị dài hơn 191 ký tự sẽ không lưu được. Schema hiện để mọi `String` ở mức này, kể cả `Order.shippingAddress`, `Order.note`, `Order.cancelReason`, `Product.imageUrl`, `Voucher.description`; cần dài hơn thì dùng `@db.VarChar(n)` hoặc `@db.Text`. Ngoại lệ: `ProductImage.url` là `VARCHAR(500)`, `ProductVariant.colorHex` là `VARCHAR(7)` |
 | Mô tả sản phẩm | `String @db.Text` | `TEXT` | Tối đa 64 KB |
 | Thời gian | `DateTime` | `DATETIME(3)` | Lưu UTC, hiển thị GMT+7 ở tầng giao diện |
 | Đúng/sai | `Boolean` | `TINYINT(1)` | |
@@ -124,18 +140,20 @@ Prisma mặc định tạo bảng theo tên model (`ProductVariant`). MySQL trê
 
 | Bảng | Cách xử lý |
 | --- | --- |
+| ProductImage | Xóa cứng được: khi sửa sản phẩm có gửi `images`, các dòng cũ bị xóa và tạo lại theo thứ tự mới (id ảnh đổi). Xóa cứng `Product` (không khuyến khích) kéo theo xóa ảnh (`CASCADE`) |
 | Product, ProductVariant, User, Voucher | Xóa mềm bằng `isActive = false` (Voucher không xóa cứng vì `Order.voucherId` tham chiếu tới) |
 | Order, OrderItem | Không xóa; hủy đơn bằng `status = CANCELLED` |
 | Cart, CartItem | Xóa cứng được; có thể dọn giỏ không hoạt động định kỳ |
 
 ## 6. Hành vi khóa ngoại
 
-Schema không khai báo `onDelete` và `onUpdate`, nên Prisma dùng mặc định (thể hiện trong migration):
+Schema không khai báo `onDelete` và `onUpdate`, nên Prisma dùng mặc định (thể hiện trong migration). **Ngoại lệ duy nhất:** `ProductImage.productId` khai báo `onDelete: Cascade` (ảnh là bảng con thuần túy, không bảng nào tham chiếu tới nó):
 
 | Loại FK | Cột | Hành vi |
 | --- | --- | --- |
 | Bắt buộc | `Product.categoryId`, `ProductVariant.productId`, `Cart.userId`, `CartItem.cartId`, `CartItem.variantId`, `OrderItem.orderId`, `OrderItem.variantId`, `StockMovement.variantId`, `StockMovement.createdById` | `ON DELETE RESTRICT`: không xóa được bản ghi đang được tham chiếu |
 | Tùy chọn | `Category.parentId`, `Order.userId`, `Order.handledById`, `Order.voucherId` | `ON DELETE SET NULL`: xóa bản ghi cha thì cột FK của bản ghi con thành NULL |
+| Ngoại lệ | `ProductImage.productId` | `ON DELETE CASCADE` |
 | Tất cả | mọi FK | `ON UPDATE CASCADE` |
 
 `SET NULL` nghĩa là nếu xóa cứng `User` hoặc `Voucher`, các đơn liên quan sẽ mất liên kết (`userId`, `handledById`, `voucherId` thành NULL) mà không báo lỗi. Vì vậy quy ước của dự án: **không xóa cứng `User`, `Voucher`, `Product`, `Order`**. Vô hiệu hóa `User`, `Voucher`, `Product` bằng `isActive = false`; hủy `Order` bằng `status = CANCELLED` (xem mục 5). `Cart` xóa cứng được nhưng phải xóa các `CartItem` của nó trước (do `RESTRICT`).
@@ -145,4 +163,10 @@ Schema không khai báo `onDelete` và `onUpdate`, nên Prisma dùng mặc đị
 - Schema `prisma/schema.prisma` đã có `@@index`, `@@unique` và `@@map` đúng như trên.
 - Các CHECK ở mục 2 đã nằm trong file migration `init_ecommerce`; migration này chưa được áp vào database.
 - Các cột văn bản dài (`Order.shippingAddress`, `Order.note`, `Order.cancelReason`, `Product.imageUrl`, `Voucher.description`) đang là `VARCHAR(191)`: chốt có đổi sang `@db.VarChar(n)` hoặc `@db.Text` hay không.
+- **Backlog ảnh sản phẩm:**
+  - Dọn file ảnh mồ côi trên ổ đĩa: upload chỉ ghi file, khi ảnh bị gỡ khỏi sản phẩm file không bị xóa.
+  - Cân nhắc bỏ cột `Product.imageUrl` (deprecated) ở đợt dọn dẹp sau, khi mọi client đã đọc `images`.
+  - Upload khi chạy nhiều instance: ổ đĩa local không dùng chung được, cần lưu trữ ngoài (S3, Cloudinary...).
+  - Lưu đường dẫn tương đối (vd `/uploads/products/x.webp`) thay vì URL đầy đủ để đổi `APP_PUBLIC_URL` không làm hỏng dữ liệu.
+  - `APP_PUBLIC_URL` đang bị giới hạn độ dài theo cột 191 của `imageUrl`; nới được sau khi bỏ cột này.
 - Cách lưu yêu cầu hủy/hoàn tiền của đơn đã thanh toán (Staff tạo, Admin duyệt): schema chưa có model hoặc trường cho việc này.

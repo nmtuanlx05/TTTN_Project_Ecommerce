@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Paginated } from '../common/paginated';
+import { fold } from '../common/utils/fold';
 import { pickUniqueSlug, slugify } from '../common/utils/slugify';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -18,6 +19,7 @@ import {
   adminProductListSelect,
   publicProductDetailSelect,
   publicProductListSelect,
+  toAdminDetail,
   toAdminListItem,
   toPublicDetail,
   toPublicListItem,
@@ -27,11 +29,12 @@ interface VariantKey {
   sku: string;
   size: string;
   color: string;
+  colorHex?: string | null;
 }
 
-// So sánh gần giống collation utf8mb4_unicode_ci của DB: không phân biệt hoa/thường và dấu
-const fold = (text: string) =>
-  text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+// Cột Product.imageUrl (deprecated) là VARCHAR(191)
+const LEGACY_IMAGE_URL_MAX = 191;
+
 const pairKey = (v: { size: string; color: string }) =>
   `${fold(v.size)}|${fold(v.color)}`;
 
@@ -140,15 +143,16 @@ export class ProductsService {
     if (!product) {
       throw new NotFoundException(`Không tìm thấy sản phẩm với ID #${id}`);
     }
-    return product;
+    return toAdminDetail(product);
   }
 
   async create(dto: CreateProductDto) {
-    const { name, slug, description, price, imageUrl, categoryId, variants } =
-      dto;
+    const { name, slug, description, price, categoryId, variants } = dto;
+    const imageUrls = this.resolveImageUrls(dto) ?? [];
 
     await this.assertCategoryExists(categoryId);
     this.assertNoDuplicateInBody(variants);
+    this.assertColorHexConsistent(variants);
     await this.assertSkusAvailable(variants.map((v) => v.sku));
 
     const finalSlug = slug
@@ -163,13 +167,17 @@ export class ProductsService {
           slug: finalSlug,
           description: description ?? null,
           price,
-          imageUrl: imageUrl ?? null,
+          imageUrl: this.legacyImageUrl(imageUrls),
           categoryId,
+          images: {
+            create: imageUrls.map((url, sortOrder) => ({ url, sortOrder })),
+          },
           variants: {
             create: variants.map((v) => ({
               sku: v.sku,
               size: v.size,
               color: v.color,
+              colorHex: v.colorHex ?? null,
               isActive: v.isActive ?? true,
             })),
           },
@@ -189,7 +197,13 @@ export class ProductsService {
         id: true,
         slug: true,
         variants: {
-          select: { id: true, sku: true, size: true, color: true },
+          select: {
+            id: true,
+            sku: true,
+            size: true,
+            color: true,
+            colorHex: true,
+          },
         },
       },
     });
@@ -206,13 +220,15 @@ export class ProductsService {
       await this.assertSlugAvailable(dto.slug, id);
     }
 
+    const imageUrls = this.resolveImageUrls(dto);
+
     const variantWrites = dto.variants?.length
       ? await this.buildVariantWrites(current.variants, dto.variants)
       : undefined;
 
     try {
       // Một lệnh update với nested write: cập nhật sản phẩm và upsert biến thể trong cùng transaction
-      await this.prisma.product.update({
+      const updateProduct = this.prisma.product.update({
         where: { id },
         data: {
           name: dto.name ?? undefined,
@@ -220,12 +236,37 @@ export class ProductsService {
           // undefined = giữ nguyên; null (hoặc "") = xóa giá trị
           description: dto.description,
           price: dto.price ?? undefined,
-          imageUrl: dto.imageUrl,
+          // Có đổi ảnh thì đồng bộ cột cũ với ảnh đầu; không đổi ảnh thì không đụng tới
+          imageUrl:
+            imageUrls === undefined
+              ? undefined
+              : this.legacyImageUrl(imageUrls),
           categoryId: dto.categoryId ?? undefined,
           ...(variantWrites && { variants: variantWrites }),
         },
         select: { id: true },
       });
+
+      if (imageUrls === undefined) {
+        await updateProduct;
+      } else {
+        // Thay cả mảng ảnh: xóa dòng cũ, thêm dòng mới theo thứ tự gửi lên, cùng một transaction với việc sửa sản phẩm
+        await this.prisma.$transaction([
+          updateProduct,
+          this.prisma.productImage.deleteMany({ where: { productId: id } }),
+          ...(imageUrls.length > 0
+            ? [
+                this.prisma.productImage.createMany({
+                  data: imageUrls.map((url, sortOrder) => ({
+                    productId: id,
+                    url,
+                    sortOrder,
+                  })),
+                }),
+              ]
+            : []),
+        ]);
+      }
       return this.findOne(id);
     } catch (error) {
       this.rethrowUniqueViolation(error);
@@ -290,13 +331,18 @@ export class ProductsService {
           'Biến thể mới phải có đủ sku, size và color',
         );
       }
-      return { item, key: { sku, size, color } };
+      // colorHex: không gửi (undefined) giữ giá trị cũ; null = xóa
+      const colorHex =
+        item.colorHex !== undefined ? item.colorHex : (base?.colorHex ?? null);
+      return { item, key: { sku, size, color, colorHex } };
     });
 
     this.assertNoDuplicateInBody(merged.map((m) => m.key));
 
     // Va chạm với các biến thể không được gửi lên (giữ nguyên) của chính sản phẩm này
     const untouched = existing.filter((v) => !seenIds.has(v.id));
+    // Kiểm mã màu trên trạng thái sau khi áp thay đổi (gồm cả biến thể giữ nguyên)
+    this.assertColorHexConsistent([...untouched, ...merged.map((m) => m.key)]);
     for (const { key } of merged) {
       if (untouched.some((v) => fold(v.sku) === fold(key.sku))) {
         throw new ConflictException(`SKU "${key.sku}" đã được sử dụng`);
@@ -327,6 +373,7 @@ export class ProductsService {
           ...(item.sku !== undefined && { sku: key.sku }),
           ...(item.size !== undefined && { size: key.size }),
           ...(item.color !== undefined && { color: key.color }),
+          ...(item.colorHex !== undefined && { colorHex: item.colorHex }),
           ...(item.isActive !== undefined && { isActive: item.isActive }),
         };
         if (Object.keys(data).length > 0) {
@@ -341,6 +388,63 @@ export class ProductsService {
       ...(update.length > 0 && { update }),
       ...(create.length > 0 && { create }),
     };
+  }
+
+  // Cùng một sản phẩm, các biến thể cùng tên màu (so khớp bằng fold) phải cùng mã màu khi đều có mã
+  private assertColorHexConsistent(variants: VariantKey[]) {
+    const seen = new Map<string, string>();
+    for (const { color, colorHex } of variants) {
+      if (!colorHex) continue;
+      const key = fold(color.trim());
+      const first = seen.get(key);
+      if (first === undefined) {
+        seen.set(key, colorHex);
+      } else if (first !== colorHex) {
+        throw new BadRequestException(
+          `Màu "${color}" có hai mã màu khác nhau (${first} và ${colorHex}). Các biến thể cùng màu phải dùng chung một mã màu`,
+        );
+      }
+    }
+  }
+
+  // ===== Ảnh =====
+
+  // Danh sách URL ảnh cần ghi; undefined = không đổi ảnh.
+  // Ưu tiên `images`. Chỉ gửi `imageUrl` cũ (tương thích tạm) thì coi như images = [imageUrl], null hoặc "" = xóa hết.
+  private resolveImageUrls(dto: {
+    images?: { url: string }[] | null;
+    imageUrl?: string | null;
+  }): string[] | undefined {
+    if (dto.images === null) {
+      // PartialType bỏ qua validate khi null nên chặn ở đây
+      throw new BadRequestException('images phải là một mảng');
+    }
+    const urls =
+      dto.images !== undefined
+        ? dto.images.map((image) => image.url)
+        : dto.imageUrl !== undefined
+          ? dto.imageUrl
+            ? [dto.imageUrl]
+            : []
+          : undefined;
+    if (urls) {
+      const seen = new Set<string>();
+      for (const url of urls) {
+        if (seen.has(url)) {
+          throw new BadRequestException(
+            `Ảnh "${url}" bị trùng trong danh sách ảnh`,
+          );
+        }
+        seen.add(url);
+      }
+    }
+    return urls;
+  }
+
+  // Cột imageUrl (deprecated) = ảnh đầu; null nếu không có ảnh hoặc URL quá dài so với cột
+  private legacyImageUrl(urls: string[]): string | null {
+    const first = urls[0];
+    return first && first.length <= LEGACY_IMAGE_URL_MAX ? first : null;
   }
 
   // Trong cùng một danh sách gửi lên không được trùng SKU hoặc cặp (size, màu)

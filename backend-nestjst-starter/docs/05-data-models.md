@@ -1,6 +1,6 @@
 # Data Models
 
-Schema chốt cho MVP gồm 10 model và 6 enum, viết bằng Prisma. Bốn quyết định lớn: tách `ProductVariant` khỏi `Product`; giữ hàng bằng `reserved`; `OrderItem` lưu snapshot; voucher giảm trên `subtotal` và số tiền giảm được lưu vào `Order.discountAmount`. Staff nhập kho bằng cách cộng trực tiếp vào `ProductVariant.stock`; mỗi lần đổi `stock` ghi một dòng `StockMovement`.
+Schema chốt cho MVP gồm 11 model (10 model gốc cộng `ProductImage` thêm sau) và 6 enum, viết bằng Prisma. Bốn quyết định lớn: tách `ProductVariant` khỏi `Product`; giữ hàng bằng `reserved`; `OrderItem` lưu snapshot; voucher giảm trên `subtotal` và số tiền giảm được lưu vào `Order.discountAmount`. Staff nhập kho bằng cách cộng trực tiếp vào `ProductVariant.stock`; mỗi lần đổi `stock` ghi một dòng `StockMovement`.
 
 > Các khối schema dưới đây khớp với `prisma/schema.prisma`. Nếu hai bên lệch nhau, `prisma/schema.prisma` là bản chuẩn.
 
@@ -16,6 +16,8 @@ Schema chốt cho MVP gồm 10 model và 6 enum, viết bằng Prisma. Bốn quy
 | `OrderStatus` | 5 giá trị | Thêm PACKING, RETURNED (tổng 7) | Có bước đóng gói và nhánh hoàn hàng |
 | `Order` | Thông tin giao hàng, tổng tiền, trạng thái | Thêm mã đơn, phí ship, giảm giá (`voucherId`, `discountAmount`), phương thức và trạng thái thanh toán, mã giao dịch, hạn thanh toán, lý do hủy, `handledById` | Thanh toán online, voucher và xử lý đơn |
 | `OrderItem` | Trỏ tới `Product`, snapshot giá | Trỏ tới `ProductVariant`, snapshot thêm tên, SKU, size, màu | Đơn cũ không đổi khi sản phẩm bị sửa |
+| Ảnh sản phẩm | Một cột `Product.imageUrl` | Thêm `ProductImage` (tối đa 6 ảnh/sản phẩm, có thứ tự `sortOrder`); `imageUrl` giữ lại nhưng **deprecated** | Gallery nhiều ảnh; cột cũ chỉ để tương thích |
+| Mã màu | Chỉ có tên màu `ProductVariant.color` | Thêm `ProductVariant.colorHex` (VARCHAR(7), tùy chọn) | Hiển thị chấm màu; không tạo bảng `Color` riêng |
 | `OrderStatusHistory` | Chưa có | Không đưa vào MVP | Không lưu lịch sử đổi trạng thái; `Order.handledById` ghi người phụ trách (Staff hoặc Admin) |
 | `StockMovement` | Chưa có | Thêm (thay cho `InventoryTransaction` dự kiến ở V2) | Lịch sử nhập/xuất/điều chỉnh `stock`; `reserved` không ghi; loại `SALE`/`RETURN` thêm ở bước đơn hàng |
 | Giảm giá | | Thêm `Voucher`, enum `DiscountType`, `Order.voucherId`, `Order.discountAmount` | Voucher thuộc MVP |
@@ -23,6 +25,7 @@ Schema chốt cho MVP gồm 10 model và 6 enum, viết bằng Prisma. Bốn quy
 ## Quan hệ giữa các model
 
 - `Category` → `Product` → `ProductVariant`: danh mục chứa sản phẩm, sản phẩm có nhiều biến thể.
+- `Product` → `ProductImage`: sản phẩm có nhiều ảnh (tối đa 6) theo thứ tự `sortOrder`. Ảnh gắn theo sản phẩm, không gắn theo màu.
 - `User` → `Cart` → `CartItem` → `ProductVariant`: mỗi khách một giỏ.
 - `User` → `Order` → `OrderItem` → `ProductVariant`: `Order.userId` để trống với guest checkout.
 - `Order` có hai quan hệ tới `User`: `userId` (quan hệ `"OrderCustomer"`, khách đặt đơn) và `handledById` (quan hệ `"OrderHandler"`, người phụ trách (Staff hoặc Admin), gán khi xác nhận đơn, để trống khi chưa xác nhận). Phía `User` là `orders` và `handledOrders`.
@@ -107,16 +110,31 @@ model Product {
   slug        String           @unique
   description String?          @db.Text
   price       Int              // giá niêm yết, VND
-  imageUrl    String?
+  imageUrl    String?          // DEPRECATED: chỉ để tương thích. Nguồn thật là images; khi ghi, imageUrl = ảnh đầu (null nếu > 191 ký tự hoặc không có ảnh)
   isActive    Boolean          @default(true)
   categoryId  Int
   category    Category         @relation(fields: [categoryId], references: [id])
   variants    ProductVariant[]
+  images      ProductImage[]
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
   @@index([categoryId, isActive])
   @@map("products")
+}
+
+// Ảnh sản phẩm, tối đa 6 ảnh/sản phẩm (kiểm ở service). sortOrder nhỏ nhất là ảnh đại diện.
+// Ngoại lệ với quy ước "không cấu hình onDelete": ảnh là bảng con thuần túy nên xóa theo sản phẩm (Cascade).
+model ProductImage {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String   @db.VarChar(500)
+  sortOrder Int
+  createdAt DateTime @default(now())
+
+  @@index([productId, sortOrder])
+  @@map("product_images")
 }
 
 model ProductVariant {
@@ -126,6 +144,7 @@ model ProductVariant {
   sku        String      @unique
   size       String
   color      String
+  colorHex   String?     @db.VarChar(7) // "#RRGGBB" in hoa hoặc NULL; CHECK ở migration
   stock      Int         @default(0)   // tồn thực tế trong kho
   reserved   Int         @default(0)   // đang giữ cho đơn chưa xuất kho
   minStock   Int         @default(0)   // ngưỡng cảnh báo sắp hết

@@ -49,7 +49,8 @@ Tiền là VND, số nguyên (JSON number). Thời gian là chuỗi ISO 8601.
 
 - `variantCount`: tổng số biến thể; `activeVariantCount`: số biến thể đang bán (`isActive = true`).
 - Danh sách **không** có `description` và tồn kho. Giá nằm ở sản phẩm (không có giá theo biến thể) nên chỉ có một `price`.
-- `imageUrl`: `string | null`.
+- `imageUrl`: `string | null` = **ảnh đầu tiên** (`sortOrder` nhỏ nhất). Sản phẩm chưa có dòng ảnh nào thì dự phòng bằng cột cũ.
+  Trường này **deprecated**, giữ để tương thích; nguồn thật là `images` (xem chi tiết).
 
 ### Admin: chi tiết (`GET /admin/products/:id`, và response của POST/PATCH)
 
@@ -60,19 +61,28 @@ Tiền là VND, số nguyên (JSON number). Thời gian là chuỗi ISO 8601.
   "slug": "ao-thun-basic-co-tron",
   "description": "Chất liệu thoáng mát.",
   "price": 199000,
-  "imageUrl": "https://picsum.photos/seed/ao-thun-basic-co-tron/600/800",
+  "imageUrl": "https://picsum.photos/seed/ao-thun-basic-co-tron-1/600/800",
+  "images": [
+    { "id": 31, "url": "https://picsum.photos/seed/ao-thun-basic-co-tron-1/600/800", "sortOrder": 0 },
+    { "id": 32, "url": "https://picsum.photos/seed/ao-thun-basic-co-tron-2/600/800", "sortOrder": 1 }
+  ],
   "isActive": true,
   "createdAt": "2026-10-28T03:00:00.000Z",
   "updatedAt": "2026-10-28T03:00:00.000Z",
   "category": { "id": 3, "name": "Áo thun", "slug": "ao-thun" },
   "variants": [
     {
-      "id": 10, "sku": "ATB-S-TRANG", "size": "S", "color": "Trắng",
+      "id": 10, "sku": "ATB-S-TRANG", "size": "S", "color": "Trắng", "colorHex": "#FFFFFF",
       "isActive": true, "stock": 20, "reserved": 0, "minStock": 5
     }
   ]
 }
 ```
+
+- `images`: chỉ gồm **dòng ảnh thật** (có `id` thật), sắp theo `sortOrder` tăng dần; **không** dự phòng từ `imageUrl`. Mảng rỗng
+  nếu sản phẩm chưa có ảnh. Id ảnh **đổi** sau mỗi lần PATCH có gửi `images` (các dòng được tạo lại).
+- `imageUrl` (deprecated): ảnh đầu; chưa có dòng ảnh nào thì là giá trị cột cũ.
+- `colorHex`: `string | null`, dạng `#RRGGBB` in hoa.
 
 - `variants` gồm cả biến thể đang ẩn, sắp theo `id` tăng dần. `stock`, `reserved`, `minStock` **chỉ đọc** ở đây
   (do module Kho quản lý, xem `docs/api/inventory.md`); API sản phẩm không cho ghi các trường này.
@@ -86,12 +96,23 @@ Tiền là VND, số nguyên (JSON number). Thời gian là chuỗi ISO 8601.
   "name": "Áo thun basic cổ tròn",
   "slug": "ao-thun-basic-co-tron",
   "price": 199000,
-  "imageUrl": "https://picsum.photos/seed/ao-thun-basic-co-tron/600/800",
+  "imageUrl": "https://picsum.photos/seed/ao-thun-basic-co-tron-1/600/800",
+  "secondImageUrl": "https://picsum.photos/seed/ao-thun-basic-co-tron-2/600/800",
+  "colors": [
+    { "name": "Trắng", "hex": "#FFFFFF" },
+    { "name": "Đen", "hex": "#111111" }
+  ],
   "category": { "id": 3, "name": "Áo thun", "slug": "ao-thun" },
   "inStock": true,
   "lowStock": false
 }
 ```
+
+- `imageUrl`: ảnh đầu (`sortOrder` nhỏ nhất); chưa có dòng ảnh nào thì dự phòng bằng cột cũ `imageUrl`; không có gì thì `null`.
+- `secondImageUrl`: ảnh thứ hai (dùng cho hiệu ứng hover) hoặc `null`.
+- `colors`: các màu khác nhau của biến thể **đang bán**, bỏ trùng không phân biệt hoa thường/dấu, theo thứ tự biến thể (`id` tăng dần).
+  `hex` có thể `null` (biến thể chưa có mã màu); cùng màu mà biến thể đầu chưa có hex thì lấy hex của biến thể sau.
+- Ảnh và biến thể được lấy cùng truy vấn danh sách (Prisma gom theo `IN (...)`, số truy vấn cố định, không tăng theo số sản phẩm).
 
 - `inStock`: `true` khi có ít nhất một biến thể đang bán còn tồn khả dụng (`stock - reserved > 0`).
 - `lowStock`: `true` (hiện huy hiệu "Sắp hết") khi sản phẩm còn hàng **và mọi biến thể đang bán còn hàng đều ở trạng thái `low`**
@@ -110,14 +131,23 @@ Tiền là VND, số nguyên (JSON number). Thời gian là chuỗi ISO 8601.
   "slug": "ao-thun-basic-co-tron",
   "description": "Chất liệu thoáng mát.",
   "price": 199000,
-  "imageUrl": "https://picsum.photos/seed/ao-thun-basic-co-tron/600/800",
+  "imageUrl": "https://picsum.photos/seed/ao-thun-basic-co-tron-1/600/800",
+  "images": [
+    { "url": "https://picsum.photos/seed/ao-thun-basic-co-tron-1/600/800" },
+    { "url": "https://picsum.photos/seed/ao-thun-basic-co-tron-2/600/800" }
+  ],
   "category": { "id": 3, "name": "Áo thun", "slug": "ao-thun" },
   "inStock": true,
   "variants": [
-    { "id": 10, "sku": "ATB-S-TRANG", "size": "S", "color": "Trắng", "inStock": true }
+    { "id": 10, "sku": "ATB-S-TRANG", "size": "S", "color": "Trắng", "colorHex": "#FFFFFF", "inStock": true }
   ]
 }
 ```
+
+- `images`: toàn bộ ảnh theo thứ tự hiển thị, chỉ có `url`. Chưa có dòng ảnh nào nhưng cột cũ `imageUrl` có giá trị thì
+  `images = [{ "url": <imageUrl> }]`; không có ảnh nào thì `[]`.
+- `imageUrl` (**deprecated**, giữ để tương thích): ảnh đầu, hoặc `null`.
+- `colorHex`: `string | null`.
 
 - Chỉ gồm biến thể **đang bán**. Không có `isActive`, `createdAt`, `updatedAt`, `stock`, `reserved`, `minStock`:
   khách chỉ biết còn hay hết (`inStock`), không biết số lượng.
@@ -230,11 +260,14 @@ Body:
   "slug": "ao-thun-basic-co-tron",
   "description": "Chất liệu thoáng mát.",
   "price": 199000,
-  "imageUrl": "https://cdn.example.com/ao-thun.jpg",
+  "images": [
+    { "url": "https://cdn.example.com/ao-thun-1.jpg" },
+    { "url": "https://cdn.example.com/ao-thun-2.jpg" }
+  ],
   "categoryId": 3,
   "variants": [
-    { "sku": "ATB-S-TRANG", "size": "S", "color": "Trắng" },
-    { "sku": "ATB-M-TRANG", "size": "M", "color": "Trắng", "isActive": true }
+    { "sku": "ATB-S-TRANG", "size": "S", "color": "Trắng", "colorHex": "#FFFFFF" },
+    { "sku": "ATB-M-TRANG", "size": "M", "color": "Trắng", "colorHex": "#ffffff", "isActive": true }
   ]
 }
 ```
@@ -251,6 +284,15 @@ Body:
 - **SKU:** bỏ khoảng trắng hai đầu và **tự đổi thành chữ in hoa** (`atb-s` → `ATB-S`). SKU là duy nhất toàn hệ thống,
   không phân biệt hoa/thường và dấu (do collation DB).
 - **Biến thể trùng:** trong cùng body không được trùng SKU hoặc trùng cặp (`size`, `color`) → 400.
+- **Ảnh (`images`):** mảng `{ "url" }`, **thứ tự trong mảng là thứ tự hiển thị** (`sortOrder` = vị trí), ảnh đầu là ảnh đại diện. Tối đa **6** ảnh,
+  mỗi `url` là `http(s)` (cho phép URL ngoài như picsum và `localhost`), tối đa 500 ký tự. **URL trùng nhau trong mảng → 400**
+  `Ảnh "<url>" bị trùng trong danh sách ảnh`. Muốn dùng ảnh upload thì gọi `POST /uploads/products` trước rồi đưa `url` vào đây.
+  Cột cũ `Product.imageUrl` được đồng bộ = ảnh đầu (null nếu ảnh đầu dài hơn 191 ký tự hoặc không có ảnh).
+- **Tương thích tạm (`imageUrl` cũ):** nếu **không** gửi `images` mà chỉ gửi `imageUrl` thì coi như `images = [imageUrl]`
+  (`null` hoặc `""` = không có ảnh). Gửi cả hai thì `images` thắng. Cơ chế này **tạm thời**, sẽ bỏ khi `imageUrl` bị gỡ.
+- **Mã màu (`colorHex`):** tùy chọn, dạng `#RRGGBB`, chữ thường được tự đổi thành **in hoa**; `""` hoặc `null` = chưa có mã.
+  **Nhất quán:** trong cùng một sản phẩm, các biến thể cùng tên màu (không phân biệt hoa thường/dấu) mà đều có `colorHex` thì phải
+  **cùng một mã**, nếu không → 400 `Màu "<màu>" có hai mã màu khác nhau (<mã 1> và <mã 2>). Các biến thể cùng màu phải dùng chung một mã màu`.
 - **Danh mục:** `categoryId` không tồn tại → **400** `Danh mục với ID #<id> không tồn tại`.
 - Tên sản phẩm không bắt buộc duy nhất.
 - Lỗi: 400, 401, 403, 409.
@@ -273,20 +315,28 @@ Body (mọi trường tùy chọn):
 ```
 
 - **200**, `data` là chi tiết admin sau cập nhật. Cập nhật sản phẩm và biến thể chạy trong **một transaction**.
-- Chỉ `name`, `slug`, `description`, `price`, `imageUrl`, `categoryId`, `variants` được sửa; trường khác (vd `id`, `isActive`)
+- Chỉ `name`, `slug`, `description`, `price`, `imageUrl`, `images`, `categoryId`, `variants` được sửa; trường khác (vd `id`, `isActive`)
   → 400. Ẩn/hiện sản phẩm dùng `PATCH :id/status`.
 - **Đổi tên không tự đổi slug** (giữ URL ổn định). Muốn đổi slug phải gửi `slug` tường minh (trùng → 409; `""` → 400).
 - Không gửi một trường thì giữ nguyên. `description` và `imageUrl`: gửi `null` hoặc `""` để **xóa** giá trị.
   `name`, `price`, `categoryId` gửi `null` được coi như không gửi.
+- **`images` khi PATCH:** có gửi thì **thay cả mảng** theo thứ tự gửi lên (xóa dòng không còn, thêm dòng mới, cùng một transaction với việc sửa sản phẩm);
+  không gửi thì giữ nguyên ảnh. `images: []` xóa hết ảnh. `images: null` → 400. Quy tắc ảnh (tối đa 6, URL, không trùng) như khi tạo.
+  Vì thay cả mảng nên id ảnh đổi sau mỗi lần sửa; đổi thứ tự = gửi lại mảng theo thứ tự mới.
+- **Tương thích tạm với `imageUrl` cũ:** chỉ gửi `imageUrl` (không gửi `images`) = `images = [imageUrl]`; `imageUrl: null` hoặc `""`
+  = **xóa toàn bộ ảnh** (không chỉ ảnh đầu). **Cảnh báo:** form cũ chỉ biết `imageUrl` sẽ thu sản phẩm nhiều ảnh về một ảnh khi lưu.
 
 #### Ngữ nghĩa `variants` khi PATCH
 
 | Phần tử trong `variants` | Hành vi |
 |---|---|
-| Có `id` | **Cập nhật** biến thể đó. Chỉ các trường được gửi mới đổi (`sku`, `size`, `color`, `isActive`); trường không gửi giữ nguyên |
+| Có `id` | **Cập nhật** biến thể đó. Chỉ các trường được gửi mới đổi (`sku`, `size`, `color`, `colorHex`, `isActive`); trường không gửi giữ nguyên (`colorHex: null` = xóa mã màu) |
 | Không có `id` | **Tạo biến thể mới**; bắt buộc đủ `sku`, `size`, `color` (`isActive` mặc định `true`) |
 | Biến thể của sản phẩm **không có** trong danh sách | **Giữ nguyên** - không xóa, không vô hiệu hóa ngầm |
 
+- **Mã màu nhất quán** được kiểm trên trạng thái **sau khi áp thay đổi**, gồm cả biến thể không có trong danh sách. Vì vậy muốn đổi hex
+  của một màu thì phải gửi **tất cả biến thể cùng màu** với hex mới trong cùng một PATCH, nếu không → 400. Biến thể mới không gửi
+  `colorHex` thì có hex `null` (không tự kế thừa từ biến thể cùng màu).
 - Muốn ẩn một biến thể: gửi `{ "id": <id>, "isActive": false }` tường minh. Hiện lại: `isActive: true`.
 - Không có cách xóa cứng biến thể.
 - `variants` không gửi hoặc `[]` → không đụng tới biến thể nào.
@@ -326,12 +376,20 @@ Mọi message bằng tiếng Việt. Lỗi trả theo từng trường trong `er
 | `slug` | Không | Chuỗi, tối đa 191 ký tự, đúng dạng `^[a-z0-9]+(-[a-z0-9]+)*$` | `Slug phải là chuỗi`, `Slug không được vượt quá 191 ký tự`, `Slug chỉ gồm chữ thường không dấu, số và dấu gạch ngang` |
 | `description` | Không | Chuỗi tối đa 10000 ký tự; `""` hoặc `null` = không có mô tả | `Mô tả phải là chuỗi`, `Mô tả không được vượt quá 10000 ký tự` |
 | `price` | Có | Số nguyên 0 – 2147483647 (VND, JSON number, không nhận chuỗi `"199000"`) | `Giá phải là số nguyên (VND)`, `Giá không được âm`, `Giá không được vượt quá 2147483647` |
-| `imageUrl` | Không | Chỉ lưu URL (chưa có upload file). `http://` hoặc `https://`, **kể cả `localhost` hoặc IP có cổng** (vd `http://localhost:3000/uploads/products/x.webp`, URL do `POST /uploads/products` trả về ở dev, xem `docs/api/uploads.md`), **tối đa 191 ký tự** (giới hạn cột VARCHAR(191) hiện tại); `""` hoặc `null` = không có ảnh | `Đường dẫn ảnh phải là chuỗi`, `Đường dẫn ảnh không được vượt quá 191 ký tự`, `Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://` |
+| `images` | Không | Mảng tối đa 6 phần tử `{ "url" }` (xem bảng ảnh dưới). Khi sửa: có gửi thì thay cả mảng | `images phải là một mảng`, `Mỗi sản phẩm tối đa 6 ảnh` |
+| `imageUrl` | Không | **DEPRECATED**, chỉ để tương thích tạm (xem mục "Tương thích tạm"). URL ảnh. `http://` hoặc `https://`, **kể cả `localhost` hoặc IP có cổng** (vd `http://localhost:3000/uploads/products/x.webp`, URL do `POST /uploads/products` trả về ở dev, xem `docs/api/uploads.md`), **tối đa 191 ký tự** (giới hạn cột VARCHAR(191) hiện tại); `""` hoặc `null` = không có ảnh | `Đường dẫn ảnh phải là chuỗi`, `Đường dẫn ảnh không được vượt quá 191 ký tự`, `Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://` |
 | `categoryId` | Có | Số nguyên ≥ 1 và danh mục phải tồn tại | `categoryId phải là số nguyên`, `categoryId phải lớn hơn hoặc bằng 1` (tồn tại: kiểm ở service, xem mục lỗi) |
 | `variants` | Có | Mảng 1–100 phần tử | `variants phải là một mảng`, `Sản phẩm phải có ít nhất 1 biến thể`, `Sản phẩm không được vượt quá 100 biến thể` |
 
-> **Giới hạn ảnh:** URL ảnh dài hơn 191 ký tự bị từ chối 400 (`Đường dẫn ảnh không được vượt quá 191 ký tự`). URL CDN có query dài
-> cần rút gọn hoặc đổi cột sang kích thước lớn hơn (cần migration, chưa làm).
+> **Giới hạn `imageUrl` cũ:** dài hơn 191 ký tự bị từ chối 400. Ảnh mới qua `images` cho phép tới 500 ký tự.
+
+### Ảnh (`images[]`)
+
+| Trường | Bắt buộc | Quy tắc | Message khi sai |
+|---|---|---|---|
+| `url` | Có | Bỏ khoảng trắng hai đầu, không rỗng, `http://` hoặc `https://` (kể cả `localhost`/IP có cổng), tối đa 500 ký tự. Không nhận trường nào khác (vd `sortOrder`) | `Đường dẫn ảnh phải là chuỗi`, `Đường dẫn ảnh không được để trống`, `Đường dẫn ảnh không được vượt quá 500 ký tự`, `Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://` |
+
+Lỗi nằm ở `images.<chỉ số>.url`. URL trùng trong mảng báo ở service (400, không có `field`).
 
 ### Biến thể (`variants[]` khi tạo)
 
@@ -340,11 +398,12 @@ Mọi message bằng tiếng Việt. Lỗi trả theo từng trường trong `er
 | `sku` | Có | Bỏ khoảng trắng hai đầu, đổi thành chữ in hoa, tối đa 64 ký tự, chỉ gồm `A-Z 0-9 . _ -` | `SKU phải là chuỗi`, `SKU không được để trống`, `SKU không được vượt quá 64 ký tự`, `SKU chỉ gồm chữ cái không dấu, số và các ký tự . _ -` |
 | `size` | Có | Chuỗi, bỏ khoảng trắng hai đầu, không rỗng, tối đa 50 ký tự | `Size phải là chuỗi`, `Size không được để trống`, `Size không được vượt quá 50 ký tự` |
 | `color` | Có | Như `size` | `Màu sắc phải là chuỗi`, `Màu sắc không được để trống`, `Màu sắc không được vượt quá 50 ký tự` |
+| `colorHex` | Không | Mã màu `#RRGGBB`; bỏ khoảng trắng hai đầu, đổi thành in hoa; `""`/`null` = chưa có. Cùng màu trong một sản phẩm phải cùng mã | `Mã màu phải là chuỗi`, `Mã màu phải có dạng #RRGGBB (ví dụ #FFFFFF)` |
 | `isActive` | Không | boolean, mặc định `true` | `isActive phải là true hoặc false` |
 
 ### UpdateProductDto
 
-Gồm `name`, `slug`, `description`, `price`, `imageUrl`, `categoryId` (tất cả tùy chọn, giữ quy tắc như bảng trên khi có gửi,
+Gồm `name`, `slug`, `description`, `price`, `imageUrl`, `images`, `categoryId` (tất cả tùy chọn, giữ quy tắc như bảng trên khi có gửi,
 vd `{"name":""}` vẫn bị 400) và `variants` (tùy chọn, tối đa 100 phần tử, message `Mỗi lần chỉ gửi tối đa 100 biến thể`).
 Phần tử `variants[]`:
 
@@ -352,6 +411,7 @@ Phần tử `variants[]`:
 |---|---|
 | `id` | Tùy chọn. Số nguyên ≥ 1 (`id biến thể phải là số nguyên`, `id biến thể phải lớn hơn hoặc bằng 1`) |
 | `sku`, `size`, `color` | **Bắt buộc khi không có `id`**; khi có `id` thì tùy chọn nhưng nếu gửi phải hợp lệ (không rỗng, không `null`). Quy tắc và message như bảng biến thể |
+| `colorHex` | Tùy chọn; không gửi = giữ nguyên, `null`/`""` = xóa mã. Quy tắc như bảng biến thể |
 | `isActive` | Tùy chọn, boolean |
 
 ### UpdateProductStatusDto
@@ -384,7 +444,7 @@ Phần tử `variants[]`:
 
 | Status | Khi nào |
 |---|---|
-| 400 | Validate sai; `ID không hợp lệ`; `Danh mục với ID #<id> không tồn tại`; `Tên sản phẩm phải chứa ít nhất một chữ cái hoặc chữ số`; `SKU "<sku>" bị trùng trong danh sách biến thể`; `Size "<size>" màu "<color>" bị trùng trong danh sách biến thể`; `Biến thể #<id> không thuộc sản phẩm này`; `Biến thể #<id> xuất hiện nhiều lần trong danh sách` |
+| 400 | Validate sai; `ID không hợp lệ`; `Danh mục với ID #<id> không tồn tại`; `Tên sản phẩm phải chứa ít nhất một chữ cái hoặc chữ số`; `SKU "<sku>" bị trùng trong danh sách biến thể`; `Size "<size>" màu "<color>" bị trùng trong danh sách biến thể`; `Biến thể #<id> không thuộc sản phẩm này`; `Biến thể #<id> xuất hiện nhiều lần trong danh sách`; `Ảnh "<url>" bị trùng trong danh sách ảnh`; `images phải là một mảng` (khi `images: null`); `Màu "<màu>" có hai mã màu khác nhau (<mã 1> và <mã 2>). Các biến thể cùng màu phải dùng chung một mã màu` |
 | 401 | Thiếu token / token sai: `Bạn chưa đăng nhập hoặc phiên đăng nhập không hợp lệ`; token hết hạn: `Phiên đăng nhập đã hết hạn` |
 | 403 | `Bạn không có quyền thực hiện thao tác này` |
 | 404 | Admin: `Không tìm thấy sản phẩm với ID #<id>`; public: `Không tìm thấy sản phẩm`; đường dẫn không tồn tại (kể cả `DELETE`) |

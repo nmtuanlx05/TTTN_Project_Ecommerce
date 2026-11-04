@@ -1,7 +1,10 @@
 import {
+  adminProductDetailSelect,
   adminProductListSelect,
+  buildColors,
   publicProductDetailSelect,
   publicProductListSelect,
+  toAdminDetail,
   toAdminListItem,
   toPublicDetail,
   toPublicListItem,
@@ -44,12 +47,24 @@ describe('products.mapper', () => {
       price: 199000,
       imageUrl: null,
       category,
+      images: [] as { url: string }[],
     };
-    type ListVariant = { stock: number; reserved: number; minStock?: number };
+    type ListVariant = {
+      stock: number;
+      reserved: number;
+      minStock?: number;
+      color?: string;
+      colorHex?: string | null;
+    };
     const listOf = (variants: ListVariant[]) =>
       toPublicListItem({
         ...base,
-        variants: variants.map((v) => ({ minStock: 0, ...v })),
+        variants: variants.map((v) => ({
+          color: 'Đen',
+          colorHex: null,
+          minStock: 0,
+          ...v,
+        })),
       });
     const inStockOf = (variants: ListVariant[]) => listOf(variants).inStock;
     const lowStockOf = (variants: ListVariant[]) => listOf(variants).lowStock;
@@ -96,19 +111,18 @@ describe('products.mapper', () => {
     });
 
     it('chỉ có đúng các khóa được phép, không lộ stock, reserved, minStock, isActive', () => {
-      const item = toPublicListItem({
-        ...base,
-        variants: [{ stock: 9, reserved: 1 }],
-      });
+      const item = listOf([{ stock: 9, reserved: 1 }]);
       expect(Object.keys(item).sort()).toEqual(
         [
           'category',
+          'colors',
           'id',
           'imageUrl',
           'inStock',
           'lowStock',
           'name',
           'price',
+          'secondImageUrl',
           'slug',
         ].sort(),
       );
@@ -123,6 +137,93 @@ describe('products.mapper', () => {
       for (const field of ['stock', 'reserved', 'minStock', 'isActive']) {
         expect(json).not.toContain(`"${field}"`);
       }
+    });
+
+    describe('ảnh', () => {
+      const withImages = (urls: string[], imageUrl: string | null = null) =>
+        toPublicListItem({
+          ...base,
+          imageUrl,
+          images: urls.map((url) => ({ url })),
+          variants: [],
+        });
+
+      it('imageUrl = ảnh đầu, secondImageUrl = ảnh thứ hai', () => {
+        const item = withImages(['a', 'b']);
+        expect(item.imageUrl).toBe('a');
+        expect(item.secondImageUrl).toBe('b');
+      });
+
+      it('chỉ một ảnh → secondImageUrl = null', () => {
+        const item = withImages(['a']);
+        expect(item.imageUrl).toBe('a');
+        expect(item.secondImageUrl).toBeNull();
+      });
+
+      it('chưa có dòng ảnh: dự phòng bằng cột imageUrl cũ, secondImageUrl = null', () => {
+        const item = withImages([], 'legacy');
+        expect(item.imageUrl).toBe('legacy');
+        expect(item.secondImageUrl).toBeNull();
+      });
+
+      it('có dòng ảnh thì ưu tiên ảnh thật, bỏ qua cột cũ', () => {
+        expect(withImages(['a'], 'legacy').imageUrl).toBe('a');
+      });
+
+      it('không ảnh nào → imageUrl = null', () => {
+        expect(withImages([]).imageUrl).toBeNull();
+      });
+    });
+
+    describe('colors', () => {
+      it('trả tên và hex, giữ thứ tự xuất hiện, bỏ trùng', () => {
+        const item = listOf([
+          { stock: 1, reserved: 0, color: 'Trắng', colorHex: '#FFFFFF' },
+          { stock: 1, reserved: 0, color: 'Trắng', colorHex: '#FFFFFF' },
+          { stock: 1, reserved: 0, color: 'Đen', colorHex: '#111111' },
+        ]);
+        expect(item.colors).toEqual([
+          { name: 'Trắng', hex: '#FFFFFF' },
+          { name: 'Đen', hex: '#111111' },
+        ]);
+      });
+
+      it('bỏ trùng không phân biệt hoa thường, dấu và khoảng trắng hai đầu', () => {
+        expect(
+          buildColors([
+            { color: 'Đen', colorHex: '#111111' },
+            { color: ' den ', colorHex: '#111111' },
+            { color: 'ĐEN', colorHex: null },
+          ]),
+        ).toEqual([{ name: 'Đen', hex: '#111111' }]);
+      });
+
+      it('hex có thể null; cùng màu thì lấy hex của biến thể sau nếu biến thể đầu chưa có', () => {
+        expect(
+          buildColors([
+            { color: 'Be', colorHex: null },
+            { color: 'Xám', colorHex: null },
+            { color: 'be', colorHex: '#C9B79C' },
+          ]),
+        ).toEqual([
+          { name: 'Be', hex: '#C9B79C' },
+          { name: 'Xám', hex: null },
+        ]);
+      });
+
+      it('không biến thể → mảng rỗng', () => {
+        expect(buildColors([])).toEqual([]);
+      });
+
+      it('colors không lộ số liệu tồn', () => {
+        const json = JSON.stringify(
+          listOf([{ stock: 9, reserved: 1, minStock: 10, color: 'Đen' }])
+            .colors,
+        );
+        for (const field of ['stock', 'reserved', 'minStock']) {
+          expect(json).not.toContain(`"${field}"`);
+        }
+      });
     });
 
     describe('lowStock', () => {
@@ -250,8 +351,9 @@ describe('products.mapper', () => {
       slug: 'ao-thun-basic',
       description: 'Mô tả',
       price: 199000,
-      imageUrl: null,
+      imageUrl: null as string | null,
       category,
+      images: [] as { url: string }[],
     };
     const variant = (
       id: number,
@@ -262,6 +364,7 @@ describe('products.mapper', () => {
       sku: `ATB-${id}`,
       size: 'M',
       color: 'Đen',
+      colorHex: '#111111',
       stock,
       reserved,
     });
@@ -306,6 +409,7 @@ describe('products.mapper', () => {
           'description',
           'id',
           'imageUrl',
+          'images',
           'inStock',
           'name',
           'price',
@@ -320,12 +424,50 @@ describe('products.mapper', () => {
       ]);
     });
 
-    it('biến thể chỉ có đúng id, sku, size, color, inStock', () => {
+    it('biến thể chỉ có đúng id, sku, size, color, colorHex, inStock', () => {
       for (const v of detail.variants) {
         expect(Object.keys(v).sort()).toEqual(
-          ['color', 'id', 'inStock', 'size', 'sku'].sort(),
+          ['color', 'colorHex', 'id', 'inStock', 'size', 'sku'].sort(),
         );
       }
+    });
+
+    describe('ảnh', () => {
+      const withImages = (urls: string[], imageUrl: string | null = null) =>
+        toPublicDetail({
+          ...product,
+          imageUrl,
+          images: urls.map((url) => ({ url })),
+          variants: [],
+        });
+
+      it('images đúng thứ tự đã sắp xếp, chỉ có url; imageUrl = ảnh đầu', () => {
+        const d = withImages(['a', 'b', 'c']);
+        expect(d.images).toEqual([{ url: 'a' }, { url: 'b' }, { url: 'c' }]);
+        expect(d.imageUrl).toBe('a');
+      });
+
+      it('chưa có dòng ảnh nhưng cột imageUrl có giá trị → images = [{ url: imageUrl }]', () => {
+        const d = withImages([], 'legacy');
+        expect(d.images).toEqual([{ url: 'legacy' }]);
+        expect(d.imageUrl).toBe('legacy');
+      });
+
+      it('không có ảnh nào và imageUrl null → images = [], imageUrl = null', () => {
+        const d = withImages([]);
+        expect(d.images).toEqual([]);
+        expect(d.imageUrl).toBeNull();
+      });
+
+      it('imageUrl là chuỗi rỗng cũng không tạo ảnh dự phòng', () => {
+        expect(withImages([], '').images).toEqual([]);
+      });
+
+      it('có dòng ảnh thì bỏ qua cột imageUrl cũ', () => {
+        const d = withImages(['a'], 'legacy');
+        expect(d.images).toEqual([{ url: 'a' }]);
+        expect(d.imageUrl).toBe('a');
+      });
     });
 
     it('không có trường nội bộ ở sản phẩm lẫn biến thể', () => {
@@ -372,6 +514,7 @@ describe('products.mapper', () => {
           'category',
           'id',
           'imageUrl',
+          'images',
           'name',
           'price',
           'slug',
@@ -380,13 +523,14 @@ describe('products.mapper', () => {
       );
       expect(
         Object.keys(publicProductListSelect.variants.select).sort(),
-      ).toEqual(['minStock', 'reserved', 'stock']);
+      ).toEqual(['color', 'colorHex', 'minStock', 'reserved', 'stock']);
       expect(Object.keys(publicProductDetailSelect).sort()).toEqual(
         [
           'category',
           'description',
           'id',
           'imageUrl',
+          'images',
           'name',
           'price',
           'slug',
@@ -395,7 +539,29 @@ describe('products.mapper', () => {
       );
       expect(
         Object.keys(publicProductDetailSelect.variants.select).sort(),
-      ).toEqual(['color', 'id', 'reserved', 'size', 'sku', 'stock']);
+      ).toEqual([
+        'color',
+        'colorHex',
+        'id',
+        'reserved',
+        'size',
+        'sku',
+        'stock',
+      ]);
+    });
+
+    // Chống N+1: ảnh và biến thể lấy cùng truy vấn danh sách; danh sách chỉ lấy tối đa 2 ảnh, sắp theo sortOrder
+    it('ảnh public: danh sách take 2 sắp theo sortOrder; chỉ chọn url', () => {
+      expect(publicProductListSelect.images.take).toBe(2);
+      expect(publicProductListSelect.images.orderBy[0]).toEqual({
+        sortOrder: 'asc',
+      });
+      expect(publicProductListSelect.images.select).toEqual({ url: true });
+      expect(publicProductDetailSelect.images.select).toEqual({ url: true });
+    });
+
+    it('biến thể public sắp theo id để thứ tự màu ổn định', () => {
+      expect(publicProductListSelect.variants.orderBy).toEqual({ id: 'asc' });
     });
   });
 
@@ -411,11 +577,34 @@ describe('products.mapper', () => {
         createdAt: new Date(0),
         updatedAt: new Date(0),
         category: { id: 1, name: 'Áo' },
+        images: [],
         variants: [{ isActive: true }, { isActive: false }, { isActive: true }],
       });
       expect(item.variantCount).toBe(3);
       expect(item.activeVariantCount).toBe(2);
       expect(item).not.toHaveProperty('variants');
+      expect(item).not.toHaveProperty('images');
+    });
+
+    it('imageUrl = ảnh đầu; chưa có dòng ảnh thì giữ cột cũ', () => {
+      const row = {
+        id: 1,
+        name: 'Áo',
+        slug: 'ao',
+        price: 100,
+        isActive: true,
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+        category: { id: 1, name: 'Áo' },
+        variants: [],
+      };
+      expect(
+        toAdminListItem({ ...row, imageUrl: 'old', images: [{ url: 'a' }] })
+          .imageUrl,
+      ).toBe('a');
+      expect(
+        toAdminListItem({ ...row, imageUrl: 'old', images: [] }).imageUrl,
+      ).toBe('old');
     });
 
     it('select danh sách admin không lấy description và tồn kho', () => {
@@ -423,6 +612,47 @@ describe('products.mapper', () => {
       expect(adminProductListSelect.variants.select).toEqual({
         isActive: true,
       });
+    });
+  });
+
+  describe('toAdminDetail', () => {
+    const row = {
+      id: 1,
+      name: 'Áo',
+      slug: 'ao',
+      description: null,
+      price: 100,
+      imageUrl: 'legacy' as string | null,
+      isActive: true,
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+      category: { id: 1, name: 'Áo', slug: 'ao' },
+      variants: [],
+    };
+
+    it('trả images thật (id, url, sortOrder) và imageUrl = ảnh đầu', () => {
+      const images = [
+        { id: 31, url: 'a', sortOrder: 0 },
+        { id: 32, url: 'b', sortOrder: 1 },
+      ];
+      const detail = toAdminDetail({ ...row, images });
+      expect(detail.images).toEqual(images);
+      expect(detail.imageUrl).toBe('a');
+    });
+
+    it('không dự phòng images từ imageUrl; imageUrl giữ giá trị cột cũ khi chưa có dòng ảnh', () => {
+      const detail = toAdminDetail({ ...row, images: [] });
+      expect(detail.images).toEqual([]);
+      expect(detail.imageUrl).toBe('legacy');
+    });
+
+    it('select chi tiết admin có images (id, url, sortOrder) và colorHex ở biến thể', () => {
+      expect(adminProductDetailSelect.images.select).toEqual({
+        id: true,
+        url: true,
+        sortOrder: true,
+      });
+      expect(adminProductDetailSelect.variants.select.colorHex).toBe(true);
     });
   });
 });

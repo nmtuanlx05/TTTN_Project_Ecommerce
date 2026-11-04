@@ -12,12 +12,14 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { SLUG_REGEX } from '../../categories/dto/create-category.dto';
 import { Trim } from '../../common/transforms/trim';
 import { TrimToNull } from '../../common/transforms/trim-to-null';
 import { CreateVariantDto } from './create-variant.dto';
+import { MAX_PRODUCT_IMAGES, ProductImageDto } from './product-image.dto';
 
 // Giá là Int (VND), trần của kiểu INT trong MySQL
 export const MAX_PRICE = 2147483647;
@@ -52,7 +54,8 @@ export class CreateProductDto {
   @Max(MAX_PRICE, { message: `Giá không được vượt quá ${MAX_PRICE}` })
   price: number;
 
-  // Chỉ lưu URL ảnh (chưa upload file). Cột DB là VARCHAR(191) nên URL dài hơn sẽ không lưu được.
+  // DEPRECATED: dùng `images`. Chỉ còn để tương thích tạm: nếu không gửi `images` thì coi như images = [imageUrl]
+  // (null hoặc "" = xóa hết ảnh). Cột DB là VARCHAR(191) nên URL dài hơn sẽ không lưu được.
   @IsOptional()
   @TrimToNull()
   @IsString({ message: 'Đường dẫn ảnh phải là chuỗi' })
@@ -72,6 +75,17 @@ export class CreateProductDto {
     },
   )
   imageUrl?: string | null;
+
+  // Ảnh sản phẩm theo thứ tự hiển thị (ảnh đầu là ảnh đại diện). Khi sửa: có gửi thì thay cả mảng, không gửi thì giữ nguyên.
+  // ValidateIf: chỉ bỏ qua khi không gửi; null vẫn bị từ chối (muốn xóa hết ảnh thì gửi []).
+  @ValidateIf((_, value) => value !== undefined)
+  @IsArray({ message: 'images phải là một mảng' })
+  @ArrayMaxSize(MAX_PRODUCT_IMAGES, {
+    message: `Mỗi sản phẩm tối đa ${MAX_PRODUCT_IMAGES} ảnh`,
+  })
+  @ValidateNested({ each: true })
+  @Type(() => ProductImageDto)
+  images?: ProductImageDto[];
 
   @IsInt({ message: 'categoryId phải là số nguyên' })
   @Min(1, { message: 'categoryId phải lớn hơn hoặc bằng 1' })
