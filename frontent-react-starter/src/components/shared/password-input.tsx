@@ -28,7 +28,7 @@ function PasswordInput({
         aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
         aria-pressed={visible}
         onClick={() => setVisible((current) => !current)}
-        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-xs text-ink-muted outline-none hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-xs text-ink-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
       >
         <Icon className="size-4" aria-hidden="true" />
       </button>

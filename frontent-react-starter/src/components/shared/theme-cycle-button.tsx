@@ -28,7 +28,7 @@ function ThemeCycleButton({
       onClick={() => onChange(next.value)}
       className={cn(
         "inline-flex size-control items-center justify-center rounded-xs border border-border-default text-ink-muted transition-colors",
-        "outline-none hover:bg-surface-hover hover:text-ink",
+        "hover:bg-surface-hover hover:text-ink",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         className
       )}

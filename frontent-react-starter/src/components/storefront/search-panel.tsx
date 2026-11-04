@@ -53,7 +53,7 @@ function SearchPanel() {
           autoComplete="off"
           defaultValue={searchParams.get("q") ?? ""}
           placeholder="Tìm sản phẩm…"
-          className="h-14 min-w-0 flex-1 border-b border-border-control bg-transparent font-display text-h3 text-ink outline-none transition-colors duration-(--motion-fast) ease-smooth placeholder:text-ink-subtle focus-visible:border-ink"
+          className="h-14 min-w-0 flex-1 border-b border-border-control bg-transparent font-display text-h3 text-ink transition-colors duration-(--motion-fast) ease-smooth placeholder:text-ink-subtle focus-visible:border-ink"
         />
         <Dialog.Close render={<Button type="button" variant="ghost" size="icon" aria-label="Đóng tìm kiếm" />}>
           <X />

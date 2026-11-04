@@ -61,7 +61,7 @@ function OptionChipGroup({
               if (!option.disabled) onSelect(option.value)
             }}
             className={cn(
-              "press flex min-h-control min-w-control flex-col items-center justify-center rounded-xs border px-4 text-body-sm outline-none",
+              "press flex min-h-control min-w-control flex-col items-center justify-center rounded-xs border px-4 text-body-sm",
               "transition-colors duration-(--motion-fast) ease-smooth focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
               checked
                 ? "border-ink bg-primary text-primary-fg"

@@ -18,7 +18,7 @@ function SelectTrigger({
         "flex h-control w-full items-center justify-between gap-inline rounded-xs border px-3",
         "border-border-control bg-transparent text-body-sm text-ink",
         "transition-colors hover:border-ink-muted",
-        "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         "disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-ink-subtle disabled:opacity-70",
         "aria-invalid:border-danger-fg aria-invalid:focus-visible:outline-danger-fg",
         className

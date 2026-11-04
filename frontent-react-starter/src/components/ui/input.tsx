@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 const controlClasses = [
   "w-full min-w-0 rounded-xs border bg-transparent",
   "border-border-control text-ink",
-  "text-body-sm transition-colors outline-none",
+  "text-body-sm transition-colors",
   "placeholder:text-ink-subtle",
   "hover:border-ink-muted",
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",

@@ -44,7 +44,7 @@ function ThemeToggle({ className }: { className?: string }) {
               }}
               className={cn(
                 "inline-flex size-8 items-center justify-center rounded-xs transition-colors",
-                "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                 selected
                   ? "bg-primary text-primary-fg"
                   : "text-ink-muted hover:bg-surface-hover hover:text-ink"

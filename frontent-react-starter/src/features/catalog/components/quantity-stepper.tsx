@@ -40,7 +40,7 @@ function QuantityStepper({ value, onChange }: { value: number; onChange: (value:
           if (digits !== "" && number >= QUANTITY_MIN) onChange(number)
         }}
         onBlur={() => setDraft(null)}
-        className="h-control w-14 border-y border-border-control bg-transparent text-center text-body text-ink outline-none focus-visible:outline-2 focus-visible:outline-ring"
+        className="h-control w-14 border-y border-border-control bg-transparent text-center text-body text-ink focus-visible:outline-2 focus-visible:outline-ring"
       />
       <Button
         type="button"

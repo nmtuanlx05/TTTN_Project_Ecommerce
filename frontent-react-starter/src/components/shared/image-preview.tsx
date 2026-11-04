@@ -85,7 +85,7 @@ function ImagePreview({
           aria-label={`Xem ảnh lớn: ${alt}`}
           title="Bấm để xem ảnh lớn"
           onClick={() => setLightbox({ mounted: true, open: true })}
-          className="absolute inset-0 cursor-zoom-in outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+          className="absolute inset-0 cursor-zoom-in focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
         >
           {image}
         </button>
