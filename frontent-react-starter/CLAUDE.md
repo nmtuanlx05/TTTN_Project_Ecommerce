@@ -16,7 +16,7 @@ của phần mình và nhắc chạy `git restore --staged :/` nếu đang có f
 ## Cấu trúc thư mục (bắt buộc)
 - Chi tiết: `docs/cau-truc-thu-muc.md`. ĐỌC khi tạo module hoặc trang mới, hoặc khi không chắc đặt file ở đâu. Sửa nhỏ thì không cần đọc.
 - Hai giao diện: storefront (khách) ở `/`, admin (ADMIN và STAFF dùng chung) ở `/admin`. Không làm trang staff riêng.
-- Luật ngắn: pages chỉ ghép (không gọi API, không logic); thứ riêng của tính năng nằm trong `features/<tên>/`; features không import lẫn nhau; mỗi file một component dưới ~150 dòng; chỉ `api.ts` và `lib/api-client.ts` dùng axios; không sửa `components/ui/`.
+- Luật ngắn: pages chỉ ghép (không gọi API, không logic); thứ riêng của tính năng nằm trong `features/<tên>/`; features không import lẫn nhau; mỗi file một component dưới ~150 dòng; chỉ `api.ts` và `lib/api-client.ts` dùng axios; không sửa `components/ui/` (ngoại lệ đã cho phép: THÊM lớp `soft:` vào variant của `ui/button.tsx`, không đổi hành vi variant hiện có; sửa kiểu này phải một commit riêng và chứng minh admin không đổi).
 - Tạo module mới: làm theo mục "Checklist module mới" trong docs. Việc cần làm → file cần mở (sửa chữ trang chủ, hero, thẻ sản phẩm, footer...): mục 10 "Bản chỉ đường storefront"; tạo file mới hay gộp: mục 11 "Khi nào tạo file mới, khi nào gộp".
 - Làm giao diện khách (storefront): đọc `docs/storefront-design.md` (ý tưởng, token dùng cho từng vai trò, thang chữ, lưới, chuyển động, ảnh, trạng thái, truy cập).
 - Đổi cấu trúc thì sửa file docs trước.
@@ -58,7 +58,7 @@ Cả `npx tsc -b` lẫn `npm run lint` hiện đang sạch — giữ nguyên nh�
 | Display | Archivo Variable (`wght` 100–900, `wdth` 62–125) | `--font-display` | Dùng cho h1–h4 và `.font-display` |
 | Body | Be Vietnam Pro (400/500/600/700) | `--font-sans` | Mặc định của `body` |
 | Số liệu | Geist Mono Variable | `--font-mono` | SKU, mã đơn, tiền |
-| Serif nghiêng | Newsreader Variable, italic thật (OFL-1.1, ghim `5.3.0`) | `--font-serif` | CHỈ tiêu đề dải "Câu chuyện thương hiệu" ở trang chủ; nạp tay hai tập latin + vietnamese (~77 kB), không dùng chỗ khác |
+| Serif nghiêng | Newsreader Variable, italic thật (OFL-1.1, ghim `5.3.0`) | `--font-serif` | Trang chủ: nhãn đầu khối, phụ đề hero, dải "Câu chuyện thương hiệu"; nạp tay hai tập latin + vietnamese (~77 kB, preload trong `index.html`), không dùng chỗ khác |
 
 Cả ba đều có bộ dấu tiếng Việt đầy đủ (đã kiểm chứng trong file woff2 của
 package, không phải phỏng đoán). Be Vietnam Pro do xưởng chữ Việt Nam vẽ, dấu
@@ -196,11 +196,13 @@ dù mật độ chữ vẫn dày.
 
 | Token | Giá trị | Dùng cho |
 |---|---|---|
-| `--radius-control` | 2px | input, nút, checkbox |
-| `--radius-surface` | 3px | card, dialog, bảng |
-| `--radius-pill` | 999px | badge, chip |
+| `--radius-control` | 2px (admin, auth, header); **10px** trong `.soft-ui` | input, nút, checkbox |
+| `--radius-surface` | 3px; = control trong `.soft-ui` | card, dialog, bảng, popup |
+| `--radius-pill` | 999px | badge, chip, nút tròn |
+| `rounded-card` | 18px | storefront: ảnh sản phẩm, thẻ danh mục |
+| `rounded-panel` | 28px | storefront: ảnh hero, thẻ câu chuyện, thẻ cam kết |
 
-Độ dày viền luôn là 1px (`--stroke-hairline`). Focus ring là 2px, cách mép 2px.
+`.soft-ui` (gắn lên `<main>` và `<footer>` của `StorefrontLayout`, KHÔNG lên header, admin, auth) là phạm vi "mềm" của storefront: ghi đè bán kính và bật lớp `soft:` (hover đảo màu của nút). Chi tiết ở `docs/storefront-design.md` mục 5. Độ dày viền luôn là 1px (`--stroke-hairline`). Focus ring là 2px, cách mép 2px.
 
 ## Nút
 
@@ -213,7 +215,7 @@ Bốn cấp, vẫn đơn sắc:
 | `ghost` | không viền, chỉ đổi nền khi hover | Hành động nhẹ, trong bảng/thanh công cụ |
 | `destructive` | nền danger | Chỉ cho xóa/hủy |
 
-Mọi nút đã có đủ default, hover, active, focus-visible, disabled và loading.
+Trong storefront (`.soft-ui`) nút `primary` và `secondary` hover ĐẢO MÀU (đặc ↔ viền; lớp `soft:` trong `ui/button.tsx`); admin giữ hover cũ. Mọi nút đã có đủ default, hover, active, focus-visible, disabled và loading.
 `loading` giữ nguyên chỗ của nhãn để nút không nhảy khi đang xử lý.
 
 `default` và `outline` là tên cũ của shadcn, giữ lại cho component sinh sẵn —
@@ -382,7 +384,7 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
   (`header-nav.tsx`, `header-nav-panel.tsx`, `hooks/use-mega-menu.ts`, `lib/nav-items.ts`; chi tiết ở `docs/storefront-design.md` mục 9b), rồi tìm kiếm (khung trượt từ trên, tự focus, Enter → `/products?q=`), giỏ hàng, đăng nhập hoặc `UserMenu`; dưới `xl` còn nút menu (ngăn kéo cùng cấu hình, mục danh mục là accordion
   (`mobile-nav-list.tsx`), kèm tài khoản kể cả "Ảnh đại diện" và "Vào trang quản trị"), tìm kiếm, giỏ hàng. Nền header mờ nhẹ + đường kẻ khi cuộn. **Thanh thông báo chạy chữ** (`announcement-bar.tsx`, dựng trong `StorefrontLayout` ngay trên header, không dính): nội dung `STORE.announcements`, dừng khi rê chuột/focus, tắt khi giảm chuyển động. **Footer** (nền tối cố định nhờ class `dark` cục bộ, không token mới): 4 cột
   (giới thiệu + liên hệ, đường dẫn nhanh từ `navItems`, chính sách khách hàng, đăng ký nhận tin), dòng bản quyền. Nội dung cửa hàng (tên, khẩu hiệu,
-  liên hệ, thanh thông báo, chữ chân trang) chỉ ở `lib/store-info.ts`: **khẩu hiệu, mô tả chân trang và các cam kết (miễn phí vận chuyển, đổi trả 30 ngày, ưu đãi 10%) là nội dung mẫu chờ xác nhận**, hệ thống chưa làm thật (bảng ở `docs/storefront-design.md` mục 13); liên hệ chưa có (footer ghi "đang được cập nhật"). **Trang chủ** (`pages/storefront/home`, chi tiết ở `docs/storefront-design.md` mục 14; nội dung ở `lib/home-content.ts`, ảnh tĩnh ở `public/home/`): hero carousel THỦ CÔNG 3 slide (nút, thanh tiến trình, phím ←/→, vuốt; không tự chạy; một `h1` ẩn thị giác, tiêu đề slide là `h2`; ảnh tràn sát mép phải, chữ canh theo container bằng `--container-inset`), "Danh mục nổi bật" (4 thẻ ảnh, gradient `scrim`), "Best sellers" (**TẠM**: hook `useBestSellerProducts` lấy sản phẩm tạo sớm nhất, chưa phải bán chạy), "Câu chuyện thương hiệu" (dải tối, tiêu đề serif nghiêng), "Sản phẩm mới về" (3 tab + danh sách cuộn ngang) và dải cam kết; mỗi khối tự xử lý rỗng/lỗi; ba khối có tiêu đề dựng trên khung chung `HomeSection`, tự bọc `Reveal`. Mọi chữ là **nội dung mẫu** chờ xác nhận, nhiều câu là cam kết chưa có thật (bảng ở `docs/storefront-design.md` mục 13). Khung nội dung của trang dùng `PageContainer` (`components/storefront/page-container.tsx`; header, chân trang, khung tìm kiếm, bảng điều hướng dùng cùng giá trị nhưng tự viết class). Trang storefront mới đặt trong cùng `<Route element={<StorefrontLayoutContainer />}>` ở `routes/storefront-routes.tsx`.
+  liên hệ, thanh thông báo, chữ chân trang) chỉ ở `lib/store-info.ts`: **khẩu hiệu, mô tả chân trang và các cam kết (miễn phí vận chuyển, đổi trả 30 ngày, ưu đãi 10%) là nội dung mẫu chờ xác nhận**, hệ thống chưa làm thật (bảng ở `docs/storefront-design.md` mục 13); liên hệ chưa có (footer ghi "đang được cập nhật"). **Trang chủ** (`pages/storefront/home`, chi tiết ở `docs/storefront-design.md` mục 14; nội dung ở `lib/home-content.ts`, ảnh tĩnh ở `public/home/`): hero carousel THỦ CÔNG 3 slide (nút, thanh tiến trình, phím ←/→, vuốt; không tự chạy; một `h1` ẩn thị giác, tiêu đề slide là `h2`; ảnh bo góc có lề, cạnh phải lòi ra ngoài container tối đa `--hero-bleed`, chữ canh theo container bằng `--container-inset`), "Danh mục nổi bật" (4 thẻ ảnh, gradient `scrim`), "Best sellers" (**TẠM**: hook `useBestSellerProducts` lấy sản phẩm tạo sớm nhất, chưa phải bán chạy), "Câu chuyện thương hiệu" (thẻ tối bo góc, tiêu đề serif nghiêng), "Sản phẩm mới về" (3 tab + danh sách cuộn ngang) và dải cam kết; mỗi khối tự xử lý rỗng/lỗi; ba khối có tiêu đề dựng trên khung chung `HomeSection`, tự bọc `Reveal`. Mọi chữ là **nội dung mẫu** chờ xác nhận, nhiều câu là cam kết chưa có thật (bảng ở `docs/storefront-design.md` mục 13). Khung nội dung của trang dùng `PageContainer` (`components/storefront/page-container.tsx`; header, chân trang, khung tìm kiếm, bảng điều hướng dùng cùng giá trị nhưng tự viết class). Trang storefront mới đặt trong cùng `<Route element={<StorefrontLayoutContainer />}>` ở `routes/storefront-routes.tsx`.
 - `/dia-chi` — danh sách cửa hàng (`pages/storefront/stores`, `components/storefront/store-list.tsx`) từ `STORE.stores` trong `lib/store-info.ts`; **mảng để rỗng cho tới khi chủ cửa hàng cung cấp thông tin thật** (rỗng thì hiện "Thông tin cửa hàng đang được cập nhật"). Không bịa địa chỉ, số điện thoại, giờ mở cửa.
 - `/thong-tin/:slug` — trang thông tin tạm (`pages/storefront/info`, cấu hình `lib/info-pages.ts`: doi-tra, van-chuyen, huong-dan-chon-size, bao-mat, dieu-khoan): một `h1`; chưa có nội dung thì "Nội dung đang được cập nhật"; slug lạ thì 404 trong khung. Footer trỏ tới các trang này.
 - **Form nhận tin** (`features/newsletter`, ở footer): chỉ giao diện; `subscribeNewsletter` (`api.ts`) là hàm TẠM trả "chưa khả dụng", thay bằng `POST /newsletter/subscribers` khi backend có. Không giả vờ thành công, không gọi API.
@@ -490,3 +492,17 @@ một module, và cập nhật `/styleguide` nếu có thêm token hoặc compon
   - Storefront: `mx-auto w-full max-w-7xl px-gutter` còn được viết lại ở header, footer, `header-nav-panel`, `search-panel` (chủ ý, xem `page-container.tsx`); skeleton `shimmer aspect-[3/4]` lặp ở vài nơi (giữ).
   - Phong cách: repo chưa có Prettier; một số file admin/auth còn dấu `;` cuối dòng (`user-form-dialog`, `admin-topbar`, `auth-store`, `pages/admin/users`).
   - Ảnh `public/home/*.webp` vượt ngân sách dung lượng (xem `docs/storefront-design.md` mục 7), cần nén.
+
+
+
+## Mức kiểm thử mặc định (áp dụng cho mọi phiên)
+
+Người dùng tự mở giao diện và xem bằng mắt. Vì vậy:
+
+1. KHÔNG tự dựng harness trình duyệt (puppeteer/playwright), KHÔNG chụp ảnh hàng loạt, KHÔNG so ảnh trước/sau, KHÔNG so computed style, KHÔNG dùng git archive để dựng bản "trước", trừ khi người dùng yêu cầu rõ trong prompt.
+2. Kiểm tra tự động chỉ gồm: `npx tsc -b`, `npm run lint`, `npm run build` — chạy MỘT lần ở cuối. Có thể thêm 1 lệnh grep/tìm kiếm cho các việc kiểu "còn chỗ nào dùng X không".
+3. Ngoại lệ được phép làm thêm (nêu một dòng lý do trước khi làm): khi sửa file dùng chung ảnh hưởng admin/auth (ví dụ ui/button.tsx, ui/input.tsx, global.css phần token chung) — khi đó chỉ cần chụp 2–3 trang admin tiêu biểu ở 1 cỡ màn, không quét toàn bộ.
+4. Không mở tiến trình nền kéo dài. Nếu lỡ mở thì tắt trước khi báo cáo.
+5. Không lặp vòng "chạy – sửa harness – chạy lại". Nếu một công cụ kiểm thử lỗi, bỏ nó, ghi vào báo cáo mục "chưa kiểm chứng", rồi dừng.
+6. Báo cáo cuối luôn có hai mục ngắn: "Đã kiểm chứng" và "Chưa kiểm chứng — bạn nên xem bằng mắt các chỗ sau: ...", liệt kê cụ thể trang, cỡ màn, thao tác.
+7. Khi xong phải đưa ngay kịch bản commit (helper ci(), nối "&& npx tsc -b"). Không mô phỏng từng commit trừ khi người dùng yêu cầu.

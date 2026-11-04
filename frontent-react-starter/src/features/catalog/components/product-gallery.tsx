@@ -29,7 +29,7 @@ function ProductGallery({ src, alt }: { src: string | null; alt: string }) {
         type="button"
         aria-label="Xem ảnh lớn"
         onClick={() => setOpen(true)}
-        className="block w-full cursor-zoom-in"
+        className="block w-full cursor-zoom-in rounded-card"
       >
         {image}
       </button>

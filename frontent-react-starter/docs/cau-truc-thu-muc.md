@@ -29,7 +29,7 @@ src/
 │   │  newsletter/ ✓ (form đăng ký nhận tin ở chân trang — mới có giao diện, chưa có backend)
 │   └─ cart/ checkout/ orders/ vouchers/ payments/ account/
 ├─ components/
-│   ├─ ui/          shadcn, KHÔNG sửa ✓
+│   ├─ ui/          shadcn, KHÔNG sửa ✓ (ngoại lệ: được THÊM lớp `soft:` vào variant của button.tsx, một commit riêng)
 │   ├─ admin/       khung admin và thứ dùng chung nhiều tính năng ✓ (admin-layout, admin-sidebar, admin-topbar, nav-items, page-header, table-pagination, search-input — ô tìm kiếm debounce, confirm-dialog; category-select ✓ — ô chọn danh mục dạng cây thụt lề, dùng ở products và inventory)
 │   ├─ storefront/  ✓ khung khách và phần dựng sẵn dùng ở nhiều trang storefront: storefront-layout, storefront-header
 │   │                 (+ header-session, header-account, header-nav (+ header-nav-link, header-nav-panel: bảng toàn chiều rộng, header-nav-styles — thanh điều hướng và mega menu từ `xl`),
@@ -208,6 +208,7 @@ Việc cần làm → file cần mở. Nội dung chữ không nằm trong compo
 | Thêm cửa hàng cho trang /dia-chi | `STORE.stores` ở `lib/store-info.ts` |
 | Thêm một trang storefront mới | `pages/storefront/<tên>/index.tsx` (mỏng) + một `<Route>` trong `routes/storefront-routes.tsx`; logic và dữ liệu ở `features/<tên>/` |
 | Đổi màu, cỡ chữ, khoảng cách, chuyển động | `src/global.css` (token), tra cách dùng ở `docs/storefront-design.md` |
+| Đổi bán kính bo góc storefront / hover đảo màu của nút | `src/global.css` (`.soft-ui`, `rounded-card/panel`, `@custom-variant soft`) / lớp `soft:` trong `components/ui/button.tsx` |
 | Đổi bề rộng và lề của khung nội dung | `components/storefront/page-container.tsx`, và 4 nơi tự viết class (header, footer, `header-nav-panel`, `search-panel`) + `--container-max`/`--container-inset` ở `global.css` |
 
 ## 11. Khi nào tạo file mới, khi nào gộp

@@ -13,7 +13,7 @@ function HScrollList({ label, busy = false, children }: { label: string; busy?: 
       aria-label={label}
       aria-busy={busy || undefined}
       tabIndex={0}
-      className="scrollbar-thin snap-x snap-mandatory overflow-x-auto overscroll-x-contain pb-4 focus-visible:-outline-offset-2"
+      className="scrollbar-soft snap-x snap-mandatory overflow-x-auto overscroll-x-contain pb-4 focus-visible:-outline-offset-2"
     >
       <ul
         className={cn(

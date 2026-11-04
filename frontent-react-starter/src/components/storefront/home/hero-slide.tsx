@@ -7,7 +7,7 @@ import type { HeroSlideContent } from "@/lib/home-content"
 import { cn } from "@/lib/utils"
 
 /**
- * Từ `lg`: cột chữ 46%, cột ảnh 54% (ảnh tràn sát mép phải màn hình, cột chữ canh theo container). Số 46 phải khớp `HERO_TEXT_WIDTH_CLASS`
+ * Từ `lg`: cột chữ 46%, cột ảnh 54% (cột chữ canh theo container, ảnh cách mép phải theo `--hero-image-inset`). Số 46 phải khớp `HERO_TEXT_WIDTH_CLASS`
  * ở `hero-layout.ts` (bề rộng hàng điều khiển nằm đè đúng cột chữ). Ghi đủ chuỗi class vì Tailwind chỉ nhận class viết nguyên văn trong mã.
  */
 const HERO_SPLIT_CLASS = "lg:grid-cols-[46fr_54fr]"
@@ -19,12 +19,19 @@ const HERO_SPLIT_CLASS = "lg:grid-cols-[46fr_54fr]"
 const HERO_IMAGE_MOBILE_CLASS = "aspect-square max-h-[40svh]"
 
 /**
- * Một slide của hero: cột chữ (nhãn có đường kẻ ngắn, tiêu đề, phụ đề, mô tả, hai nút) và cột ảnh có khung viền mảnh lùi vào trong.
+ * Khung ảnh bo góc có lề quanh (không còn tràn sát mép). Dưới `lg`: lề ngang `gutter`, bo `card`. Từ `lg`: lề trên/dưới `gutter`, bo `panel`, và lề phải là `--hero-image-inset`
+ * (global.css): màn hẹp thì một gutter, màn rộng thì ảnh chỉ lòi ra ngoài lề phải của container tối đa `--hero-bleed`, không lòi thêm.
+ */
+const HERO_IMAGE_FRAME_CLASS =
+  "relative max-lg:order-first max-lg:mx-gutter max-lg:mt-4 max-lg:rounded-card lg:my-gutter lg:mr-(--hero-image-inset) lg:rounded-panel overflow-hidden"
+
+/**
+ * Một slide của hero: cột chữ (nhãn có đường kẻ ngắn, tiêu đề, phụ đề serif nghiêng, mô tả, hai nút) và cột ảnh bo góc có lề.
  * Ba slide xếp chồng trong CÙNG một ô lưới nên chiều cao không nhảy khi đổi; slide không hiện thì `inert` (không focus được, không bấm được,
  * ẩn khỏi cây truy cập) và mờ đi. Không dùng `visibility`: chuyển `hidden → visible` giữ `hidden` tới hết chuyển động nên `focus()` ngay sau khi đổi slide sẽ thất bại. Chữ trồi nhẹ khi vào (bỏ khi giảm chuyển động).
  *
  * Bố cục: dưới `lg` ảnh ở trên (vuông dưới `md`, 3:2 từ `md`; ảnh vuông bị chặn cao theo màn hình để tiêu đề và nút chính còn trong màn hình đầu),
- * chữ ở dưới. Từ `lg` chia 46/54, cao `--hero-h`, cột chữ canh theo mép trái container (`--container-inset`), ảnh tràn sát mép phải màn hình.
+ * chữ ở dưới. Từ `lg` chia 46/54, cao `--hero-h`, cột chữ canh theo mép trái container (`--container-inset`), ảnh có lề (xem `HERO_IMAGE_FRAME_CLASS`).
  * `pb-24` chừa chỗ cho hàng điều khiển nằm đè phía dưới (`HeroControls`).
  */
 function HeroSlide({
@@ -70,7 +77,7 @@ function HeroSlide({
           {eyebrow}
         </p>
         <h2 className="text-h1 uppercase text-balance text-ink md:text-display lg:text-h1 xl:text-display">{slide.title}</h2>
-        <p className="text-body-lg font-medium text-ink">{slide.subtitle}</p>
+        <p className="font-serif text-h3 font-normal text-ink italic md:text-h2">{slide.subtitle}</p>
         <p className="max-w-prose text-body-sm text-ink-muted md:text-body">{slide.description}</p>
         <div className="flex flex-wrap gap-inline pt-2">
           <Link to={homeHref(tree, slide.primary.categorySlug)} className={cn(buttonVariants({ size: "lg" }), "press")}>
@@ -78,20 +85,19 @@ function HeroSlide({
           </Link>
           <Link
             to={homeHref(tree, slide.secondary.categorySlug)}
-            className={cn(buttonVariants({ size: "lg", variant: "secondary" }), "press border-border-control")}
+            className={cn(buttonVariants({ size: "lg", variant: "secondary" }), "press")}
           >
             {slide.secondary.label}
           </Link>
         </div>
       </div>
-      <div className={cn("relative w-full max-lg:order-first", HERO_IMAGE_MOBILE_CLASS, "md:aspect-[3/2] md:max-h-none lg:aspect-auto")}>
+      <div className={cn(HERO_IMAGE_FRAME_CLASS, HERO_IMAGE_MOBILE_CLASS, "md:aspect-[3/2] md:max-h-none lg:aspect-auto")}>
         <StaticImage
           src={slide.image.src}
           alt={slide.image.alt}
           objectPosition={slide.image.objectPosition}
           eager={eager}
         />
-        <div aria-hidden="true" className="pointer-events-none absolute inset-3 border border-canvas/60 lg:inset-5" />
       </div>
     </div>
   )

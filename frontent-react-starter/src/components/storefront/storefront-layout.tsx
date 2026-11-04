@@ -24,6 +24,9 @@ function SkipLink() {
  * không nói rõ easing (kể cả của `ui/Button`, `ui/Select` nằm trong khung) dùng đúng đường cong của storefront mà không đụng `ui/` và
  * không đổi admin. Chỉ phủ phần tử con trực tiếp trong cây; popup render ở Portal (ngăn kéo, danh sách chọn) tự khai báo easing riêng.
  *
+ * Phong cách "mềm" (nút/ô nhập bo 10px, hover đảo màu của nút) gắn bằng class `soft-ui` lên `<main>` và `<footer>`, KHÔNG gắn lên header (header giữ nguyên)
+ * hay khu admin/auth (xem global.css).
+ *
  * Hiệu ứng vào trang gắn `key` theo PATHNAME, không theo query: đổi bộ lọc hay đổi trang trong /products không làm
  * cả trang mờ-trồi lại. `scroll-mt-header` để mục tiêu "bỏ qua tới nội dung" không bị header dính che.
  */
@@ -42,7 +45,7 @@ function StorefrontLayout({
       <SkipLink />
       <AnnouncementBar />
       {header}
-      <main id="main-content" tabIndex={-1} className="flex-1 scroll-mt-header outline-none">
+      <main id="main-content" tabIndex={-1} className="soft-ui flex-1 scroll-mt-header outline-none">
         <div key={pathname} className="motion-safe:animate-page-enter">
           <Outlet />
         </div>

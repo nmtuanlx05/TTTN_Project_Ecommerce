@@ -1,6 +1,10 @@
 import type { KeyboardEvent } from "react"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { panelDomId, tabDomId } from "@/lib/tab-ids"
+
+/** Tab đang chọn là nút đặc nhưng KHÔNG đảo màu khi hover (đảo sẽ trông như vừa bị bỏ chọn): ghi đè lại hover của variant `primary` trong phạm vi `soft-ui`. */
+const SELECTED_TAB = "soft:hover:border-transparent soft:hover:bg-primary soft:hover:text-primary-fg soft:active:bg-primary-active soft:active:text-primary-fg"
 
 interface TabItem {
   id: string
@@ -9,7 +13,7 @@ interface TabItem {
 
 /**
  * Thanh tab (`tablist`) kiểu APG: chỉ tab đang chọn nằm trong thứ tự Tab (tabindex luân chuyển), ←/→ chuyển tab (quay vòng) và KÍCH HOẠT ngay,
- * Home/End về tab đầu/cuối. Tab đang chọn là nút đặc (`primary`), tab còn lại là nút viền (`secondary`); cao 44px. Nơi dùng đặt `role="tabpanel"`
+ * Home/End về tab đầu/cuối. Dạng viên thuốc: tab đang chọn là nút đặc (`primary`), tab còn lại là nút viền (`secondary`, hover đảo thành nút đặc); cao 44px. Nơi dùng đặt `role="tabpanel"`
  * với `id={panelDomId(prefix)}` và `aria-labelledby={tabDomId(prefix, <id tab đang chọn>)}` (`lib/tab-ids.ts`).
  */
 function TabBar({
@@ -56,7 +60,7 @@ function TabBar({
             aria-controls={panelDomId(prefix)}
             tabIndex={selected ? 0 : -1}
             variant={selected ? "primary" : "secondary"}
-            className={selected ? undefined : "border-border-control"}
+            className={cn("rounded-4xl", selected && SELECTED_TAB)}
             onClick={() => onSelect(tab.id)}
           >
             {tab.label}

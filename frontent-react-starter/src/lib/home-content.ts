@@ -57,7 +57,7 @@ export interface HomeAssurance {
   description: string
 }
 
-/** Nhãn chung của một khối có tiêu đề. */
+/** Nhãn chung của một khối có tiêu đề. `eyebrow` hiển thị serif nghiêng đúng như viết ở đây (viết thường như thiết kế mẫu); `title` hiển thị hoa bằng CSS. */
 interface SectionCopy {
   eyebrow: string
   title: string
@@ -94,7 +94,7 @@ const HERO_SLIDES: readonly HeroSlideContent[] = [
 ]
 
 const CATEGORIES_SECTION: SectionCopy & { viewAll: string } = {
-  eyebrow: "MUA THEO DANH MỤC",
+  eyebrow: "Mua theo danh mục",
   title: "DANH MỤC NỔI BẬT",
   viewAll: "Xem tất cả sản phẩm",
 }
@@ -111,14 +111,14 @@ const CATEGORY_CARDS: readonly HomeCategoryCard[] = [
  * `useBestSellerProducts`); chờ có đơn hàng, xem bảng cam kết ở docs/storefront-design.md mục 13.
  */
 const BEST_SELLERS_SECTION: SectionCopy & { description: string; viewAll: string } = {
-  eyebrow: "BEST SELLERS",
+  eyebrow: "Best sellers",
   title: "XU HƯỚNG HIỆN TẠI",
   description: "Tuyển chọn những thiết kế tối giản, dễ phối và được yêu thích tại MONO STUDIO.",
   viewAll: "Xem tất cả",
 }
 
 const STORY: SectionCopy & { description: string; cta: string; image: HomeImage } = {
-  eyebrow: "CÂU CHUYỆN THƯƠNG HIỆU",
+  eyebrow: "Câu chuyện thương hiệu",
   title: "Thời trang tối giản cho cuộc sống hiện đại.",
   // Có cam kết về chất liệu và form (bảng cam kết, docs mục 13).
   description: "MONO STUDIO theo đuổi những thiết kế gọn gàng: chất liệu thoáng mát, form chuẩn, dễ phối cho mọi ngày.",
@@ -126,7 +126,7 @@ const STORY: SectionCopy & { description: string; cta: string; image: HomeImage 
   image: { src: "/home/story.webp", alt: "", objectPosition: "center" },
 }
 
-const NEW_ARRIVALS_SECTION: SectionCopy = { eyebrow: "MỚI CẬP NHẬT", title: "SẢN PHẨM MỚI VỀ" }
+const NEW_ARRIVALS_SECTION: SectionCopy = { eyebrow: "Mới cập nhật", title: "SẢN PHẨM MỚI VỀ" }
 
 const NEW_ARRIVALS_TABS: readonly HomeTab[] = [
   { id: "all", label: "Tất cả" },

@@ -26,7 +26,7 @@ function CategoryShowcase({ tree, loading }: { tree: CategoryTree | null; loadin
       {loading ? (
         <ul aria-hidden="true" className={GRID}>
           {cards.map((card) => (
-            <li key={card.categorySlug} className="shimmer aspect-[3/4]" />
+            <li key={card.categorySlug} className="shimmer aspect-[3/4] rounded-card" />
           ))}
         </ul>
       ) : (

@@ -8,7 +8,7 @@ function SortSelect({ value, onChange }: { value: CatalogSort; onChange: (value:
       <SelectTrigger aria-label="Sắp xếp" className="w-44">
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="soft-ui">
         {SORT_OPTIONS.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             {option.label}

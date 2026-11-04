@@ -4,6 +4,15 @@ import { LoaderCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 /**
+ * Hover ĐẢO MÀU của storefront (chỉ chạy bên trong `.soft-ui`, xem `@custom-variant soft` ở global.css; admin và trang auth không có phạm vi này nên không đổi).
+ * Nút đặc khi hover thành nền sáng + chữ tối + viền; nút viền khi hover thành nền đặc + chữ sáng. Chỉ dùng token nên trong vùng tối cố định (`dark`) cặp màu tự đảo theo.
+ * Màu viền/nền khai báo theo TỪNG variant (cva không gộp class xung đột như `cn`). `hover:` của Tailwind chỉ chạy trên thiết bị có hover.
+ */
+const SOFT_SOLID = "soft:hover:border-ink soft:hover:bg-canvas soft:hover:text-ink soft:active:bg-surface-active soft:active:text-ink"
+const SOFT_OUTLINE =
+  "soft:border-border-control soft:hover:border-primary soft:hover:bg-primary soft:hover:text-primary-fg soft:active:border-primary soft:active:bg-primary-active"
+
+/**
  * Bốn cấp nút, vẫn giữ đơn sắc:
  * - primary     nền mực đặc, chữ ngà. Mỗi màn chỉ MỘT nút cấp này.
  * - secondary   viền 1px, nền trong suốt.
@@ -29,10 +38,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary:
+        primary: [
           "border-transparent bg-primary text-primary-fg hover:bg-primary-hover active:bg-primary-active",
-        secondary:
+          SOFT_SOLID,
+        ],
+        secondary: [
           "border-border-strong bg-transparent text-ink hover:bg-surface-hover active:bg-surface-active",
+          SOFT_OUTLINE,
+        ],
         ghost:
           "border-transparent bg-transparent text-ink hover:bg-surface-hover active:bg-surface-active",
         destructive:
