@@ -22,7 +22,7 @@ src/
 │   │               inventory ✓, vouchers, placeholder ✓
 │   ├─ styleguide/  ✓ trang nội bộ cho dev (route /styleguide), không thuộc admin
 │   ├─ forbidden.tsx ✓ (403), not-found.tsx ✓ (404)
-│   ├─ storefront/  home ✓ (hero, danh mục, sản phẩm mới, tuyên bố), catalog ✓ (/products), product-detail ✓ (/products/:slug), stores ✓ (/dia-chi), not-found ✓ (404 trong khung khách),
+│   ├─ storefront/  home ✓ (hero carousel, danh mục nổi bật, best sellers, câu chuyện, sản phẩm mới về, dải cam kết), catalog ✓ (/products), product-detail ✓ (/products/:slug), stores ✓ (/dia-chi), not-found ✓ (404 trong khung khách),
 │   │               cart, checkout, order-success, my-orders, account
 ├─ features/      mỗi thực thể một thư mục theo khuôn mục 3
 │   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/ ✓ catalog/ ✓ (dữ liệu công khai của storefront: danh sách và chi tiết sản phẩm)
@@ -36,7 +36,9 @@ src/
 │   │                 mobile-nav-drawer (+ mobile-nav-list, mobile-nav-accordion, mobile-nav-styles — ngăn kéo dưới `xl`), mobile-account, search-panel,
 │   │                 cart-button), storefront-footer, storefront-drawer (ngăn kéo/khung trượt dựng trên Base UI Dialog), skip-link,
 │   │                 breadcrumbs, pagination (số trang, dạng liên kết), product-image (khung 3:4, shimmer, fade, ảnh dự phòng),
-│   │                 reveal (hiện dần khi cuộn), state-message (rỗng/lỗi/404), section-heading, category-tiles (ô chữ danh mục trang chủ), brand-statement,
+│   │                 reveal (hiện dần khi cuộn), state-message (rỗng/lỗi/404), section-heading (nhãn + tiêu đề + mô tả + liên kết phụ), page-container (khung nội dung `max-w-7xl` + gutter),
+│                 static-image (ảnh tĩnh trong `public/` có khung trung tính khi thiếu/lỗi), hscroll-list (danh sách cuộn ngang có snap), tab-bar (tablist điều khiển bằng mũi tên),
+│                 home/ (các khối trang chủ chỉ nhận props, không import features: home-hero + hero-slide + hero-controls + hero-progress, category-showcase + category-card, brand-story, assurance-strip + assurance-item, hero-layout — hằng số bố cục dùng chung của hero), view-all-link (liên kết "Xem tất cả →"),
 │   │                 store-list (+ store-entry) — danh sách cửa hàng của trang /dia-chi,
 │   │                 announcement-bar (thanh thông báo chạy chữ phía trên header), footer-brand, footer-link-column, footer-bottom-bar (các phần của storefront-footer),
 │   │                 info-page-content (nội dung trang chính sách tạm), not-found-content (nội dung 404 dùng chung cho 404 và slug lạ của trang thông tin)
@@ -49,7 +51,7 @@ src/
 ├─ hooks/         hook dùng chung (use-theme ✓, use-mobile ✓, use-dialog-target ✓, use-category-options ✓ — danh mục cho ô chọn của
 │                 categories và products, use-image-upload ✓ + use-file-drop ✓ — upload ảnh và kéo-thả cho image-upload-field, use-update-avatar ✓ — lưu ảnh đại diện, use-pan-zoom ✓ +
 │                 use-pan-zoom-gestures ✓ — thu phóng và kéo ảnh cho image-lightbox, use-debounce,
-│                 use-category-tree ✓ — cây danh mục công khai cho header/footer/catalog, use-document-title ✓, use-in-view ✓ — IntersectionObserver,
+│                 use-category-tree ✓ — cây danh mục công khai cho header/footer/catalog, use-carousel ✓ + use-swipe ✓ — carousel thủ công (không tự chạy) của hero trang chủ, use-image-load ✓ — trạng thái tải/lỗi của ảnh (dùng chung product-image và static-image), use-document-title ✓, use-in-view ✓ — IntersectionObserver,
 │                 use-open-until-navigation ✓ — ngăn kéo menu/khung tìm kiếm tự đóng khi đổi pathname, use-mega-menu ✓ — trạng thái mở/đóng, hẹn giờ hover và bấm ra ngoài của bảng điều hướng ở header, use-scroll-restoration ✓ — cuộn lên đầu khi đổi trang
 │                 và khôi phục vị trí khi Back/F5 của storefront)
 ├─ lib/           hạ tầng: api-client ✓, api-error ✓, query-client ✓, format ✓, utils ✓, date-range ✓, category-tree-options ✓ (danh mục phẳng → danh sách theo cây, thuần túy),
@@ -58,23 +60,27 @@ src/
 │                 pan-zoom ✓ (toán thu phóng và kéo ảnh, thuần túy), store-info ✓ (nội dung cửa hàng: tên, khẩu hiệu, liên hệ — MỘT file duy nhất),
 │                 category-tree ✓ (danh mục phẳng → cây, tra slug, chuỗi cha; thuần túy),
 │                 nav-items ✓ (cấu hình `STORE.navItems` + cây danh mục → mục điều hướng, dòng của bảng, mục đang xem; thuần túy),
-│                 info-pages ✓ (cấu hình các trang chính sách tạm `{ slug, title, paragraphs? }`, tra theo slug, đường dẫn; thuần túy)
+│                 info-pages ✓ (cấu hình các trang chính sách tạm `{ slug, title, paragraphs? }`, tra theo slug, đường dẫn; thuần túy),
+│                 home-content ✓ (nội dung trang chủ: slide hero, danh mục nổi bật, best sellers, câu chuyện, tab sản phẩm mới, cam kết; tách khỏi giao diện),
+│                 home-links ✓ (đích liên kết `{ categorySlug }` + cây danh mục → URL, thuần túy),
+│                 tab-ids ✓ (id DOM của tab và tabpanel, dùng chung `tab-bar` và nơi dựng tabpanel)
 ├─ types/         kiểu dùng chung (api.ts ✓, user.ts ✓ — Role và User, dùng ở auth, users, components/admin; category.ts ✓ — PublicCategory,
 │                 dùng ở categories và products; upload.ts ✓ — ImageUploadKind)
 └─ assets/        ảnh, font nội bộ
+public/home/      ảnh tĩnh của trang chủ (hero, danh mục, câu chuyện); đường dẫn khai báo ở `lib/home-content.ts`, thiếu file thì hiện khung trung tính
 ````
 
 ### features/catalog (dữ liệu công khai của storefront)
 ````
 features/catalog/
-├─ api.ts  queries.ts  types.ts  constants.ts  (GET /products và /products/:slug; key `["catalog", ...]`)
+├─ api.ts  queries.ts  types.ts  constants.ts  home-constants.ts  (GET /products và /products/:slug; key `["catalog", ...]`; home-constants: số thẻ và bề rộng thẻ của các khối trang chủ)
 ├─ use-catalog-search-params.ts   (URL → bộ lọc: category slug, q, sort, minPrice, maxPrice, page; lọc whitelist)
 ├─ variant-options.ts  price-range.ts   (logic thuần)
 └─ components/   danh sách: catalog-content, catalog-heading, catalog-results, catalog-states, catalog-filters, category-filter,
                  price-filter, filter-link, filter-drawer, sort-select, active-filter-chips, product-grid(+skeleton), product-card
                  chi tiết: product-detail-content (+skeleton, not-found), product-gallery, purchase-panel, variant-picker,
                  option-chip-group, quantity-stepper, sticky-buy-bar, related-products
-                 trang chủ: home-hero (+ home-hero-images), home-new-arrivals (dùng chung một request `limit=8` với hero)
+                 trang chủ (`components/home/`, có dữ liệu): home-best-sellers (hook TẠM `useBestSellerProducts`), home-new-arrivals (3 tab + cuộn ngang), product-strip-skeleton
                  thẻ sản phẩm: product-card + product-stock-badge (huy hiệu "Hết hàng" / "Sắp hết")
 ````
 
@@ -124,6 +130,7 @@ Tính năng chỉ có một phía (users, dashboard, cart) để phẳng `compon
 | Ghép các phần thành một trang | pages/... |
 | Hạ tầng (axios, format tiền, ngày) | lib/ |
 | Nội dung cửa hàng (tên, khẩu hiệu, liên hệ) | lib/store-info.ts (không viết rải rác) |
+| Nội dung trang chủ (chữ, liên kết, đường dẫn ảnh, `objectPosition`) | lib/home-content.ts |
 
 ## 6. Checklist module mới
 1. Đọc ../backend-nestjst-starter/docs/api/<tên>.md (chỉ đọc, không sửa backend).
@@ -163,6 +170,7 @@ Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 4
 | Giỏ hàng, đơn hàng, voucher | features/cart/, orders/, vouchers/ |
 | Storefront khung + catalog ✓ | components/storefront/, pages/storefront/catalog + product-detail, features/catalog/ |
 | Storefront: thanh thông báo, thẻ sản phẩm mới, chân trang, trang thông tin ✓ | features/newsletter/, pages/storefront/info/ |
+| Storefront: làm lại trang chủ ✓ | components/storefront/home/, features/catalog/components/home/, public/home/ |
 | Storefront còn lại | features/checkout/, account/ |
 | Thanh toán online | features/payments/ |
 | Dashboard thật | features/dashboard/ nối API thật |
