@@ -70,6 +70,8 @@ interface StoreComingSoon {
   wishlist: string
   /** Nút "Thêm nhanh" trên thẻ sản phẩm. */
   quickAdd: string
+  /** Link "Hướng dẫn chọn size" ở trang chi tiết sản phẩm. */
+  sizeGuide: string
 }
 
 interface StoreInfo {
@@ -114,7 +116,7 @@ export const STORE: StoreInfo = {
     emailLabel: "Email của bạn",
     submitLabel: "ĐĂNG KÝ",
   },
-  comingSoon: { wishlist: "Yêu thích sẽ sớm có mặt", quickAdd: "Thêm nhanh sẽ sớm có mặt" },
+  comingSoon: { wishlist: "Yêu thích sẽ sớm có mặt", quickAdd: "Thêm nhanh sẽ sớm có mặt", sizeGuide: "Hướng dẫn chọn size sẽ sớm có mặt" },
   // Slug "phu-kien" và "qua-tang" là slug mà backend sẽ sinh từ tên danh mục; mục chỉ hiện khi danh mục đó có trong GET /categories.
   navItems: [
     { label: "Tất cả sản phẩm", href: "/products" },

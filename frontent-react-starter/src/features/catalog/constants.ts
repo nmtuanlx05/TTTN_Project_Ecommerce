@@ -3,8 +3,8 @@ import type { CatalogSort } from "./types"
 
 /** Mặc định và tối đa của backend cho GET /products công khai: 12 và 48. */
 export const PAGE_SIZE = 12
-/** Số thẻ trong khối "Sản phẩm cùng danh mục". */
-export const RELATED_LIMIT = 8
+/** Số thẻ trong khối "Có thể bạn cũng thích". */
+export const RELATED_LIMIT = 4
 /** Số thẻ đầu danh sách tải ảnh ngay (hàng đầu ở desktop); phần còn lại tải lười. */
 export const EAGER_IMAGE_COUNT = 4
 
@@ -45,3 +45,26 @@ export const PRICE_RANGES: readonly PriceRange[] = [
 ]
 
 export type { PriceRange }
+
+/**
+ * TẠM: tên màu → mã màu của chấm chọn màu. Backend CHƯA có mã màu nên frontend tự ánh xạ theo tên màu trong seed. Đây là DỮ LIỆU SẢN PHẨM, không phải
+ * token giao diện (ngoại lệ có chủ đích của quy tắc "không viết cứng mã màu", docs/storefront-design.md mục 2 và 13); sẽ thay bằng mã màu từ backend ở bước ảnh và màu.
+ * Tên chưa có trong bảng thì ô màu rơi về nút chữ. `light`: màu sáng/trắng, chấm cần viền mảnh để thấy rõ trên nền be.
+ */
+const SWATCH_COLORS: Record<string, { hex: string; light?: boolean }> = {
+  trắng: { hex: "#ffffff", light: true },
+  đen: { hex: "#1a1a1a" },
+  xám: { hex: "#9a9a9a" },
+  "xanh navy": { hex: "#1f2a44" },
+  xanh: { hex: "#4a78b5" },
+  hồng: { hex: "#e8b4bc", light: true },
+  be: { hex: "#cdb79e", light: true },
+  "xanh rêu": { hex: "#6b7a55" },
+  "xanh đậm": { hex: "#1f4e79" },
+  "xanh nhạt": { hex: "#a9c4de", light: true },
+}
+
+/** Tra mã màu theo tên (không phân biệt hoa thường, bỏ khoảng trắng thừa); không có thì `undefined`. */
+export function findSwatch(name: string) {
+  return SWATCH_COLORS[name.trim().replace(/\s+/g, " ").toLowerCase()]
+}

@@ -1,6 +1,7 @@
 import { Fragment } from "react"
 import { Link } from "react-router-dom"
 import { ChevronRight } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface BreadcrumbItem {
   label: string
@@ -8,11 +9,11 @@ interface BreadcrumbItem {
   to?: string
 }
 
-/** Đường dẫn trang. Mục cuối là trang hiện tại (`aria-current`), không phải liên kết; tên dài thì cắt bằng dấu "…". */
-function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
+/** Đường dẫn trang. `subtle`: chữ nhỏ (`text-caption`) và mục cuối nhạt `ink-muted` (trang chi tiết). Mục cuối là trang hiện tại (`aria-current`), không phải liên kết; tên dài thì cắt bằng dấu "…". */
+function Breadcrumbs({ items, subtle = false }: { items: BreadcrumbItem[]; subtle?: boolean }) {
   return (
     <nav aria-label="Đường dẫn trang">
-      <ol className="flex flex-wrap items-center gap-x-1 text-body-sm text-ink-muted">
+      <ol className={cn("flex flex-wrap items-center gap-x-1 text-ink-muted", subtle ? "text-caption" : "text-body-sm")}>
         {items.map((item, index) => (
           <Fragment key={`${index}-${item.label}`}>
             {index > 0 ? <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-ink-subtle" /> : null}
@@ -25,7 +26,7 @@ function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
                   {item.label}
                 </Link>
               ) : (
-                <span aria-current="page" className="block max-w-56 truncate text-ink sm:max-w-md">
+                <span aria-current="page" className={cn("block max-w-56 truncate sm:max-w-md", subtle ? "text-ink-muted" : "text-ink")}>
                   {item.label}
                 </span>
               )}

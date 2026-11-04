@@ -3,20 +3,20 @@ import { useCategoryTree } from "@/hooks/use-category-tree"
 import { useDocumentTitle } from "@/hooks/use-document-title"
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/storefront/breadcrumbs"
 import { categoryTrail } from "@/lib/category-tree"
-import { formatVnd } from "@/lib/format"
 import { useCatalogProduct } from "../queries"
 import { CatalogError } from "./catalog-states"
 import { ProductDetailSkeleton } from "./product-detail-skeleton"
 import { ProductGallery } from "./product-gallery"
 import { ProductNotFound } from "./product-not-found"
-import { PurchasePanel, type AddToCartInput } from "./purchase-panel"
+import { ProductInfoCard } from "./product-info-card"
+import type { AddToCartInput } from "./purchase-panel"
 import { RelatedProducts } from "./related-products"
 import { PageContainer } from "@/components/storefront/page-container"
 
 /**
  * Trang /products/:slug. Breadcrumb dựng chuỗi danh mục cha từ cây danh mục; cây chưa có/lỗi thì dùng danh mục của chính
- * sản phẩm. 404 (không tồn tại, ẩn, hết biến thể bán) hiện trang thân thiện; lỗi khác hiện "Thử lại". Cột ảnh/thông tin
- * chia 6/6 từ `md`, 7/5 từ `lg`.
+ * sản phẩm. 404 (không tồn tại, ẩn, hết biến thể bán) hiện trang thân thiện; lỗi khác hiện "Thử lại". Cột ảnh/thẻ thông tin
+ * chia 6/6 từ `md`, 7/5 từ `lg`; dưới `md` xếp dọc (ảnh rồi thẻ).
  */
 function ProductDetailContent({
   slug,
@@ -46,30 +46,20 @@ function ProductDetailContent({
     ]
     body = (
       <>
-        <Breadcrumbs items={crumbs} />
-        <div className="mt-6 grid gap-8 md:grid-cols-2 md:gap-10 lg:grid-cols-12 lg:gap-16">
+        <Breadcrumbs items={crumbs} subtle />
+        <div className="mt-4 grid gap-8 md:grid-cols-2 md:gap-10 lg:grid-cols-12 lg:gap-16">
           <div className="lg:col-span-7">
-            <ProductGallery src={product.imageUrl} alt={product.name} />
+            <ProductGallery images={product.imageUrl ? [product.imageUrl] : []} alt={product.name} />
           </div>
-          <div className="flex flex-col gap-6 lg:col-span-5">
-            <div className="flex flex-col gap-2">
-              <h1 className="text-h2 text-ink">{product.name}</h1>
-              <p className="text-body font-semibold text-ink">{formatVnd(product.price)}</p>
-            </div>
-            <PurchasePanel
-              key={product.id}
-              product={product}
-              barSlot={barSlot}
-              onAddToCart={onAddToCart}
-            />
-            {product.description ? (
-              <p className="max-w-prose whitespace-pre-line border-t border-border-subtle pt-6 text-body text-ink-muted">
-                {product.description}
-              </p>
-            ) : null}
+          <div className="lg:col-span-5">
+            <ProductInfoCard product={product} barSlot={barSlot} onAddToCart={onAddToCart} />
           </div>
         </div>
-        <RelatedProducts productId={product.id} categoryId={product.category.id} />
+        <RelatedProducts
+          productId={product.id}
+          categoryId={product.category.id}
+          categorySlug={product.category.slug}
+        />
       </>
     )
   } else if (query.isError) {

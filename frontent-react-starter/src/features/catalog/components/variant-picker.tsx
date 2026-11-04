@@ -1,4 +1,7 @@
 import { useId } from "react"
+import { useToast } from "@/components/ui/toast"
+import { STORE } from "@/lib/store-info"
+import { findSwatch } from "../constants"
 import type { CatalogVariant } from "../types"
 import {
   describeOption,
@@ -14,7 +17,10 @@ const AXES: ReadonlyArray<{ axis: Axis; label: string }> = [
   { axis: "size", label: "Kích thước" },
 ]
 
-/** Hai nhóm chip: màu rồi size. Nhãn nhóm ghi kèm giá trị đang chọn. */
+/**
+ * Hai nhóm chọn: màu (chấm màu; màu chưa có mã thì nút chữ) rồi size (pill). Nhãn nhóm ghi kèm giá trị đang chọn.
+ * Link "Hướng dẫn chọn size" là STUB: chỉ hiện toast "chưa có tính năng" (docs/storefront-design.md mục 13), không bịa bảng số đo.
+ */
 function VariantPicker({
   variants,
   choice,
@@ -25,20 +31,34 @@ function VariantPicker({
   onChange: (choice: VariantChoice) => void
 }) {
   const id = useId()
+  const toast = useToast()
 
   return (
     <div className="flex flex-col gap-6">
       {AXES.map(({ axis, label }) => (
-        <div key={axis} className="flex flex-col gap-3">
-          <p id={`${id}-${axis}`} className="text-overline uppercase text-ink">
-            {label}: <span className="font-normal normal-case text-ink-muted">{choice[axis]}</span>
-          </p>
+        <div key={axis} className="flex flex-col gap-1">
+          <div className="flex items-center justify-between gap-inline">
+            <p id={`${id}-${axis}`} className="text-overline uppercase text-ink">
+              {label} <span className="ml-1 font-normal normal-case text-ink-muted">{choice[axis]}</span>
+            </p>
+            {axis === "size" ? (
+              <button
+                type="button"
+                onClick={() => toast.add({ title: STORE.comingSoon.sizeGuide, data: { tone: "info" } })}
+                className="inline-flex min-h-control items-center text-caption text-ink-muted underline underline-offset-4 transition-colors duration-(--motion-fast) ease-smooth hover:text-ink"
+              >
+                Hướng dẫn chọn size
+              </button>
+            ) : null}
+          </div>
           <OptionChipGroup
             labelId={`${id}-${axis}`}
+            variant={axis === "color" ? "swatch" : "pill"}
             selected={choice[axis]}
             options={optionValues(variants, axis).map((value) => ({
               value,
               ...describeOption(variants, choice, axis, value),
+              swatch: axis === "color" ? findSwatch(value) : undefined,
             }))}
             onSelect={(value) => onChange(selectOption(variants, choice, axis, value))}
           />
