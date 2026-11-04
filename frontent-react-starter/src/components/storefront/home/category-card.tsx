@@ -5,7 +5,7 @@ import type { HomeCategoryCard } from "@/lib/home-content"
 
 /**
  * Thẻ danh mục dọc 3:4: ảnh nền, lớp tối dần ở đáy (`scrim`, ngoại lệ gradient duy nhất của dự án), tên ở góc dưới trái, mũi tên ở góc dưới phải.
- * Phạm vi `dark` nên chữ luôn sáng ở cả hai chế độ, và thiếu ảnh thì nền là `surface-sunken` tối (chữ vẫn đọc được). Hover: ảnh phóng nhẹ, mũi tên dịch phải
+ * Phạm vi `dark` nên chữ luôn sáng, và thiếu ảnh thì nền là `surface-sunken` tối (chữ vẫn đọc được). Hover: ảnh phóng nhẹ, mũi tên dịch phải
  * (chỉ khi người dùng không giảm chuyển động). Vòng focus vẽ BÊN TRONG thẻ (offset âm): vòng ngoài của phạm vi `dark` là màu sáng, sẽ biến mất trên nền trang sáng.
  */
 function CategoryCard({ card, href }: { card: HomeCategoryCard; href: string }) {

@@ -12,7 +12,7 @@ const SETS = Array.from({ length: SETS_PER_HALF }, (_, index) => index)
 
 /**
  * Thanh thông báo chạy chữ phía trên header (mọi trang storefront). Không dính: cuộn là trượt đi, header dính vẫn như cũ.
- * Nền tối ở cả hai chế độ nhờ class `dark` (dùng bộ token tối trong phạm vi thanh này, không thêm token mới).
+ * Nền tối cố định nhờ class `dark` (vùng tối cố định: dùng bộ token tối trong phạm vi thanh này, không thêm token mới).
  *
  * Chạy bằng CSS (`animate-marquee`). Rê chuột hoặc focus bàn phím vào thanh thì dừng (`tabIndex={0}` để người dùng bàn phím dừng
  * được). Giảm chuyển động: không chạy, hiện tĩnh thông điệp đầu (cho xuống hai dòng nếu màn hình hẹp, không bị cắt). Chỉ lượt đầu tiên cho trình đọc màn hình; các lượt lặp `aria-hidden`.

@@ -23,8 +23,8 @@ import type { DailyPoint } from "../mock"
 /**
  * Doanh thu theo ngày — đơn sắc, một trục.
  *
- * Màu đọc thẳng từ biến CSS trong SVG (`var(--ink)`), nên dark mode tự đổi mà
- * không cần JS theo dõi theme. Không gradient, không đổ bóng: vùng tô là một
+ * Màu đọc thẳng từ biến CSS trong SVG (`var(--ink)`), nên màu luôn theo token
+ * mà không cần JS đọc giá trị màu. Không gradient, không đổ bóng: vùng tô là một
  * lớp mực mỏng cùng màu đường.
  *
  * Kỳ trước phân biệt bằng CẢ độ sáng lẫn nét đứt, không chỉ bằng màu — hai

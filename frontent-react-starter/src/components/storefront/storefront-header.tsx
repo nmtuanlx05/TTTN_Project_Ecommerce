@@ -1,6 +1,5 @@
 import { useMemo } from "react"
 import { BrandLogo } from "@/components/shared/brand-logo"
-import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { useInView } from "@/hooks/use-in-view"
 import type { CategoryTree } from "@/lib/category-tree"
 import { resolveNavItems } from "@/lib/nav-items"
@@ -18,9 +17,9 @@ import { SearchPanel } from "./search-panel"
  * (phát hiện bằng một phần tử mốc cao 8px, đặt ngay dưới thanh thông báo ở đầu tài liệu — tức đúng chỗ header đang nằm khi chưa dính —
  * không dùng scroll listener).
  *
- * Từ `xl` (1280px): logo bên trái; thanh điều hướng (`STORE.navItems`) và nhóm biểu tượng (tìm kiếm, đổi sáng/tối, giỏ hàng, tài khoản)
- * gom về bên phải, thanh điều hướng cách nhóm biểu tượng 40px. Dưới `xl`: nút menu, logo, tìm kiếm, giỏ hàng; điều hướng, tài khoản
- * và đổi sáng/tối nằm trong ngăn kéo (thanh điều hướng đầy đủ không vừa ở 1024px).
+ * Từ `xl` (1280px): logo bên trái; thanh điều hướng (`STORE.navItems`) và nhóm biểu tượng (tìm kiếm, giỏ hàng, tài khoản)
+ * gom về bên phải, thanh điều hướng cách nhóm biểu tượng 40px. Dưới `xl`: nút menu, logo, tìm kiếm, giỏ hàng; điều hướng và tài khoản
+ * nằm trong ngăn kéo (thanh điều hướng đầy đủ không vừa ở 1024px).
  */
 function StorefrontHeader({
   session,
@@ -53,9 +52,6 @@ function StorefrontHeader({
           <HeaderNav items={navItems} className="ml-auto max-xl:hidden xl:flex" />
           <div className="ml-auto flex items-center gap-1 xl:ml-10 xl:gap-inline">
             <SearchPanel />
-            <div className="max-xl:hidden">
-              <ThemeToggle />
-            </div>
             <CartButton onClick={onCartClick} />
             <div className="max-xl:hidden">
               <HeaderAccount session={session} />

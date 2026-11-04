@@ -121,7 +121,7 @@
   /* --- Khác --- */
   --skeleton: #e1dfdc;
 
-  /* Lớp tối phủ trên ảnh (thẻ danh mục, dải câu chuyện): LUÔN tối, cùng giá trị ở light và dark (không khai báo lại trong .dark).
+  /* Lớp tối phủ trên ảnh (thẻ danh mục, dải câu chuyện): LUÔN tối (không khai báo lại trong .dark).
      Dùng với độ mờ (`bg-scrim/70`, `from-scrim/80`) cho chữ sáng đặt trên ảnh. Đây là chỗ DUY NHẤT được dùng gradient (xem docs/storefront-design.md mục 2). */
   --scrim: #11100e;
 
@@ -247,6 +247,9 @@
   }
 }
 
+/* Bộ token của VÙNG TỐI CỐ ĐỊNH (inverse scope), không phải "chế độ tối" của cả trang: website chỉ có giao diện sáng.
+   Gắn class `dark` lên một phần tử thì mọi token bên trong dùng bộ này. Hiện dùng ở thanh thông báo, chân trang, dải câu chuyện,
+   thẻ danh mục nổi bật và lightbox xem ảnh. `color-scheme: dark` giữ ô nhập và thanh cuộn trong vùng đó cũng tối. */
 .dark {
   color-scheme: dark;
 
@@ -649,7 +652,7 @@
     color: var(--ink-inverse);
   }
 
-  /* Focus nhìn thấy rõ ở cả hai chế độ, dùng chung một quy tắc */
+  /* Focus nhìn thấy rõ trên nền sáng lẫn trong vùng tối cố định, dùng chung một quy tắc */
   :focus-visible {
     outline: var(--stroke-focus) solid var(--ring);
     outline-offset: var(--focus-offset);

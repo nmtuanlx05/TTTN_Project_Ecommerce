@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const { eyebrow, title, description, cta, image } = HOME.story;
 
 /**
- * "Câu chuyện thương hiệu": dải tối toàn chiều rộng. Phạm vi `dark` + `surface-sunken` (như chân trang) nên tối ở cả hai chế độ; ảnh nền tĩnh phủ
+ * "Câu chuyện thương hiệu": dải tối toàn chiều rộng. Phạm vi `dark` + `surface-sunken` (như chân trang) nên tối cố định; ảnh nền tĩnh phủ
  * `scrim/70` (đủ tối để chữ `ink` đạt tương phản ≥ 4,5:1 kể cả trên ảnh trắng; chữ phụ `ink-muted` KHÔNG đạt trên ảnh trắng nên khối này chỉ dùng `ink`); chưa có ảnh thì chỉ còn nền tối. Tiêu đề dùng serif NGHIÊNG THẬT
  * (Newsreader, chỉ khối này), nút là nút đặc của phạm vi tối nên sáng.
  */
