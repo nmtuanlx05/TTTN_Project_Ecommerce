@@ -7,9 +7,6 @@ export const PAGE_SIZE = 12
 export const RELATED_LIMIT = 8
 /** Số thẻ đầu danh sách tải ảnh ngay (hàng đầu ở desktop); phần còn lại tải lười. */
 export const EAGER_IMAGE_COUNT = 4
-/** Số sản phẩm của khối "Sản phẩm mới" trên trang chủ; hero lấy 3 sản phẩm đầu của cùng một lần gọi (một request). */
-export const HOME_NEW_ARRIVALS = 8
-export const HOME_HERO_IMAGES = 3
 
 export const PRICE_MAX = 2147483647
 

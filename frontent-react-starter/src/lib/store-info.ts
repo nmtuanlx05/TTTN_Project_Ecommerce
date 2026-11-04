@@ -2,7 +2,7 @@ import type { InfoPageSlug } from "@/lib/info-pages"
 
 /**
  * Nội dung cửa hàng: MỘT file duy nhất. Header, footer, tiêu đề tab, logo chữ đều đọc từ đây,
- * không viết lại tên hay khẩu hiệu ở nơi khác.
+ * không viết lại tên hay khẩu hiệu ở nơi khác. Nội dung riêng của trang chủ (slide hero, khối, cam kết, đường dẫn ảnh) ở `lib/home-content.ts`.
  */
 
 interface StoreContact {
@@ -28,20 +28,6 @@ export interface StoreLocation {
   hours?: string
   /** Liên kết bản đồ (http/https), vd. đường dẫn chia sẻ của Google Maps. */
   mapUrl?: string
-}
-
-interface StoreHeroImage {
-  /** Đường dẫn ảnh tĩnh đặt trong `public/`, vd. "/hero/1.jpg" (khung 3:4). */
-  src: string
-  alt: string
-}
-
-/** Nhãn các khối trang chủ. */
-interface StoreHomeLabels {
-  cta: string
-  categoriesTitle: string
-  newArrivalsTitle: string
-  viewAll: string
 }
 
 /** Liên kết "Trang chủ" đứng đầu cột đường dẫn nhanh (header không có mục này vì logo đã về trang chủ). */
@@ -84,15 +70,6 @@ interface StoreInfo {
   tagline: string
   /** NỘI DUNG MẪU, dùng tạm — chờ chủ cửa hàng xác nhận. */
   description: string
-  /** NỘI DUNG MẪU, dùng tạm — câu tuyên bố ở cuối trang chủ, chờ chủ cửa hàng xác nhận. Không viết cam kết kinh doanh vào đây. */
-  statement: string
-  /** NỘI DUNG MẪU — nhãn các khối trang chủ, chờ chủ cửa hàng xác nhận. */
-  home: StoreHomeLabels
-  /**
-   * Ảnh tĩnh cho hero (tối đa 3, khung 3:4). Để rỗng thì hero dùng ảnh của tối đa 3 sản phẩm mới nhất.
-   * Có ảnh thì hero dùng đúng các ảnh này và không phải đợi dữ liệu sản phẩm.
-   */
-  heroImages: StoreHeroImage[]
   /**
    * NỘI DUNG MẪU, chờ xác nhận — thanh thông báo chạy chữ phía trên header; mỗi phần tử là một thông điệp. Có cam kết kinh doanh
    * (miễn phí vận chuyển, đổi trả): chỉ giữ khi hệ thống làm thật, xem bảng cam kết ở docs/storefront-design.md mục 13.
@@ -113,14 +90,6 @@ export const STORE: StoreInfo = {
   name: "MONO STUDIO",
   tagline: "Thời trang tối giản cho mọi ngày",
   description: "Những thiết kế đơn sắc, dễ phối.",
-  statement: "Ít màu. Ít chi tiết. Nhiều chỗ cho chính bạn.",
-  home: {
-    cta: "Khám phá cửa hàng",
-    categoriesTitle: "Mua theo danh mục",
-    newArrivalsTitle: "Sản phẩm mới",
-    viewAll: "Xem tất cả",
-  },
-  heroImages: [],
   announcements: ["MIỄN PHÍ VẬN CHUYỂN CHO ĐƠN HÀNG TỪ 500.000₫", "ĐỔI TRẢ TRONG 30 NGÀY"],
   footer: {
     description: "Thời trang tối giản cho mọi ngày. Chất liệu thoáng mát, form chuẩn, dễ phối.",

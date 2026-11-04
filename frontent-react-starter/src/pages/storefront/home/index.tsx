@@ -1,38 +1,30 @@
-import { HomeHero } from "@/features/catalog/components/home-hero"
-import { HomeNewArrivals } from "@/features/catalog/components/home-new-arrivals"
-import { BrandStatement } from "@/components/storefront/brand-statement"
-import { CategoryTiles } from "@/components/storefront/category-tiles"
-import { Reveal } from "@/components/storefront/reveal"
+import { AssuranceStrip } from "@/components/storefront/home/assurance-strip"
+import { BrandStory } from "@/components/storefront/home/brand-story"
+import { CategoryShowcase } from "@/components/storefront/home/category-showcase"
+import { HomeHero } from "@/components/storefront/home/home-hero"
+import { HomeBestSellers } from "@/features/catalog/components/home/home-best-sellers"
+import { HomeNewArrivals } from "@/features/catalog/components/home/home-new-arrivals"
 import { useCategoryTree } from "@/hooks/use-category-tree"
 import { useDocumentTitle } from "@/hooks/use-document-title"
 import { STORE } from "@/lib/store-info"
 
 /**
- * Trang chủ: hero, danh mục cấp 1, sản phẩm mới, dải tuyên bố. Khối dưới hero dùng `Reveal` (hiện dần một lần; khối đã nằm trong
- * màn hình lúc vào trang thì hiện ngay). Khối danh mục ẩn khi cây danh mục lỗi hoặc rỗng (header đã tự giảm cấp).
+ * Trang chủ: hero carousel, danh mục nổi bật, best sellers (tạm), câu chuyện thương hiệu, sản phẩm mới về, dải cam kết. Chỉ ghép; mỗi khối tự xử lý
+ * rỗng/lỗi và tự bọc `Reveal` (hiện dần một lần cho khối dưới màn hình đầu). Cây danh mục lấy một lần (chung cache với header) rồi truyền xuống.
  */
 function StorefrontHomePage() {
   const { tree, isPending } = useCategoryTree()
   useDocumentTitle(STORE.name)
 
-  const roots = tree?.roots ?? []
-  const showCategories = isPending || roots.length > 0
-
   return (
-    <div className="mx-auto w-full max-w-7xl px-gutter pt-8 pb-block lg:pt-16">
-      <HomeHero />
-      {showCategories ? (
-        <Reveal className="mt-block">
-          <CategoryTiles categories={tree ? roots : null} />
-        </Reveal>
-      ) : null}
-      <Reveal className="mt-block">
-        <HomeNewArrivals />
-      </Reveal>
-      <Reveal className="mt-block">
-        <BrandStatement />
-      </Reveal>
-    </div>
+    <>
+      <HomeHero tree={tree} />
+      <CategoryShowcase tree={tree} loading={isPending} />
+      <HomeBestSellers />
+      <BrandStory />
+      <HomeNewArrivals tree={tree} />
+      <AssuranceStrip />
+    </>
   )
 }
 
