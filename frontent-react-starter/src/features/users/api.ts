@@ -1,4 +1,4 @@
-import { apiGet, apiGetPage, apiSend } from "@/lib/api-client"
+import { apiGetPage, apiSend } from "@/lib/api-client"
 import type { Paginated } from "@/types/api"
 import type { User } from "@/types/user"
 import type {
@@ -15,10 +15,6 @@ export function listUsers(
   signal?: AbortSignal,
 ): Promise<Paginated<User>> {
   return apiGetPage<User>("/users", { params, signal })
-}
-
-export function getUser(id: number, signal?: AbortSignal): Promise<User> {
-  return apiGet<User>(`/users/${id}`, { signal })
 }
 
 export function createUser(input: CreateUserInput): Promise<User> {

@@ -22,7 +22,7 @@ export interface HomeLink {
   categorySlug?: string
 }
 
-export interface HeroSlide {
+export interface HeroSlideContent {
   /** Tiêu đề (hiển thị hoa). */
   title: string
   subtitle: string
@@ -66,7 +66,7 @@ interface SectionCopy {
 /** Nhãn nhỏ phía trên tiêu đề của mọi slide (cùng một dòng, chữ y mẫu). */
 const HERO_EYEBROW = "MONO STUDIO · AW26"
 
-const HERO_SLIDES: readonly HeroSlide[] = [
+const HERO_SLIDES: readonly HeroSlideContent[] = [
   {
     title: "THE MINIMALIST EDIT",
     subtitle: "Bộ sưu tập Thu Đông 2026",

@@ -203,7 +203,6 @@ async function apiUpload<T>(
 }
 
 export {
-  apiClient,
   apiGet,
   apiGetPage,
   apiSend,

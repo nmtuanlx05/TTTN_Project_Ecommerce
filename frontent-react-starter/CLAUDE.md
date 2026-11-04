@@ -17,7 +17,7 @@ của phần mình và nhắc chạy `git restore --staged :/` nếu đang có f
 - Chi tiết: `docs/cau-truc-thu-muc.md`. ĐỌC khi tạo module hoặc trang mới, hoặc khi không chắc đặt file ở đâu. Sửa nhỏ thì không cần đọc.
 - Hai giao diện: storefront (khách) ở `/`, admin (ADMIN và STAFF dùng chung) ở `/admin`. Không làm trang staff riêng.
 - Luật ngắn: pages chỉ ghép (không gọi API, không logic); thứ riêng của tính năng nằm trong `features/<tên>/`; features không import lẫn nhau; mỗi file một component dưới ~150 dòng; chỉ `api.ts` và `lib/api-client.ts` dùng axios; không sửa `components/ui/`.
-- Tạo module mới: làm theo mục "Checklist module mới" trong docs.
+- Tạo module mới: làm theo mục "Checklist module mới" trong docs. Việc cần làm → file cần mở (sửa chữ trang chủ, hero, thẻ sản phẩm, footer...): mục 10 "Bản chỉ đường storefront"; tạo file mới hay gộp: mục 11 "Khi nào tạo file mới, khi nào gộp".
 - Làm giao diện khách (storefront): đọc `docs/storefront-design.md` (ý tưởng, token dùng cho từng vai trò, thang chữ, lưới, chuyển động, ảnh, trạng thái, truy cập).
 - Đổi cấu trúc thì sửa file docs trước.
 
@@ -229,7 +229,7 @@ code mới dùng `primary` / `secondary`.
   đặt lên MỘT phần tử thì mọi token bên trong dùng bộ màu tối (kể cả `ui/Input`, `ui/Button`, `color-scheme: dark`). Hiện có 5 vùng:
   `announcement-bar`, `storefront-footer`, `home/brand-story`, `home/category-card`, `shared/image-lightbox`. Không xóa khối `.dark`
   hay đổi tên class. Không thêm lại chuyển chế độ cho cả trang.
-- Các class `dark:` (biến thể Tailwind) nằm NGOÀI 5 vùng tối trên (hiện còn ở `ui/dropdown-menu.tsx`, `ui/avatar.tsx`) không còn tác dụng; vô hại, để nhánh dọn code quyết định.
+- Các class `dark:` (biến thể Tailwind) nằm NGOÀI 5 vùng tối trên (hiện còn ở `ui/dropdown-menu.tsx`) không còn tác dụng; vô hại, chưa xử lý.
 
 ## Tiếp cận
 
@@ -268,8 +268,7 @@ Giao diện viết bằng tiếng Việt. Tên biến, hàm, file, commit messag
   `tableFeatures({...})` chứ không phải `useReactTable` + `getCoreRowModel()`.
   Xem `src/pages/styleguide/index.tsx` làm mẫu.
 - Toast dùng `@base-ui/react/toast` qua `src/components/ui/toast.tsx`.
-  `react-toastify` còn trong `package.json` nhưng **không dùng** — nó không đọc
-  token của ta.
+  `react-toastify` đã được gỡ khỏi `package.json` (nó không đọc token của ta); không cài lại.
 
 **`cn()` luôn import từ `@/lib/utils`, không import từ gói `"cn"`.** `utils.ts` đọc các
 `--text-*` trong `global.css` để khai báo chúng là cỡ chữ; gói `"cn"` trần coi
@@ -383,7 +382,7 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
   (`header-nav.tsx`, `header-nav-panel.tsx`, `hooks/use-mega-menu.ts`, `lib/nav-items.ts`; chi tiết ở `docs/storefront-design.md` mục 9b), rồi tìm kiếm (khung trượt từ trên, tự focus, Enter → `/products?q=`), giỏ hàng, đăng nhập hoặc `UserMenu`; dưới `xl` còn nút menu (ngăn kéo cùng cấu hình, mục danh mục là accordion
   (`mobile-nav-list.tsx`), kèm tài khoản kể cả "Ảnh đại diện" và "Vào trang quản trị"), tìm kiếm, giỏ hàng. Nền header mờ nhẹ + đường kẻ khi cuộn. **Thanh thông báo chạy chữ** (`announcement-bar.tsx`, dựng trong `StorefrontLayout` ngay trên header, không dính): nội dung `STORE.announcements`, dừng khi rê chuột/focus, tắt khi giảm chuyển động. **Footer** (nền tối cố định nhờ class `dark` cục bộ, không token mới): 4 cột
   (giới thiệu + liên hệ, đường dẫn nhanh từ `navItems`, chính sách khách hàng, đăng ký nhận tin), dòng bản quyền. Nội dung cửa hàng (tên, khẩu hiệu,
-  liên hệ, thanh thông báo, chữ chân trang) chỉ ở `lib/store-info.ts`: **khẩu hiệu, mô tả và các cam kết (miễn phí vận chuyển, đổi trả 30 ngày, ưu đãi 10%) là nội dung mẫu chờ xác nhận**, hệ thống chưa làm thật (bảng ở `docs/storefront-design.md` mục 13); liên hệ chưa có (footer ghi "đang được cập nhật"). **Trang chủ** (`pages/storefront/home`, chi tiết ở `docs/storefront-design.md` mục 14; nội dung ở `lib/home-content.ts`, ảnh tĩnh ở `public/home/`): hero carousel THỦ CÔNG 3 slide (nút, thanh tiến trình, phím ←/→, vuốt; không tự chạy; một `h1` ẩn thị giác, tiêu đề slide là `h2`; ảnh tràn sát mép phải, chữ canh theo container bằng `--container-inset`), "Danh mục nổi bật" (4 thẻ ảnh, gradient `scrim`), "Best sellers" (**TẠM**: hook `useBestSellerProducts` lấy sản phẩm tạo sớm nhất, chưa phải bán chạy), "Câu chuyện thương hiệu" (dải tối, tiêu đề serif nghiêng), "Sản phẩm mới về" (3 tab + danh sách cuộn ngang) và dải cam kết; mỗi khối tự xử lý rỗng/lỗi và tự bọc `Reveal`. Mọi chữ là **nội dung mẫu** chờ xác nhận, nhiều câu là cam kết chưa có thật (bảng ở `docs/storefront-design.md` mục 13). Khung nội dung của trang dùng `PageContainer` (`components/storefront/page-container.tsx`; header, chân trang, khung tìm kiếm, bảng điều hướng dùng cùng giá trị nhưng tự viết class). Trang storefront mới đặt trong cùng `<Route element={<StorefrontLayoutContainer />}>` ở `routes/storefront-routes.tsx`.
+  liên hệ, thanh thông báo, chữ chân trang) chỉ ở `lib/store-info.ts`: **khẩu hiệu, mô tả chân trang và các cam kết (miễn phí vận chuyển, đổi trả 30 ngày, ưu đãi 10%) là nội dung mẫu chờ xác nhận**, hệ thống chưa làm thật (bảng ở `docs/storefront-design.md` mục 13); liên hệ chưa có (footer ghi "đang được cập nhật"). **Trang chủ** (`pages/storefront/home`, chi tiết ở `docs/storefront-design.md` mục 14; nội dung ở `lib/home-content.ts`, ảnh tĩnh ở `public/home/`): hero carousel THỦ CÔNG 3 slide (nút, thanh tiến trình, phím ←/→, vuốt; không tự chạy; một `h1` ẩn thị giác, tiêu đề slide là `h2`; ảnh tràn sát mép phải, chữ canh theo container bằng `--container-inset`), "Danh mục nổi bật" (4 thẻ ảnh, gradient `scrim`), "Best sellers" (**TẠM**: hook `useBestSellerProducts` lấy sản phẩm tạo sớm nhất, chưa phải bán chạy), "Câu chuyện thương hiệu" (dải tối, tiêu đề serif nghiêng), "Sản phẩm mới về" (3 tab + danh sách cuộn ngang) và dải cam kết; mỗi khối tự xử lý rỗng/lỗi; ba khối có tiêu đề dựng trên khung chung `HomeSection`, tự bọc `Reveal`. Mọi chữ là **nội dung mẫu** chờ xác nhận, nhiều câu là cam kết chưa có thật (bảng ở `docs/storefront-design.md` mục 13). Khung nội dung của trang dùng `PageContainer` (`components/storefront/page-container.tsx`; header, chân trang, khung tìm kiếm, bảng điều hướng dùng cùng giá trị nhưng tự viết class). Trang storefront mới đặt trong cùng `<Route element={<StorefrontLayoutContainer />}>` ở `routes/storefront-routes.tsx`.
 - `/dia-chi` — danh sách cửa hàng (`pages/storefront/stores`, `components/storefront/store-list.tsx`) từ `STORE.stores` trong `lib/store-info.ts`; **mảng để rỗng cho tới khi chủ cửa hàng cung cấp thông tin thật** (rỗng thì hiện "Thông tin cửa hàng đang được cập nhật"). Không bịa địa chỉ, số điện thoại, giờ mở cửa.
 - `/thong-tin/:slug` — trang thông tin tạm (`pages/storefront/info`, cấu hình `lib/info-pages.ts`: doi-tra, van-chuyen, huong-dan-chon-size, bao-mat, dieu-khoan): một `h1`; chưa có nội dung thì "Nội dung đang được cập nhật"; slug lạ thì 404 trong khung. Footer trỏ tới các trang này.
 - **Form nhận tin** (`features/newsletter`, ở footer): chỉ giao diện; `subscribeNewsletter` (`api.ts`) là hàm TẠM trả "chưa khả dụng", thay bằng `POST /newsletter/subscribers` khi backend có. Không giả vờ thành công, không gọi API.
@@ -420,7 +419,7 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
   (`remapVariantErrors`) vì ta chỉ gửi các hàng có đổi; 409 (trùng slug/SKU/size-màu) hiện `Alert` nguyên văn đầu form. Tồn kho (`stock`, `reserved`)
   chỉ đọc ở trang sửa và lấy từ `product.variants` của query MỚI NHẤT khớp theo id (không từ `baseline` của form, nên đổi tồn ở Kho rồi quay lại vẫn thấy số mới mà không động tới
   chỉnh sửa đang dở); biến thể đã lưu có liên kết "Quản lý tồn kho" sang `/admin/inventory?q=<SKU>` (thêm `includeHidden=true` khi sản phẩm ẩn hoặc biến thể ngừng bán,
-  `inventory-link.ts`); hàng mới thêm trong form chưa lưu thì không hiện tồn và không có liên kết. Ảnh upload bằng `ImageUploadField` (`components/shared/`, kind `products`, khung vuông `object-contain`; trong lúc tải thì khóa nút Lưu và chặn submit);
+  `inventoryLinkOf` trong `product-variant-row.tsx`); hàng mới thêm trong form chưa lưu thì không hiện tồn và không có liên kết. Ảnh upload bằng `ImageUploadField` (`components/shared/`, kind `products`, khung vuông `object-contain`; trong lúc tải thì khóa nút Lưu và chặn submit);
   mục thu gọn "Nhập URL ảnh" vẫn dùng được cho ảnh ở nơi khác (≤ 191 ký tự). "Xóa ảnh" chỉ xóa giá trị trong form, không xóa file trên server. Tạo xong về danh sách; sửa xong ở lại trang và
   `reset` form theo response. Trạng thái hiện/ẩn không nằm trong form (API chỉ đổi qua `PATCH :id/status`): nút Ẩn/Hiện ở đầu trang sửa. Link từ
   danh sách mang theo `location.state.listSearch` để "Quay lại" giữ bộ lọc và trang (`list-link.ts`).
@@ -443,7 +442,7 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
   (products 5 MB, avatars 2 MB; JPEG/PNG/WebP) ở `lib/image-rules.ts`, khớp backend; client chỉ kiểm loại file (`File.type`, rỗng cũng coi là sai), dung lượng, file rỗng
   và nhiều file, còn server kiểm thật (kể cả chữ ký byte). Upload lỗi thì giữ nguyên ảnh hiện tại. `ImagePreview` hiển thị mọi URL http(s), dùng cả
   trong bảng sản phẩm; prop `fallback` thay ô trống mặc định (avatar hiện chữ cái đầu).
-- **Ảnh đại diện (avatar)**: mọi role chỉ sửa avatar của CHÍNH MÌNH (`PATCH /users/me/avatar`, `lib/update-avatar.ts` + `hooks/use-update-avatar.ts`); ADMIN chỉ xem avatar người khác
+- **Ảnh đại diện (avatar)**: mọi role chỉ sửa avatar của CHÍNH MÌNH (`PATCH /users/me/avatar`, `hooks/use-update-avatar.ts`, hàm gọi API nằm cùng file); ADMIN chỉ xem avatar người khác
   trong bảng người dùng, form sửa người dùng không có ô avatar. Lối vào là mục "Ảnh đại diện" trong `components/shared/user-menu.tsx` (dùng chung admin và storefront), mở
   `avatar-dialog.tsx` (vỏ `FormDialog`) + `avatar-form.tsx`. Hộp thoại đặt NGOÀI `DropdownMenuContent` và điều khiển bằng state (bấm mục menu đóng menu ngay, hộp thoại nằm trong
   sẽ bị hủy theo); `finalFocus` trả focus về nút mở menu vì mục menu đã bị gỡ. Ảnh tải lên ngay khi chọn nhưng chỉ gắn vào tài khoản khi bấm Lưu (nút Lưu chỉ bật khi có thay đổi và
@@ -453,7 +452,7 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
   Ảnh tải lên rồi bị bỏ (Hủy, hoặc chọn ảnh khác) vẫn nằm trên server: hạn chế đã biết của backend, không có endpoint xóa file.
 - **Xem ảnh lớn (lightbox)**: `ImagePreview` có prop `zoomable`; khi bật và ảnh hợp lệ, khung ảnh là nút (`type="button"`) mở `components/shared/image-lightbox.tsx`
   (`src`, `alt`, `open`, `onOpenChange`, `title?` — điều khiển từ ngoài nên dùng lại được ở storefront). Đang bật ở ô upload ảnh (khi không đang tải lên) và
-  ảnh nhỏ trong bảng sản phẩm. Dựng thẳng trên `@base-ui/react/dialog` (như `ConfirmDialog`/`FormDialog`, vì `ui/dialog.tsx` trái token), nền tối bằng lớp `dark` đặt lên
+  ảnh nhỏ trong bảng sản phẩm. Dựng thẳng trên `@base-ui/react/dialog` (như `ConfirmDialog`/`FormDialog`, vì bản shadcn `ui/dialog` trái token và đã bị xóa khỏi `ui/`), nền tối bằng lớp `dark` đặt lên
   Popup (vùng tối cố định thứ 5; token khai báo trong `.dark` và Tailwind dùng `@theme inline` nên mọi token trong Popup tự đổi, không cần token riêng). 100% = vừa khung (ảnh nhỏ giãn
   tối đa 2× kích thước gốc), giới hạn 100–400%. Bánh xe zoom quanh con trỏ, bấm đúp chuyển 100%/200%, kéo khi đã phóng to (giới hạn để ảnh luôn phủ kín khung), hai ngón
   chụm để zoom, phím `+ − 0` và mũi tên, bấm vùng trống đóng. Logic ở `hooks/use-pan-zoom.ts` (state, bánh xe, phím) + `use-pan-zoom-gestures.ts` (pointer events; bấm vùng trống
@@ -483,3 +482,11 @@ một module, và cập nhật `/styleguide` nếu có thêm token hoặc compon
 - Sản phẩm: danh sách chưa có cột tồn kho (API không trả); ảnh upload xong mà không lưu (hoặc bị thay) vẫn nằm trên server, chưa có cách dọn; chưa cảnh báo khi rời trang sửa lúc có thay đổi chưa lưu; hoán đổi size/màu giữa hai biến thể trong một lần lưu bị 409 (tách hai lần lưu).
 - Backend chưa gắn guard cho `/users`..., chưa thu hồi được refresh token, chưa giới hạn số lần đăng nhập sai (xem CLAUDE.md backend).
 - Cookie refresh `SameSite=Lax`: khi deploy, frontend và backend phải cùng site (cùng domain gốc) thì cookie mới được gửi.
+- **Nợ kỹ thuật từ đợt dọn code (nhánh `chore/cleanup-frontend`, đã chủ ý bỏ qua):**
+  - Export dư (dùng trong file nhưng không ai import, khoảng 18 mục: `foldKey`, `ACCEPTED_IMAGE_TYPES`, `INFO_PAGES`, `MAX_UPSCALE`, `clamp`, `FooterLink`, `TabItem`, `ChipOption`, `CatalogCategoryRef`, `CreateVariantInput`, `HomeImage`, `HomeLink`, `HomeTab`, `ToastTone`, `ButtonProps`...): ROI thấp, chưa gỡ. Các hàm tạo query key (`catalogKeys`, `categoryKeys`, `inventoryKeys`, `productKeys`) GIỮ export.
+  - Token CSS chưa dùng trong `global.css` (chưa xóa): `--fw-body-lg`, `--fw-body-sm`, `--fw-caption`, `--radius-2xl`, `--stroke-hairline`, `--color-status-cancelled-bg`, `--color-payment-unpaid-bg` (hai cái sau sắp dùng cho trạng thái đơn hàng) và các alias shadcn (`--color-secondary(-foreground)`, `--color-destructive-foreground`, `--color-sidebar-primary(-foreground)`, `--color-ink-inverse`).
+  - File trên ~150 dòng chưa tách: `features/users/components/user-form-dialog.tsx` (372), `features/dashboard/components/revenue-chart.tsx` (288), `users-table.tsx` (244), `categories-table.tsx` (205), `products-table.tsx` (186), `features/products/form-mapping.ts` (177), `features/products/schemas.ts` (171), `components/shared/image-upload-field.tsx` (167). Giữ nguyên có chủ ý: `components/storefront/header-nav.tsx` (165), `lib/api-client.ts` (214), `lib/home-content.ts` (dữ liệu), `pages/styleguide` và `features/dashboard/mock.ts`.
+  - Trùng lặp trong admin chưa gom (jscpd): `categories-table`/`users-table`, `inventory-sort-header`/`product-sort-header`, ba hook `use-*-search-params`, các `*-content`, bốn hộp thoại kho.
+  - Storefront: `mx-auto w-full max-w-7xl px-gutter` còn được viết lại ở header, footer, `header-nav-panel`, `search-panel` (chủ ý, xem `page-container.tsx`); skeleton `shimmer aspect-[3/4]` lặp ở vài nơi (giữ).
+  - Phong cách: repo chưa có Prettier; một số file admin/auth còn dấu `;` cuối dòng (`user-form-dialog`, `admin-topbar`, `auth-store`, `pages/admin/users`).
+  - Ảnh `public/home/*.webp` vượt ngân sách dung lượng (xem `docs/storefront-design.md` mục 7), cần nén.

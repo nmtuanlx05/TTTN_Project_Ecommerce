@@ -9,10 +9,10 @@ import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import type { ApiError } from "@/lib/api-error"
 import { applyServerErrors } from "@/lib/form-errors"
+import { useAuthStore } from "../auth-store"
 import { SESSION_EXPIRED_MESSAGE } from "../constants"
 import { useLogin } from "../queries"
 import { loginSchema, type LoginFormValues } from "../schemas"
-import { useSessionExpiredNotice } from "../use-session-expired-notice"
 
 const LOGIN_FIELDS = ["email", "password"] as const
 
@@ -26,6 +26,18 @@ function statusMessage(error: ApiError): string | null {
     return "Tài khoản này đã bị khóa. Liên hệ cửa hàng để được mở khóa."
   }
   return null
+}
+
+/**
+ * `true` nếu người dùng vừa bị đưa về trang đăng nhập do phiên hết hạn hoặc tài khoản
+ * bị khóa. Giá trị được chụp lúc mở trang rồi xóa cờ trong store, nên thông báo chỉ hiện một lần.
+ */
+function useSessionExpiredNotice(): boolean {
+  const [expired] = useState(() => useAuthStore.getState().sessionExpired)
+  useEffect(() => {
+    useAuthStore.getState().dismissSessionExpired()
+  }, [])
+  return expired
 }
 
 function LoginForm() {

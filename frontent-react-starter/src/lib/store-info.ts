@@ -68,8 +68,6 @@ interface StoreInfo {
   name: string
   /** NỘI DUNG MẪU, dùng tạm — chờ chủ cửa hàng xác nhận. */
   tagline: string
-  /** NỘI DUNG MẪU, dùng tạm — chờ chủ cửa hàng xác nhận. */
-  description: string
   /**
    * NỘI DUNG MẪU, chờ xác nhận — thanh thông báo chạy chữ phía trên header; mỗi phần tử là một thông điệp. Có cam kết kinh doanh
    * (miễn phí vận chuyển, đổi trả): chỉ giữ khi hệ thống làm thật, xem bảng cam kết ở docs/storefront-design.md mục 13.
@@ -89,7 +87,6 @@ interface StoreInfo {
 export const STORE: StoreInfo = {
   name: "MONO STUDIO",
   tagline: "Thời trang tối giản cho mọi ngày",
-  description: "Những thiết kế đơn sắc, dễ phối.",
   announcements: ["MIỄN PHÍ VẬN CHUYỂN CHO ĐƠN HÀNG TỪ 500.000₫", "ĐỔI TRẢ TRONG 30 NGÀY"],
   footer: {
     description: "Thời trang tối giản cho mọi ngày. Chất liệu thoáng mát, form chuẩn, dễ phối.",

@@ -1,16 +1,28 @@
 import { useRef } from "react"
 import { useCategoryTree } from "@/hooks/use-category-tree"
 import { useDocumentTitle } from "@/hooks/use-document-title"
+import { formatNumber } from "@/lib/format"
 import { useCatalogProducts } from "../queries"
 import { useCatalogSearchParams } from "../use-catalog-search-params"
 import { ActiveFilterChips } from "./active-filter-chips"
 import { CatalogError, CategoryNotFound } from "./catalog-states"
 import { CatalogFilters } from "./catalog-filters"
-import { CatalogHeading } from "./catalog-heading"
 import { CatalogResults } from "./catalog-results"
 import { FilterDrawer } from "./filter-drawer"
 import { SortSelect } from "./sort-select"
 import { PageContainer } from "@/components/storefront/page-container"
+
+/** Tiêu đề trang (h1 duy nhất) và số kết quả. Dòng số kết quả giữ chỗ khi chưa có để tiêu đề không nhảy; là vùng live. */
+function CatalogHeading({ title, total }: { title: string; total: number | undefined }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <h1 className="text-h1 uppercase text-ink">{title}</h1>
+      <p aria-live="polite" className="min-h-6 text-body-sm text-ink-muted">
+        {total === undefined ? "" : `${formatNumber(total)} sản phẩm`}
+      </p>
+    </div>
+  )
+}
 
 /**
  * Trang /products. Đọc bộ lọc từ URL, tra slug danh mục sang id (backend chỉ nhận `categoryId`), gọi danh sách và ghép
