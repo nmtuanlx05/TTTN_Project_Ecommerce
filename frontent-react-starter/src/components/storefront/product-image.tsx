@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useImageLoad } from "@/hooks/use-image-load"
 import { STORE } from "@/lib/store-info"
 import { cn } from "@/lib/utils"
 
@@ -29,11 +29,12 @@ function ProductImage({
   onFailed?: () => void
   className?: string
 }) {
-  // Nhớ đúng URL đã xong/lỗi (không phải cờ chung) nên đổi URL là tải lại ngay.
-  const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
-  const [failedSrc, setFailedSrc] = useState<string | null>(null)
-  const showImage = src !== null && LOADABLE_SRC.test(src) && failedSrc !== src
-  const loaded = showImage && loadedSrc === src
+  const { showImage, loaded, imgProps } = useImageLoad({
+    src,
+    usable: src !== null && LOADABLE_SRC.test(src),
+    onLoaded,
+    onFailed,
+  })
 
   return (
     <div
@@ -43,7 +44,7 @@ function ProductImage({
         className,
       )}
     >
-      {showImage ? (
+      {showImage && src ? (
         <img
           src={src}
           alt={alt}
@@ -51,21 +52,7 @@ function ProductImage({
           decoding="async"
           fetchPriority={eager ? "high" : undefined}
           referrerPolicy="no-referrer"
-          // Ảnh có sẵn trong cache có thể đã xong trước khi gắn onLoad.
-          ref={(img) => {
-            if (img?.complete && img.naturalWidth > 0) {
-              setLoadedSrc(src)
-              onLoaded?.()
-            }
-          }}
-          onLoad={() => {
-            setLoadedSrc(src)
-            onLoaded?.()
-          }}
-          onError={() => {
-            setFailedSrc(src)
-            onFailed?.()
-          }}
+          {...imgProps}
           className={cn(
             "size-full object-cover transition-[opacity,transform] duration-(--motion-image) ease-smooth",
             loaded ? "opacity-100" : "opacity-0",
