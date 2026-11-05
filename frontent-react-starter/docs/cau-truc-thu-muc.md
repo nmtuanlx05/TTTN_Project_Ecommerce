@@ -19,7 +19,7 @@ src/
 ├─ pages/         MỎNG: chỉ ghép
 │   ├─ auth/        login ✓, register ✓
 │   ├─ admin/       dashboard ✓, users ✓, categories ✓, products ✓ (index, new, edit; form có danh sách nhiều ảnh `product-images-field` + vùng kéo-thả file `product-image-dropzone` (dùng `use-file-drop` chung) + hàng đợi tải `use-multi-image-upload`, mã màu hex của biến thể `variant-color-hex-field`), orders ✓ (index, detail/:id),
-│   │               inventory ✓, vouchers, placeholder ✓
+│   │               inventory ✓, vouchers ✓ (một trang: danh sách + hộp thoại tạo/sửa)
 │   ├─ styleguide/  ✓ trang nội bộ cho dev (route /styleguide: index + color-data — dữ liệu bảng màu), không thuộc admin
 │   ├─ forbidden.tsx ✓ (403), not-found.tsx ✓ (404)
 │   ├─ storefront/  home ✓ (hero carousel, danh mục nổi bật, best sellers, câu chuyện, sản phẩm mới về, dải cam kết), catalog ✓ (/products), product-detail ✓ (/products/:slug), stores ✓ (/dia-chi), not-found ✓ (404 trong khung khách),
@@ -30,7 +30,8 @@ src/
 │   ├─ cart/ ✓ (giỏ hàng của CUSTOMER: types, api, queries (useCart, useAddToCart, useUpdateCartItem, useRemoveCartItem, useClearCart); components/: cart-drawer (+ header, footer, states), cart-line (+ cart-line-list), free-shipping-bar, checkout-button (STUB), cart-page-content (+ cart-summary, clear-cart-confirm))
 │   ├─ admin-orders/ ✓ (đơn hàng phía admin: danh sách + lọc trên URL, chi tiết, đổi trạng thái qua hộp xác nhận, huy hiệu đơn chờ xác nhận ở sidebar; không import `features/orders`)
 │   ├─ orders/ ✓ (đơn của khách: danh sách + lọc trên URL, tóm tắt, chi tiết + mốc thời gian, hủy, mua lại; constants.ts có Record<OrderStatus, ...>; `OrderStatusPill` riêng cho storefront)
-│   └─ checkout/ ✓ vouchers/ payments/ account/
+│   ├─ admin-vouchers/ ✓ (voucher phía admin, API `/admin/vouchers`: danh sách + lọc trên URL, công tắc bật/tắt (tắt voucher đang chạy qua hộp xác nhận), hộp thoại tạo/sửa (khóa các ô giá trị khi voucher đã được dùng), khối thống kê, dòng "Ví dụ minh họa"; không import `features/checkout`)
+│   └─ checkout/ ✓ payments/ account/
 ├─ components/
 │   ├─ ui/          shadcn, KHÔNG sửa ✓ (ngoại lệ: được THÊM lớp `soft:` vào variant của button.tsx, một commit riêng)
 │   ├─ admin/       khung admin và thứ dùng chung nhiều tính năng ✓ (admin-layout, admin-sidebar, admin-topbar, nav-items, page-header, table-pagination, search-input — ô tìm kiếm debounce, confirm-dialog; category-select ✓ — ô chọn danh mục dạng cây thụt lề, dùng ở products và inventory)
@@ -57,7 +58,7 @@ src/
 │                 use-category-tree ✓ — cây danh mục công khai cho header/footer/catalog, use-carousel ✓ + use-swipe ✓ — carousel thủ công (không tự chạy) của hero trang chủ, use-image-load ✓ — trạng thái tải/lỗi của ảnh (dùng chung product-image và static-image), use-document-title ✓, use-in-view ✓ — IntersectionObserver,
 │                 use-open-until-navigation ✓ — ngăn kéo menu/khung tìm kiếm tự đóng khi đổi pathname, use-mega-menu ✓ — trạng thái mở/đóng, hẹn giờ hover và bấm ra ngoài của bảng điều hướng ở header, use-scroll-restoration ✓ — cuộn lên đầu khi đổi trang
 │                 và khôi phục vị trí khi Back/F5 của storefront)
-├─ lib/           hạ tầng: api-client ✓, api-error ✓, query-client ✓, format ✓, utils ✓, date-range ✓, category-tree-options ✓ (danh mục phẳng → danh sách theo cây, thuần túy),
+├─ lib/           hạ tầng: api-client ✓, api-error ✓, query-client ✓, format ✓, ymd ✓ (ngày YYYY-MM-DD thuần chuỗi: `formatYmd`, `addDaysYmd`, không dùng Date), utils ✓, date-range ✓, category-tree-options ✓ (danh mục phẳng → danh sách theo cây, thuần túy),
 │                 form-errors ✓, password-rules ✓ (nguồn duy nhất độ dài mật khẩu), vn-phone ✓, display-name ✓ (tên hiển thị của tài khoản),
 │                 image-rules ✓ (giới hạn và kiểm tra file ảnh theo kind), upload-image ✓ (POST /uploads/<kind>),
 │                 pan-zoom ✓ (toán thu phóng và kéo ảnh, thuần túy), store-info ✓ (nội dung cửa hàng: tên, khẩu hiệu, liên hệ — MỘT file duy nhất),
@@ -181,6 +182,9 @@ Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 4
 | Dashboard thật | features/dashboard/ nối API thật |
 
 ## 9. Việc tồn đọng
+- **Quy tắc giảm giá đang nằm ở hai nơi**: backend `orders.pricing.ts` (nguồn thật) và bản sao `features/admin-vouchers/discount-preview.ts` chỉ để hiện dòng "Ví dụ minh họa" trên form voucher (PERCENT làm tròn xuống rồi không vượt `maxDiscount`; FIXED không vượt tổng đơn). Đổi quy tắc ở backend thì phải đổi cả ở đây.
+- `ui/switch.tsx` là file THÊM MỚI (dựng trên `@base-ui/react/switch`, không phải bản sinh từ `shadcn add`); không có file `ui/` nào có sẵn bị sửa. Trạng thái voucher dùng lại variant badge của đơn hàng/thanh toán (`paid`, `cancelled`, `confirmed`, `pending`, `returned`) ở `features/admin-vouchers/constants.ts`.
+- Trang voucher chưa chạy thử với backend thật trên MySQL (backend cũng ghi chưa chạy ghi thật); chưa kiểm bằng mắt.
 - Storefront dùng mật độ mặc định (không `.density-admin`), tông tối giản biên tập (Archivo cho logo/tiêu đề). Định hướng thiết kế chi tiết: `docs/storefront-design.md`.
 - Backend Products đã tách `/admin/products` (thấy cả sản phẩm ẩn) và `/products` (khách, chỉ sản phẩm đang bán). Admin dùng `features/products`, khách dùng `features/catalog` (query key `["catalog", ...]`, tách khỏi `["products"]` của admin).
 - Trang admin và `/styleguide` nạp bằng `React.lazy` (`routes/admin-routes.tsx`, `App.tsx`) để khách storefront không tải mã quản trị; `/login` và `/register` KHÔNG lazy vì nằm trên đường mua hàng.
