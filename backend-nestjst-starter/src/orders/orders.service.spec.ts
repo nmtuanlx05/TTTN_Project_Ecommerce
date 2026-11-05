@@ -279,7 +279,12 @@ function setup(opts: Setup = {}) {
 
   const locations = new LocationsService();
   const workflow = { transition: jest.fn() } as unknown as OrderWorkflowService;
-  const service = new OrdersService(prisma as never, locations, workflow);
+  const service = new OrdersService(
+    prisma as never,
+    locations,
+    workflow,
+    {} as never,
+  );
   return {
     service,
     prisma,
@@ -1044,18 +1049,18 @@ describe('OrdersService: xem và hủy đơn của tôi', () => {
     const result = await service.findMine(7, {
       page: 3,
       limit: 10,
-      status: OrderStatus.PENDING,
+      status: [OrderStatus.PENDING],
       sortBy: 'createdAt',
       order: 'desc',
     });
 
     const args = prisma.order.findMany.mock.calls[0][0];
-    expect(args.where).toEqual({ userId: 7, status: 'PENDING' });
+    expect(args.where).toEqual({ userId: 7, status: { in: ['PENDING'] } });
     expect(args.skip).toBe(20);
     expect(args.take).toBe(10);
     expect(args.orderBy).toEqual([{ createdAt: 'desc' }, { id: 'desc' }]);
     expect(prisma.order.count).toHaveBeenCalledWith({
-      where: { userId: 7, status: 'PENDING' },
+      where: { userId: 7, status: { in: ['PENDING'] } },
     });
     expect(result.meta).toEqual({
       page: 3,

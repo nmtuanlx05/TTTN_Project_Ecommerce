@@ -54,6 +54,8 @@ describe('Orders API (e2e, service giả)', () => {
     create: jest.fn(),
     findMine: jest.fn(),
     findMineByCode: jest.fn(),
+    summaryMine: jest.fn(),
+    reorderMine: jest.fn(),
     cancelMine: jest.fn(),
   };
   const adminOrdersService = {
@@ -128,6 +130,8 @@ describe('Orders API (e2e, service giả)', () => {
       ['post', '/orders/preview', {}],
       ['post', '/orders', validBody],
       ['get', '/orders', undefined],
+      ['get', '/orders/summary', undefined],
+      ['post', '/orders/MS-261105-ABCD/reorder', {}],
       ['get', '/orders/MS-261105-ABCD', undefined],
       ['post', '/orders/MS-261105-ABCD/cancel', {}],
     ];
@@ -385,12 +389,48 @@ describe('Orders API (e2e, service giả)', () => {
       ).expect(200);
       expect(ordersService.findMine).toHaveBeenCalledWith(
         3,
-        expect.objectContaining({ status: 'PENDING', page: 2, limit: 5 }),
+        expect.objectContaining({ status: ['PENDING'], page: 2, limit: 5 }),
+      );
+    });
+
+    it('status nhiều giá trị phân tách bằng dấu phẩy và q chuyển cho service', async () => {
+      await as('CUSTOMER')(
+        request(server()).get('/orders?status=PENDING,CONFIRMED&q=%20ms-26%20'),
+      ).expect(200);
+      expect(ordersService.findMine).toHaveBeenCalledWith(
+        3,
+        expect.objectContaining({
+          status: ['PENDING', 'CONFIRMED'],
+          q: 'ms-26',
+        }),
+      );
+    });
+
+    it('GET /orders/summary không bị hiểu là mã đơn; userId từ token', async () => {
+      await as('CUSTOMER')(request(server()).get('/orders/summary')).expect(
+        200,
+      );
+      expect(ordersService.summaryMine).toHaveBeenCalledWith(3);
+      expect(ordersService.findMineByCode).not.toHaveBeenCalled();
+    });
+
+    it('POST /orders/:code/reorder: mã đơn và userId từ token; không có đơn thêm được → 409 có code', async () => {
+      ordersService.reorderMine.mockRejectedValue(
+        conflict('REORDER_NOTHING_ADDED', 'Không có sản phẩm nào thêm được'),
+      );
+      const res = await as('CUSTOMER')(
+        request(server()).post('/orders/MS-261105-ABCD/reorder'),
+      ).expect(409);
+      expect(res.body.code).toBe('REORDER_NOTHING_ADDED');
+      expect(ordersService.reorderMine).toHaveBeenCalledWith(
+        3,
+        'MS-261105-ABCD',
       );
     });
 
     it.each([
       'status=XYZ',
+      'status=PENDING,NOPE',
       'page=0',
       'limit=101',
       'sortBy=password',
