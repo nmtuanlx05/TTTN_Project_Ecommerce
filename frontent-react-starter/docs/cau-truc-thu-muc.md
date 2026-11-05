@@ -18,7 +18,7 @@ src/
 │                 redirect-if-authenticated), account-layout-container ✓ (layout /tai-khoan), use-avatar-saved ✓ (cập nhật phiên + cache sau khi đổi ảnh đại diện)
 ├─ pages/         MỎNG: chỉ ghép
 │   ├─ auth/        login ✓, register ✓
-│   ├─ admin/       dashboard ✓, users ✓, categories ✓, products ✓ (index, new, edit; form có danh sách nhiều ảnh `product-images-field` + vùng kéo-thả file `product-image-dropzone` (dùng `use-file-drop` chung) + hàng đợi tải `use-multi-image-upload`, mã màu hex của biến thể `variant-color-hex-field`), orders,
+│   ├─ admin/       dashboard ✓, users ✓, categories ✓, products ✓ (index, new, edit; form có danh sách nhiều ảnh `product-images-field` + vùng kéo-thả file `product-image-dropzone` (dùng `use-file-drop` chung) + hàng đợi tải `use-multi-image-upload`, mã màu hex của biến thể `variant-color-hex-field`), orders ✓ (index, detail/:id),
 │   │               inventory ✓, vouchers, placeholder ✓
 │   ├─ styleguide/  ✓ trang nội bộ cho dev (route /styleguide: index + color-data — dữ liệu bảng màu), không thuộc admin
 │   ├─ forbidden.tsx ✓ (403), not-found.tsx ✓ (404)
@@ -28,6 +28,7 @@ src/
 │   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/ ✓ catalog/ ✓ (dữ liệu công khai của storefront: danh sách và chi tiết sản phẩm)
 │   │  newsletter/ ✓ (form đăng ký nhận tin ở chân trang — mới có giao diện, chưa có backend)
 │   ├─ cart/ ✓ (giỏ hàng của CUSTOMER: types, api, queries (useCart, useAddToCart, useUpdateCartItem, useRemoveCartItem, useClearCart); components/: cart-drawer (+ header, footer, states), cart-line (+ cart-line-list), free-shipping-bar, checkout-button (STUB), cart-page-content (+ cart-summary, clear-cart-confirm))
+│   ├─ admin-orders/ ✓ (đơn hàng phía admin: danh sách + lọc trên URL, chi tiết, đổi trạng thái qua hộp xác nhận, huy hiệu đơn chờ xác nhận ở sidebar; không import `features/orders`)
 │   ├─ orders/ ✓ (đơn của khách: danh sách + lọc trên URL, tóm tắt, chi tiết + mốc thời gian, hủy, mua lại; constants.ts có Record<OrderStatus, ...>; `OrderStatusPill` riêng cho storefront)
 │   └─ checkout/ ✓ vouchers/ payments/ account/
 ├─ components/

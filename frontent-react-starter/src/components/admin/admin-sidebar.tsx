@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { NavCountBadge } from "@/components/admin/nav-count-badge";
 import { NAV_ITEMS } from "@/components/admin/nav-items";
 import type { Role } from "@/types/user";
 
@@ -10,7 +11,18 @@ import type { Role } from "@/types/user";
  * chuyển sang drawer ở 768px (ta cần 1024px) và mang theo bộ style riêng
  * (nền khối, bo góc, rail) không khớp tông hairline của hệ thống này.
  */
-function AdminNav({ role, onNavigate }: { role: Role; onNavigate?: () => void }) {
+/** Số đếm tùy chọn của từng mục menu, khóa theo `to` (vd. "/admin/orders"). */
+type NavCounts = Record<string, { count: number; label: string }>;
+
+function AdminNav({
+  role,
+  onNavigate,
+  counts,
+}: {
+  role: Role;
+  onNavigate?: () => void;
+  counts?: NavCounts;
+}) {
   return (
     <nav
       aria-label="Điều hướng khu quản trị"
@@ -36,6 +48,9 @@ function AdminNav({ role, onNavigate }: { role: Role; onNavigate?: () => void })
           {!ready ? (
             <span className="ml-auto text-caption text-ink-subtle">Sắp có</span>
           ) : null}
+          {counts?.[to] ? (
+            <NavCountBadge count={counts[to].count} label={counts[to].label} />
+          ) : null}
         </NavLink>
       ))}
     </nav>
@@ -43,7 +58,7 @@ function AdminNav({ role, onNavigate }: { role: Role; onNavigate?: () => void })
 }
 
 /** Cột trái cố định, chỉ hiện từ 1024px trở lên. */
-function AdminSidebar({ role }: { role: Role }) {
+function AdminSidebar({ role, counts }: { role: Role; counts?: NavCounts }) {
   return (
     <aside className="hidden w-60 shrink-0 border-r border-border-subtle bg-surface-sunken lg:flex lg:flex-col">
       <div className="flex h-16 items-center border-b border-border-subtle px-4">
@@ -51,7 +66,7 @@ function AdminSidebar({ role }: { role: Role }) {
           MONO STUDIO
         </span>
       </div>
-      <AdminNav role={role} />
+      <AdminNav role={role} counts={counts} />
       <div className="mt-auto border-t border-border-subtle p-4">
         <p className="text-caption text-ink-muted">Khu quản trị nội bộ</p>
       </div>
@@ -60,3 +75,4 @@ function AdminSidebar({ role }: { role: Role }) {
 }
 
 export { AdminSidebar, AdminNav };
+export type { NavCounts };

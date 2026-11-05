@@ -10,7 +10,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { UserMenu, type UserMenuAccount } from "@/components/shared/user-menu";
-import { AdminNav } from "@/components/admin/admin-sidebar";
+import { AdminNav, type NavCounts } from "@/components/admin/admin-sidebar";
 import { NAV_ITEMS } from "@/components/admin/nav-items";
 import type { Role, User } from "@/types/user";
 
@@ -29,12 +29,14 @@ function AdminTopbar({
   onLogout,
   loggingOut,
   onAvatarSaved,
+  navCounts,
 }: {
   account: AdminAccount;
   role: Role;
   onLogout: () => void;
   loggingOut: boolean;
   onAvatarSaved: (user: User) => void;
+  navCounts?: NavCounts;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const current = useBreadcrumb();
@@ -62,7 +64,11 @@ function AdminTopbar({
           <SheetDescription className="sr-only">
             Điều hướng giữa các khu vực của trang quản trị
           </SheetDescription>
-          <AdminNav role={role} onNavigate={() => setDrawerOpen(false)} />
+          <AdminNav
+            role={role}
+            counts={navCounts}
+            onNavigate={() => setDrawerOpen(false)}
+          />
         </SheetContent>
       </Sheet>
 

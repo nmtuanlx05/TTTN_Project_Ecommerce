@@ -448,7 +448,14 @@ Code ở `src/features/auth/` và `src/routes/`; chi tiết endpoint ở `backen
   Lịch sử (`movements-list.tsx`): `useInfiniteQuery`, "Tải thêm" dựa vào `meta.totalPages`; loại EXPORT ánh xạ mã sang nhãn, ADJUST hiện nguyên văn, loại lạ hiện nguyên giá trị. Khóa truy vấn dưới `["inventory"]`;
   sau mỗi thao tác làm mới cả `["inventory"]` và `["products"]` (khóa chữ trong `queries.ts`, khớp `productKeys.all`, không import vì features không import lẫn nhau — đổi một nơi phải đổi nơi kia).
   Tên sản phẩm là liên kết sang trang sửa; nút "Quay lại" ở đó về danh sách sản phẩm chứ không về Kho (hạn chế đã biết: `list-link.ts` của products cố định đường dẫn).
-- Các mục menu còn lại hiện là `PlaceholderPage`. Route lạ trong `/admin` hiện 404 trong khung admin; ngoài `/admin` hiện 404 TRONG khung storefront (`pages/storefront/not-found`, route `*` ở `routes/storefront-routes.tsx`: có header, footer, tiêu đề tab, `h1`).
+- `/admin/orders` — ADMIN + STAFF (quyền y hệt nhau, không ẩn nút theo role). Nối backend thật (`docs/api/orders.md`, mục "Endpoint quản trị"), feature `features/admin-orders` (tách khỏi `features/orders` của khách, không import chéo; nhãn trạng thái dùng `ORDER_STATUS` ở `ui/badge.tsx`, đã thêm `PENDING_PAYMENT`).
+  **Danh sách**: hàng nút lọc nhanh theo trạng thái (không kèm số đếm: backend chưa có API đếm cho admin), tìm `q` (mã đơn / SĐT / tên, debounce), hai ô ngày `from`/`to` (`<input type="date">`, chuỗi `YYYY-MM-DD` gửi thẳng, backend hiểu theo GMT+7),
+  20 dòng/trang, mới nhất trước, toàn bộ trên URL (`use-admin-orders-search-params.ts`, lọc whitelist, `status=PACKING` bị bỏ). Cột "Số sản phẩm" là tổng `quantity` (danh sách không có `itemCount`).
+  **Chi tiết** `/admin/orders/:id` (theo id số, không theo mã): khách và giao hàng, người phụ trách (`handledBy`), dòng hàng (bản chụp lúc đặt), thanh toán, tiền, lịch sử kèm tên người đổi (`actor`, `null` = hệ thống).
+  **Đổi trạng thái** (`order-actions-panel.tsx`, `ORDER_ACTIONS` là `Record<OrderStatus, ...>`): PENDING xác nhận/hủy, CONFIRMED giao/hủy, SHIPPING hoàn tất; mỗi bước qua hộp xác nhận nêu hậu quả (giao = trừ kho và không hủy được nữa; hoàn tất = COD ghi đã thanh toán, không hoàn tác; hủy = lý do bắt buộc ≤ 500 ký tự).
+  Lỗi theo mã (`use-order-status-action.ts`): 409 `ORDER_INVALID_TRANSITION` đóng hộp + báo + làm mới, 404/403 toast, còn lại (kể cả 409 không đủ tồn khi giao, backend chưa có `code`) hiện nguyên văn trong hộp. Sau khi đổi: ghi cache chi tiết, làm mới `["admin-orders"]`, `["inventory"]`, `["products"]`.
+  **Huy hiệu sidebar**: số đơn PENDING cạnh mục "Đơn hàng" (`usePendingOrdersCount`: `GET /admin/orders?status=PENDING&limit=1` đọc `meta.total`; làm mới khi lấy lại focus và mỗi 60 giây khi tab hiện; truyền xuống `AdminLayout`/`AdminNav` bằng prop tùy chọn `navCounts`). Chưa có: in phiếu giao hàng, xuất file, hoàn hàng `RETURNED`.
+- Các mục menu còn lại (Voucher) hiện là `PlaceholderPage`. Route lạ trong `/admin` hiện 404 trong khung admin; ngoài `/admin` hiện 404 TRONG khung storefront (`pages/storefront/not-found`, route `*` ở `routes/storefront-routes.tsx`: có header, footer, tiêu đề tab, `h1`).
 - **Upload ảnh dùng chung**: `components/shared/image-upload-field.tsx` (props `value`, `onChange`, `kind` = `products`|`avatars`, `shape` = `square`|`circle`, `label`, `error`, `disabled`,
   `zoomable` (mặc định bật), `fallback`, `onUploadingChange`). Chọn file hoặc kéo-thả (tự dùng sự kiện trình duyệt, `hooks/use-file-drop.ts`), tiến độ và nút Hủy (`hooks/use-image-upload.ts`). Giới hạn
   (products 5 MB, avatars 2 MB; JPEG/PNG/WebP) ở `lib/image-rules.ts`, khớp backend; client chỉ kiểm loại file (`File.type`, rỗng cũng coi là sai), dung lượng, file rỗng
@@ -480,9 +487,10 @@ một module, và cập nhật `/styleguide` nếu có thêm token hoặc compon
 
 ## Việc tồn đọng
 
+- Backend nên có `code` riêng cho 409 "không đủ tồn kho khi giao" (`InventoryService.shipOut` ném `ConflictException` không mã). Hiện frontend chỉ phân biệt được bằng "409 không có `code`" và hiện nguyên văn message.
+- Admin đơn hàng: tab lọc nhanh chưa có số đếm (cần `GET /admin/orders/summary` ở backend); `PaymentStatusBadge` chưa có `FAILED` (đơn online chưa dùng), chỗ hiển thị đang dùng `Badge` variant `unpaid` cho trạng thái này.
 - Quên mật khẩu / đặt lại mật khẩu (backend chưa có endpoint).
 - Đồng bộ đăng xuất giữa nhiều tab (hiện tab khác chỉ biết khi request kế tiếp gặp 401).
-- Trang đích của STAFF sau đăng nhập đang là `/admin/orders` (placeholder); đổi khi có trang Đơn hàng thật.
 - Storefront: trang chủ đã có; giỏ hàng đã có (mục Giỏ hàng); thanh toán COD và trang cảm ơn đã có (mục Trang hiện có; thanh toán online là giao diện giả); đánh giá, "Đơn hàng của tôi" chưa có.
 - Storefront: ảnh sản phẩm là ảnh gốc từ máy chủ, không có bản thu nhỏ (`srcset`/resize) nên nặng trên di động; danh mục chưa có sản phẩm vẫn hiện trên menu (API danh mục không có cờ ẩn) và dẫn tới trạng thái rỗng; mục "Phụ kiện", "Quà tặng" trong `STORE.navItems` chỉ hiện khi GET `/categories` có slug `phu-kien`, `qua-tang` (dữ liệu hiện tại ĐÃ có cả hai; mục ẩn đi nếu danh mục bị xóa); khi các mục danh mục xuất hiện lần đầu, "Tất cả sản phẩm" dịch trái vì thanh điều hướng căn phải; khách bấm "Đăng ký"
   rồi mới đăng nhập vẫn giữ `from` (đã xử lý), nhưng đăng ký bằng đường khác (mở thẳng `/register`) thì không có đường quay lại; thanh mua dính đáy chưa tận dụng `env(safe-area-inset-bottom)` vì `index.html` chưa đặt `viewport-fit=cover`;

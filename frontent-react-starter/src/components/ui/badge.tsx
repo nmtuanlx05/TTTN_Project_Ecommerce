@@ -55,6 +55,7 @@ const badgeVariants = cva(
 /** Trạng thái đơn hàng theo prisma/schema.prisma */
 export type OrderStatus =
   | "PENDING"
+  | "PENDING_PAYMENT"
   | "CONFIRMED"
   | "SHIPPING"
   | "COMPLETED"
@@ -69,6 +70,7 @@ const ORDER_STATUS: Record<
   { label: string; variant: VariantProps<typeof badgeVariants>["variant"] }
 > = {
   PENDING: { label: "Chờ xác nhận", variant: "pending" },
+  PENDING_PAYMENT: { label: "Chờ thanh toán", variant: "pending" },
   CONFIRMED: { label: "Đã xác nhận", variant: "confirmed" },
   SHIPPING: { label: "Đang giao", variant: "shipping" },
   COMPLETED: { label: "Đã giao", variant: "completed" },

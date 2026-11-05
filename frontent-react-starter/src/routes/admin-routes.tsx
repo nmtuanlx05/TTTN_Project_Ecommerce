@@ -7,6 +7,8 @@ import {
   CategoriesPage,
   DashboardPage,
   InventoryPage,
+  OrderDetailPage,
+  OrdersPage,
   ProductCreatePage,
   ProductEditPage,
   ProductsPage,
@@ -32,7 +34,11 @@ export const adminRoutes = (
       <Route element={<AdminLayoutContainer />}>
         <Route index element={<AdminIndexRedirect />} />
         <Route path="dashboard" element={guarded("/admin/dashboard", <DashboardPage />)} />
-        <Route path="orders/*" element={guarded("/admin/orders", <PlaceholderPage />)} />
+        <Route path="orders" element={guarded("/admin/orders", <Outlet />)}>
+          <Route index element={<OrdersPage />} />
+          <Route path=":id" element={<OrderDetailPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
         <Route path="products" element={guarded("/admin/products", <Outlet />)}>
           <Route index element={<ProductsPage />} />
           <Route path="new" element={<ProductCreatePage />} />
