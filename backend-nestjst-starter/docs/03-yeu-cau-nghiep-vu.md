@@ -12,14 +12,14 @@ Yêu cầu chia theo ba phía: người dùng, Admin, Staff. Ưu tiên **MVP** l
 | BR-U-04 | Customer đã đăng nhập thêm, sửa số lượng, xóa sản phẩm trong giỏ (giỏ lưu ở DB, tối đa 10 mỗi dòng, không giữ hàng) | MVP |
 | BR-U-04b | Guest giữ giỏ tạm ở trình duyệt và gộp vào giỏ tài khoản khi đăng nhập | V2 |
 | BR-U-05 | Đăng ký, đăng nhập, đăng xuất, quên và đổi mật khẩu | MVP |
-| BR-U-06 | Đặt hàng: nhập tên, số điện thoại, địa chỉ; chọn COD hoặc online; xem lại đơn trước khi xác nhận | MVP |
-| BR-U-07 | Guest checkout (mua không cần đăng ký) | MVP |
+| BR-U-06 | Đặt hàng từ giỏ: nhập tên, số điện thoại (10 số, đầu 03/05/07/08/09), địa chỉ 3 cấp (chọn từ danh sách); chọn COD (online chưa triển khai); xem lại đơn (`preview`) trước khi xác nhận | MVP |
+| BR-U-07 | Guest checkout (mua không cần đăng ký) | V2 (bản hiện tại đặt đơn từ giỏ của Customer) |
 | BR-U-08 | Nhận email xác nhận kèm mã đơn | MVP |
 | BR-U-09 | Xem lịch sử đơn hàng, chi tiết và trạng thái đơn | MVP |
-| BR-U-10 | Tự hủy đơn khi đơn chưa vào giai đoạn đóng gói (đến hết trạng thái CONFIRMED) | MVP |
+| BR-U-10 | Tự hủy đơn khi đơn còn ở trạng thái chờ xác nhận (PENDING); đã xác nhận thì liên hệ cửa hàng | MVP |
 | BR-U-11 | Quản lý hồ sơ cá nhân (tên, số điện thoại), đổi mật khẩu | MVP |
 | BR-U-12 | Sổ địa chỉ nhiều địa chỉ | V2 |
-| BR-U-13 | Áp mã giảm giá (tối đa một mã mỗi đơn, guest dùng được) | MVP |
+| BR-U-13 | Áp mã giảm giá (tối đa một mã mỗi đơn); mỗi lỗi voucher có thông báo riêng | MVP |
 | BR-U-14 | Yêu cầu đổi/trả hàng | V2 |
 | BR-U-15 | Đánh giá sản phẩm, wishlist | V2 |
 
@@ -67,10 +67,10 @@ Yêu cầu chia theo ba phía: người dùng, Admin, Staff. Ưu tiên **MVP** l
 | --- | --- | --- |
 | BR-S-10 | Xem danh sách đơn, lọc theo trạng thái, ngày, mã đơn, số điện thoại | MVP |
 | BR-S-11 | Xác nhận đơn (hệ thống gán người xác nhận làm người phụ trách đơn, `handledById`) và chuyển trạng thái theo đúng chuỗi hợp lệ | MVP |
-| BR-S-12 | Hủy đơn chưa thanh toán, bắt buộc ghi lý do | MVP |
+| BR-S-12 | Hủy đơn chưa thanh toán (đến hết PACKING), bắt buộc ghi lý do | MVP |
 | BR-S-13 | Với đơn đã thanh toán: chỉ tạo yêu cầu hủy, Admin duyệt | MVP |
 | BR-S-14 | In phiếu đóng gói, phiếu giao hàng | MVP |
-| BR-S-15 | Xử lý hàng hoàn về, cộng lại tồn sau khi kiểm hàng | MVP |
+| BR-S-15 | Xử lý hàng hoàn về, cộng lại tồn sau khi kiểm hàng | MVP (hoãn: chưa triển khai `RETURNED`, làm lần sau) |
 
 ### 3.4 Khách hàng
 

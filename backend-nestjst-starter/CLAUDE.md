@@ -7,8 +7,8 @@ File này cung cấp hướng dẫn cho Claude Code (claude.ai/code) khi làm vi
 Đây là một NestJS starter cho backend e-commerce thời trang. Cây thư mục `src/` hiện tại chỉ là
 scaffold mặc định của Nest (`AppModule`/`AppController`/`AppService` trả về "Hello World") — các module
 nghiệp vụ chưa được xây dựng. Đã có `docker-compose.yml` (service MySQL 8), `.env.development`/`.env.production` và `prisma.config.ts`
-(Prisma 7: URL kết nối khai báo ở đây, không nằm trong schema). `prisma/schema.prisma` (11 model) đã khớp
-`docs/05` và `docs/06`; migration `init_ecommerce`, `add_user_avatar_url`, `add_stock_movements` và `add_product_images_color_hex` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
+(Prisma 7: URL kết nối khai báo ở đây, không nằm trong schema). `prisma/schema.prisma` (13 model) đã khớp
+`docs/05` và `docs/06`; migration `init_ecommerce`, `add_user_avatar_url`, `add_stock_movements`, `add_product_images_color_hex` và `add_order_checkout` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
 xây dựng dựa trên đó; coi nó là nguồn thông tin chính khi triển khai tính năng, không phải code `src/`
 hiện tại. Nếu `docs/05` lệch với `prisma/schema.prisma` thì schema là bản chuẩn.
 
@@ -48,7 +48,7 @@ website e-commerce thời trang gồm khu vực mua sắm cho khách và khu v�
 - `03-yeu-cau-nghiep-vu.md` — yêu cầu nghiệp vụ, mã hóa `BR-U-*` (user), `BR-A-*` (admin),
   `BR-S-*` (staff), mỗi mục gắn nhãn MVP hoặc V2
 - `04-yeu-cau-he-thong.md` — yêu cầu chức năng (`FR-*`) và phi chức năng (`NFR-*`)
-- `05-data-models.md` — mô tả schema Prisma (11 model, khớp `prisma/schema.prisma`) và quy tắc tồn kho, voucher
+- `05-data-models.md` — mô tả schema Prisma (13 model, khớp `prisma/schema.prisma`) và quy tắc tồn kho, voucher
 - `06-thiet-ke-database.md` — các vấn đề riêng của MySQL: đặt tên bảng (`@@map` sang snake_case),
   index, và các ràng buộc CHECK mà Prisma không hỗ trợ trực tiếp (thêm bằng cách sửa tay migration
   tạo từ `prisma migrate dev --create-only`)
@@ -97,6 +97,20 @@ COMPLETED`, với `CANCELLED` và `RETURNED` là các nhánh phụ tách ra từ
   (`MAX_QUANTITY_PER_ITEM`, không CHECK ở DB) và không vượt `stock - reserved`; thêm trùng biến thể thì cộng dồn. Giỏ không giữ hàng và
   **không lưu giá** (đọc giá hiện tại; đơn hàng chụp giá lúc đặt). Ghi trong `$transaction` có `SELECT ... FOR UPDATE` dòng `carts`; dòng đã
   hết hàng/ẩn vẫn hiện kèm `purchasable`/`inStock`, `subtotal`/`itemCount` chỉ tính dòng mua được. Dòng của người khác trả 404.
+- **Đặt đơn, voucher, quản lý đơn** (`src/orders/`, API ở `docs/api/orders.md`; địa chỉ ở `src/locations/`, `docs/api/locations.md`): chỉ `CUSTOMER` đặt đơn
+  từ giỏ (guest checkout để V2), chỉ COD (`ONLINE` → 400 `PAYMENT_METHOD_NOT_SUPPORTED`; schema đã chừa `PENDING_PAYMENT`, `payment_transactions`).
+  **Tiền tính ở một nơi** `orders.pricing.ts`: `phíShip = tạmTính >= 500.000 ? 0 : 30.000` (trên tạmTính TRƯỚC giảm giá; hằng số ở `orders.constants.ts`,
+  cùng giá trị giao diện); `PERCENT` làm tròn xuống rồi ≤ `maxDiscount`, mọi giảm giá ≤ tạmTính (tổng có thể = 0). Đơn lưu `subtotal`/`discountAmount`/
+  `voucherCode`/`shippingFee`/`totalAmount`, không tính lại. **Thứ tự khóa cố định** (tránh deadlock): giỏ → đơn → biến thể theo `variantId` tăng dần
+  (câu khóa chỉ trên `product_variants`, không JOIN; tồn lấy từ chính câu khóa) → voucher. Lượt voucher tăng bằng `UPDATE ... WHERE (usageLimit IS NULL OR
+  usedCount < usageLimit)` kiểm số dòng; hủy đơn trả `usedCount - 1` đúng một lần (kiểm trạng thái sau khi khóa đơn). Trừ kho thật ở `PACKING → SHIPPING`
+  qua `InventoryService.shipOut` (giảm `stock` và `reserved`, ghi `StockMovement` `SALE`). Khách chỉ hủy khi `PENDING` (đơn khác → 409
+  `ORDER_NOT_CANCELLABLE_BY_CUSTOMER`); Staff/Admin hủy đến hết `PACKING` kèm lý do. `COMPLETED` là trạng thái cuối, `RETURNED` để lần sau. Mọi đổi trạng thái
+  ghi `order_status_histories`. Mã đơn `MS-YYMMDD-XXXX` (YYMMDD theo GMT+7 tường minh). `Idempotency-Key` (header tùy chọn) trả lại đúng đơn cũ, kiểm sau khi khóa giỏ.
+  Voucher: không giới hạn theo từng khách (V2, cần cột `perUserLimit`); không có endpoint xóa voucher; chưa có admin CRUD voucher (voucher mẫu ở `prisma/seed.ts`).
+  **Địa chỉ 3 cấp (chuẩn CŨ)**: dữ liệu dvhcvn `v20250301` (GPL-3.0, xem `src/locations/data/NOTICE.md`) nạp vào bộ nhớ; đơn lưu mã VÀ tên từng cấp;
+  quận/huyện có phường/xã thì `wardCode` bắt buộc, không có (5 huyện đảo) thì phải bỏ trống. Lỗi mới có trường `code` (`AllExceptionsFilter`, helper
+  `src/common/errors/coded-errors.ts`); lỗi cũ không đổi.
 - Xóa mềm bằng `isActive` cho `Product`/`ProductVariant`/`User`/`Voucher`; `Order` và `OrderItem`
   không bao giờ xóa cứng (hủy đơn bằng `CANCELLED`).
 
@@ -123,7 +137,7 @@ Quyết định nghiệp vụ quan trọng (không tự ý thay đổi):
   Tồn khả dụng = `stock - reserved`.
 - Thêm vào giỏ không giữ hàng. Đặt đơn tăng `reserved`. Chuyển SHIPPING thì giảm
   cả `stock` và `reserved`.
-- Trạng thái đơn: PENDING, CONFIRMED, PACKING, SHIPPING, COMPLETED; nhánh CANCELLED, RETURNED.
+- Trạng thái đơn: PENDING, CONFIRMED, PACKING, SHIPPING, COMPLETED; nhánh CANCELLED, RETURNED (RETURNED chưa triển khai); PENDING_PAYMENT cho đơn online (chưa dùng).
 - Đơn online quá 30 phút chưa thanh toán thì tự hủy và nhả `reserved`.
 - Đơn đã thanh toán: Staff chỉ tạo yêu cầu hủy, Admin duyệt.
 - Không xóa cứng Order, OrderItem, Voucher.
@@ -131,8 +145,8 @@ Quyết định nghiệp vụ quan trọng (không tự ý thay đổi):
 - Voucher: mỗi đơn tối đa một mã, giảm trên `subtotal`, hủy đơn thì hoàn lượt (`usedCount - 1`).
 - Tiền là VND, kiểu Int.
 
-Phạm vi MVP: 11 model (User, Category, Product, ProductVariant, ProductImage, Cart, CartItem,
-Order, OrderItem, Voucher, StockMovement).
+Phạm vi MVP: 13 model (User, Category, Product, ProductVariant, ProductImage, Cart, CartItem,
+Order, OrderItem, OrderStatusHistory, PaymentTransaction, Voucher, StockMovement).
 Để V2: Address, Review, Supplier, AuditLog.
 
 ## Tài liệu dự án (đọc khi cần)
@@ -240,6 +254,8 @@ bằng `PATCH /<resource>/:id/status` với body `{ isActive: boolean }`. `Order
 từ `@nestjs/mapped-types` (chưa cài `@nestjs/swagger`), chỉ gồm các trường được phép sửa — ví dụ User không cho
 sửa `email`/`password` qua PATCH thường.
 
+**Mã lỗi `code`**: lỗi mới ở module đơn hàng/địa chỉ có thêm trường `code` (vd `VOUCHER_EXPIRED`, `CART_EMPTY`), liệt kê ở `docs/api/orders.md`; dùng helper `badRequest/conflict/notFound` ở `src/common/errors/coded-errors.ts`.
+
 **Lưu ý Jest**: `@nestjs/config` và `@nestjs/mapped-types` (v12) chỉ có bản ESM nên Jest không nạp được; test
 phải `jest.mock` chúng (xem `test/users.e2e-spec.ts`, `test/auth.e2e-spec.ts`). `@nestjs/jwt` và `@nestjs/passport` cũng ESM
 nhưng cần chạy thật, nên được transform qua `transformIgnorePatterns` trong `test/jest-e2e.json`.
@@ -317,6 +333,9 @@ Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy tr�
 
 - **Chưa thu hồi được refresh token**: stateless nên logout chỉ xóa cookie; token bị lộ dùng được tới khi hết 7 ngày
   (chỉ chặn được bằng cách khóa user hoặc đổi `JWT_REFRESH_SECRET`). Cân nhắc lưu hash refresh token / `tokenVersion` ở V2.
+- **Đặt đơn chưa kiểm chứng trên MySQL thật**: khóa `FOR UPDATE`, thứ tự khóa, chống bán vượt tồn và chống dùng quá lượt voucher khi hai request đồng thời chỉ được bảo vệ bằng thiết kế
+  (khóa theo thứ tự cố định + UPDATE có điều kiện + kiểm số dòng); test hiện dùng Prisma giả. Chưa xác minh adapter áp dụng `isolationLevel: ReadCommitted`.
+- **Chưa có**: admin CRUD voucher, đơn hết hạn tự hủy cho thanh toán online (job định kỳ, mô tả ở `docs/api/orders.md`), hoàn hàng `RETURNED`, giới hạn voucher theo khách, guest checkout, email.
 - **Chưa giới hạn số lần đăng nhập sai** (chưa có rate limit/lockout) cho `/auth/login`.
 - **`test/app.e2e-spec.ts` fail từ trước**: nạp `AppModule` thật mà `@nestjs/config` chỉ có bản ESM (Jest không nạp được)
   và cần DB. `test/jest-e2e.json` đã cho Jest transform `@nestjs/jwt` và `@nestjs/passport` (cũng ESM) để test Auth chạy được.

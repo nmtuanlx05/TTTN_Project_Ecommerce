@@ -13,23 +13,24 @@ Dự án xây dựng website thương mại điện tử bán hàng cho một br
 | Thêm vào giỏ                         | Không trừ, không giữ tồn kho; chỉ kiểm tra tồn khi thêm giỏ và khi đặt đơn. Giỏ lưu trong DB, chỉ Customer đã đăng nhập; giỏ Guest để V2 |
 | Nhập kho                             | Staff tự nhập kho, không cần Admin duyệt; cộng trực tiếp vào `ProductVariant.stock`, mỗi lần đổi tồn ghi một dòng lịch sử (`StockMovement`) |
 | Khách mua hàng                       | Cho phép guest checkout (không cần đăng ký)                                                                           |
-| Thanh toán                           | COD và một cổng thanh toán online                                                                                     |
+| Thanh toán                           | COD và một cổng thanh toán online. **Bản hiện tại chỉ triển khai COD**; schema đã chừa chỗ cho cổng online (VNPay sandbox dự kiến), chưa làm |
 | Hủy đơn chưa thanh toán              | Staff được hủy, bắt buộc ghi lý do                                                                                    |
 | Hủy hoặc hoàn tiền đơn đã thanh toán | Staff chỉ tạo yêu cầu, Admin duyệt                                                                                    |
 | Kho                                  | Một kho duy nhất                                                                                                      |
 | Voucher                              | Thuộc MVP: mỗi đơn tối đa một mã, giảm trên `subtotal` (không giảm phí ship), guest dùng được, chỉ Admin tạo và quản lý |
-| Phạm vi                              | Mức tối thiểu cho MVP; sổ địa chỉ, đánh giá, đổi trả để V2                                               |
+| Đặt đơn                              | Đặt từ giỏ của Customer (guest checkout để V2). Tiền tính ở backend: miễn phí ship từ 500.000đ trên tạmTính **trước** giảm giá, phí 30.000đ; địa chỉ chọn theo 3 cấp (chuẩn cũ); mã đơn `MS-YYMMDD-XXXX`; có lịch sử đổi trạng thái đơn |
+| Phạm vi                              | Mức tối thiểu cho MVP; sổ địa chỉ, đánh giá, đổi trả, hoàn hàng (`RETURNED`), giới hạn voucher theo khách để V2 |
 
 ## Phạm vi MVP và phần để V2
 
-MVP gồm 10 model dữ liệu và ba nhóm người dùng: Customer (kèm Guest), Staff, Admin.
+MVP gồm 13 model dữ liệu (thêm `OrderStatusHistory`, `PaymentTransaction` ở bước đặt đơn) và ba nhóm người dùng: Customer (kèm Guest), Staff, Admin.
 
 |            | MVP                                                                                                                 | Để V2                                                             |
 | ---------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | Khách hàng | Xem, tìm, lọc sản phẩm; giỏ hàng (cần đăng nhập, giỏ tạm của Guest để V2); guest checkout; đặt đơn COD/online; áp mã giảm giá; theo dõi và tự hủy đơn | Sổ địa chỉ, đổi/trả, đánh giá, wishlist                           |
 | Staff      | CRUD sản phẩm, biến thể, danh mục; nhập kho, điều chỉnh tồn, xem lịch sử kho; xử lý đơn; tra cứu khách                           | Phiếu nhập theo nhà cung cấp, phân quyền chi tiết theo nhóm Staff |
 | Admin      | Quản lý Staff, khóa khách, dashboard, báo cáo doanh thu, duyệt hoàn tiền, quản lý voucher, cấu hình hệ thống | Nhật ký thao tác, khuyến mãi tự động, banner, báo cáo lợi nhuận   |
-| Dữ liệu    | User, Category, Product, ProductVariant, Cart, CartItem, Order, OrderItem, Voucher, StockMovement | Address, Supplier, Review, AuditLog |
+| Dữ liệu    | User, Category, Product, ProductVariant, ProductImage, Cart, CartItem, Order, OrderItem, OrderStatusHistory, PaymentTransaction, Voucher, StockMovement | Address, Supplier, Review, AuditLog |
 
 ## Cấu trúc tài liệu
 
