@@ -17,7 +17,7 @@ chạy thử trên MySQL thật**: chỉ được bảo vệ bằng thiết kế
   cổng online (xem "Thiết kế chừa chỗ thanh toán online").
 - Đặt đơn **từ giỏ của CUSTOMER**; guest checkout để V2 (`Order.userId` vẫn nullable).
 - `COMPLETED` là trạng thái cuối. `RETURNED` (hàng hoàn) **chưa triển khai**, để lần sau.
-- Không email, không cổng thanh toán online, chưa có admin CRUD voucher (voucher mẫu tạo bằng seed).
+- Không email, không cổng thanh toán online, quản lý voucher của admin xem `docs/api/vouchers.md` (voucher mẫu vẫn tạo bằng seed).
 
 ## Quyền
 
