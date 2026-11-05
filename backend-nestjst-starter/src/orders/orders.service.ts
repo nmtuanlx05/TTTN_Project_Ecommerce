@@ -531,11 +531,7 @@ export class OrdersService {
     const sum = (statuses: OrderStatus[]) =>
       statuses.reduce((total, s) => total + (byStatus.get(s) ?? 0), 0);
     const pending = sum([OrderStatus.PENDING, OrderStatus.PENDING_PAYMENT]);
-    const processing = sum([
-      OrderStatus.CONFIRMED,
-      OrderStatus.PACKING,
-      OrderStatus.SHIPPING,
-    ]);
+    const processing = sum([OrderStatus.CONFIRMED, OrderStatus.SHIPPING]);
     return {
       total: sum(Object.values(OrderStatus)),
       pending,
