@@ -156,13 +156,12 @@ function summarise(points: DailyPoint[]): KpiSnapshot {
 /* --------------------------- Đơn theo trạng thái -------------------------- */
 
 /**
- * Tỉ trọng 7 trạng thái trên tổng đơn của kỳ. Phần lớn đơn đã kết thúc; số đơn
+ * Tỉ trọng 6 trạng thái trên tổng đơn của kỳ. Phần lớn đơn đã kết thúc; số đơn
  * còn đang chạy trong pipeline nhỏ và gần như không đổi theo độ dài khoảng.
  */
 const STATUS_SHARE: { status: OrderStatus; share: number }[] = [
   { status: "PENDING", share: 0.045 },
-  { status: "CONFIRMED", share: 0.062 },
-  { status: "PACKING", share: 0.048 },
+  { status: "CONFIRMED", share: 0.11 },
   { status: "SHIPPING", share: 0.091 },
   { status: "COMPLETED", share: 0.681 },
   { status: "CANCELLED", share: 0.049 },
@@ -324,7 +323,7 @@ function buildPendingOrders(): PendingOrder[] {
       code: `DH${stamp}-0144`,
       customerName: "Đặng Quốc Việt",
       totalAmount: 3_180_000,
-      status: "PACKING",
+      status: "CONFIRMED",
       paymentStatus: "PAID",
       createdAt: minutesAgo(205),
     },
@@ -333,7 +332,7 @@ function buildPendingOrders(): PendingOrder[] {
       code: `DH${stamp}-0143`,
       customerName: "Vũ Thị Ánh Nguyệt",
       totalAmount: 940_000,
-      status: "PACKING",
+      status: "CONFIRMED",
       paymentStatus: "UNPAID",
       createdAt: minutesAgo(268),
     },

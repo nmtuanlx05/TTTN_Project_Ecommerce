@@ -80,8 +80,6 @@
   --status-pending-fg: #403416; /* 10.36 */
   --status-confirmed-bg: #ccd9e5;
   --status-confirmed-fg: #1f3548; /* 8.80 */
-  --status-packing-bg: #c3bdcb;
-  --status-packing-fg: #352b41; /* 7.29 */
   --status-shipping-bg: #97acae;
   --status-shipping-fg: #083439; /* 5.66 */
   --status-returned-bg: #7f6761;
@@ -325,8 +323,6 @@
   --status-pending-fg: #ded3ba; /* 7.28 */
   --status-confirmed-bg: #2d3741;
   --status-confirmed-fg: #c0d4e6; /* 7.96 */
-  --status-packing-bg: #332e39;
-  --status-packing-fg: #d4cbe0; /* 8.44 */
   --status-shipping-bg: #1e2f31;
   --status-shipping-fg: #b4d4d8; /* 8.86 */
   --status-returned-bg: #34201b;
@@ -452,8 +448,6 @@
   --color-status-pending-fg: var(--status-pending-fg);
   --color-status-confirmed-bg: var(--status-confirmed-bg);
   --color-status-confirmed-fg: var(--status-confirmed-fg);
-  --color-status-packing-bg: var(--status-packing-bg);
-  --color-status-packing-fg: var(--status-packing-fg);
   --color-status-shipping-bg: var(--status-shipping-bg);
   --color-status-shipping-fg: var(--status-shipping-fg);
   --color-status-completed-bg: var(--status-completed-bg);

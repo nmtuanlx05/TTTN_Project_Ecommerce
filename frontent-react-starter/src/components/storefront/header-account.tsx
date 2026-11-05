@@ -16,6 +16,8 @@ function HeaderAccount({ session }: { session: HeaderSession }) {
         onLogout={session.onLogout}
         loggingOut={session.loggingOut}
         onAvatarSaved={session.onAvatarSaved}
+        ordersLink={session.ordersLink}
+        soft
       />
     )
   }

@@ -130,16 +130,6 @@ export const ORDER_SWATCHES: StatusSwatch[] = [
     darkRatio: 7.96,
   },
   {
-    status: "PACKING",
-    label: "Đang đóng gói",
-    lightBg: "#C3BDCB",
-    lightFg: "#352B41",
-    darkBg: "#332E39",
-    darkFg: "#D4CBE0",
-    lightRatio: 7.29,
-    darkRatio: 8.44,
-  },
-  {
     status: "SHIPPING",
     label: "Đang giao",
     lightBg: "#97ACAE",

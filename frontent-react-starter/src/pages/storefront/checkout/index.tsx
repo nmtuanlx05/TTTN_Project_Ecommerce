@@ -6,16 +6,18 @@ import { useCurrentRole } from "@/features/auth/use-current-role"
 import { useCurrentUser } from "@/features/auth/use-current-user"
 import { useResetCart } from "@/features/cart/queries"
 import { CheckoutContent } from "@/features/checkout/components/checkout-content"
+import { useInvalidateOrders } from "@/features/orders/queries"
 import { useDocumentTitle } from "@/hooks/use-document-title"
 
 /**
  * /thanh-toan — chỉ CUSTOMER (route bọc `RequireAuth` lo đăng nhập, rồi quay lại sau khi đăng nhập). ADMIN/STAFF chỉ thấy thông báo, KHÔNG gọi API.
- * Trang là nơi ghép: `features/checkout` không biết giỏ nên làm mới giỏ sau khi đặt đơn được truyền vào qua `onOrderPlaced`.
+ * Trang là nơi ghép: `features/checkout` không biết giỏ và đơn hàng nên làm mới giỏ và số đơn sau khi đặt đơn được truyền vào qua `onOrderPlaced`.
  */
 function StorefrontCheckoutPage() {
   const role = useCurrentRole()
   const user = useCurrentUser()
   const resetCart = useResetCart()
+  const invalidateOrders = useInvalidateOrders()
   useDocumentTitle("Thanh toán")
 
   if (role && role !== "CUSTOMER") {
@@ -37,7 +39,11 @@ function StorefrontCheckoutPage() {
         <p className="font-serif text-h3 font-normal text-ink-muted italic">Hoàn tất đơn hàng của bạn</p>
         <h1 className="text-h1 text-ink uppercase">Thanh toán</h1>
       </header>
-      <CheckoutContent user={{ name: user?.name ?? null, phone: user?.phone ?? null }} onOrderPlaced={resetCart} />
+      <CheckoutContent user={{ name: user?.name ?? null, phone: user?.phone ?? null }} onOrderPlaced={() => {
+          resetCart()
+          // Đơn mới: làm mới số đếm và huy hiệu "Đơn hàng của tôi" ở header.
+          invalidateOrders()
+        }} />
     </PageContainer>
   )
 }

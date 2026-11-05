@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
  * Badge trạng thái.
  *
  * Nguyên tắc: độ đậm của mực tăng dần theo tiến độ đơn hàng
- * (PENDING nhạt nhất → COMPLETED đậm nhất). Nhờ vậy 7 trạng thái phân biệt
+ * (PENDING nhạt nhất → COMPLETED đậm nhất). Nhờ vậy 6 trạng thái phân biệt
  * được cả khi in đen trắng, không chỉ khác nhau về sắc độ.
  *
  * Hai nhánh phụ tách khỏi thang bằng HÌNH THỨC chứ không chỉ bằng tông:
@@ -30,10 +30,9 @@ const badgeVariants = cva(
         outline: "border-border-strong bg-transparent text-ink-muted",
         solid: "bg-primary text-primary-fg",
 
-        // --- 7 trạng thái đơn hàng ---
+        // --- 6 trạng thái đơn hàng ---
         pending: "bg-status-pending-bg text-status-pending-fg",
         confirmed: "bg-status-confirmed-bg text-status-confirmed-fg",
-        packing: "bg-status-packing-bg text-status-packing-fg",
         shipping: "bg-status-shipping-bg text-status-shipping-fg",
         completed: "bg-status-completed-bg text-status-completed-fg",
         returned: "bg-status-returned-bg text-status-returned-fg",
@@ -57,7 +56,6 @@ const badgeVariants = cva(
 export type OrderStatus =
   | "PENDING"
   | "CONFIRMED"
-  | "PACKING"
   | "SHIPPING"
   | "COMPLETED"
   | "CANCELLED"
@@ -72,7 +70,6 @@ const ORDER_STATUS: Record<
 > = {
   PENDING: { label: "Chờ xác nhận", variant: "pending" },
   CONFIRMED: { label: "Đã xác nhận", variant: "confirmed" },
-  PACKING: { label: "Đang đóng gói", variant: "packing" },
   SHIPPING: { label: "Đang giao", variant: "shipping" },
   COMPLETED: { label: "Đã giao", variant: "completed" },
   CANCELLED: { label: "Đã hủy", variant: "cancelled" },

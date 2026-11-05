@@ -1,9 +1,11 @@
 import { useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { Camera, LayoutDashboard, LogOut } from "lucide-react"
+import { Camera, LayoutDashboard, LogOut, ReceiptText } from "lucide-react"
 import { AvatarDialog } from "@/components/shared/avatar-dialog"
+import { OrdersCountBadge } from "@/components/shared/orders-count-badge"
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { ACCOUNT_ORDERS_PATH } from "@/lib/account-paths"
 import type { HeaderSession } from "./header-session"
 
 /**
@@ -48,6 +50,17 @@ function MobileAccount({ session, onNavigate }: { session: HeaderSession; onNavi
         >
           <LayoutDashboard />
           Vào trang quản trị
+        </Link>
+      ) : null}
+      {session.ordersLink ? (
+        <Link
+          to={ACCOUNT_ORDERS_PATH}
+          onClick={onNavigate}
+          className={buttonVariants({ variant: "ghost", className: "justify-start" })}
+        >
+          <ReceiptText />
+          Đơn hàng của tôi
+          <OrdersCountBadge count={session.ordersLink.count} />
         </Link>
       ) : null}
       <Button

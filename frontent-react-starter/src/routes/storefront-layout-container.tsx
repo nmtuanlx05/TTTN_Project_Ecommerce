@@ -11,6 +11,7 @@ import { useCurrentRole } from "@/features/auth/use-current-role"
 import { useRequireLogin } from "@/features/auth/use-require-login"
 import { CartDrawer } from "@/features/cart/components/cart-drawer"
 import { useAddToCart, useCart } from "@/features/cart/queries"
+import { useOrdersSummary } from "@/features/orders/queries"
 import { ROLE_LABEL } from "@/features/users/constants"
 import { useCategoryTree } from "@/hooks/use-category-tree"
 import { useOpenUntilNavigation } from "@/hooks/use-open-until-navigation"
@@ -34,6 +35,7 @@ function StorefrontLayoutContainer() {
   const toast = useToast()
   const isCustomer = useCurrentRole() === "CUSTOMER"
   const cart = useCart({ enabled: isCustomer })
+  const ordersSummary = useOrdersSummary({ enabled: isCustomer })
   const addItem = useAddToCart()
   const [cartOpen, setCartOpen] = useOpenUntilNavigation()
 
@@ -70,6 +72,8 @@ function StorefrontLayoutContainer() {
           onLogout: () => logout.mutate(),
           loggingOut: logout.isPending,
           onAvatarSaved,
+          // Mục "Đơn hàng của tôi" chỉ cho CUSTOMER; huy hiệu là số đơn đang hoạt động (ẩn khi 0 hoặc chưa tải).
+          ordersLink: isCustomer ? { count: ordersSummary.data?.active ?? 0 } : undefined,
         }
       : { status: status === "loading" ? "loading" : "anonymous" }
 

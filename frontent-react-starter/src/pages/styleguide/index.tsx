@@ -328,7 +328,7 @@ function BadgeSection() {
       </div>
 
       <Alert variant="info" title="Vì sao badge đậm dần">
-        Độ đậm của mực tăng theo tiến độ đơn hàng, nên bảy trạng thái phân biệt
+        Độ đậm của mực tăng theo tiến độ đơn hàng, nên sáu trạng thái phân biệt
         được cả khi in đen trắng chứ không chỉ khác nhau về sắc độ. Hai nhánh phụ
         tách khỏi thang bằng hình thức: đơn đã hủy là badge rỗng, chỉ có viền.
       </Alert>
@@ -543,7 +543,7 @@ const ORDERS: OrderRow[] = [
     customer: "Lê Hoàng Phúc",
     placedAt: "2026-10-04T15:03:00Z",
     total: 2430000,
-    status: "PACKING",
+    status: "CONFIRMED",
     payment: "PAID",
   },
   {
@@ -753,7 +753,7 @@ function StateSection() {
             onClick={() =>
               toast.add({
                 title: "Đã xác nhận đơn",
-                description: "Đơn DH-20261005-0147 chuyển sang đóng gói.",
+                description: "Đơn DH-20261005-0147 đã được xác nhận.",
                 data: { tone: "success" },
               })
             }
