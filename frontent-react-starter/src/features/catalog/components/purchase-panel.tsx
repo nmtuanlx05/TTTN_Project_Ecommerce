@@ -1,12 +1,12 @@
 import { useState } from "react"
 import { createPortal } from "react-dom"
-import { Heart, ShoppingBag } from "lucide-react"
+import { ShoppingBag } from "lucide-react"
+import { FavoriteButton } from "@/components/storefront/favorite-button"
+import { useWishlistUi } from "@/components/storefront/wishlist-ui-context"
 import { QuantityStepper } from "@/components/storefront/quantity-stepper"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/toast"
 import { ABOVE_ONLY_MARGIN, useInView } from "@/hooks/use-in-view"
 import { MAX_QUANTITY_PER_ITEM } from "@/lib/cart-rules"
-import { STORE } from "@/lib/store-info"
 import type { CatalogProductDetail } from "../types"
 import { defaultChoice, findVariant, type VariantChoice } from "../variant-options"
 import { StickyBuyBar } from "./sticky-buy-bar"
@@ -15,7 +15,7 @@ import { VariantPicker } from "./variant-picker"
 type AddToCartInput = { variantId: number; quantity: number }
 
 /**
- * Chọn màu/size, số lượng, nút "Thêm vào giỏ" (ghi "Hết hàng" và khóa khi tổ hợp đang chọn hết hàng) và nút tim (STUB: chỉ hiện toast). Mặc định chọn biến thể còn
+ * Chọn màu/size, số lượng, nút "Thêm vào giỏ" (ghi "Hết hàng" và khóa khi tổ hợp đang chọn hết hàng) và nút tim yêu thích (thật, qua `useWishlistUi`). Mặc định chọn biến thể còn
  * hàng đầu tiên. Dựng với `key={product.id}` ở nơi dùng nên đổi sản phẩm là đặt lại lựa chọn. `onAddToCart` do trang truyền
  * vào (qua cổng đăng nhập); panel không biết giỏ hàng. `pending`: đang gửi yêu cầu thêm, khóa hai nút thêm. Số lượng chặn sớm ở `MAX_QUANTITY_PER_ITEM`. Thanh mua dính đáy (di động) hiện khi nút chính đã cuộn lên khỏi
  * màn hình; nó được portal vào `barSlot` (ô dính ở cuối trang) nhưng state vẫn thuộc panel này.
@@ -34,7 +34,7 @@ function PurchasePanel({
   const { variants } = product
   const [choice, setChoice] = useState<VariantChoice | null>(() => defaultChoice(variants))
   const [quantity, setQuantity] = useState(1)
-  const toast = useToast()
+  const wishlist = useWishlistUi()
   const { ref: buttonRef, above } = useInView<HTMLDivElement>({ rootMargin: ABOVE_ONLY_MARGIN })
 
   const variant = choice ? findVariant(variants, choice) : undefined
@@ -59,16 +59,13 @@ function PurchasePanel({
         <div className="order-1">
           <QuantityStepper pill max={MAX_QUANTITY_PER_ITEM} value={quantity} onChange={setQuantity} />
         </div>
-        <Button
-          type="button"
-          variant="secondary"
-          size="icon"
-          aria-label="Thêm vào yêu thích"
-          onClick={() => toast.add({ title: STORE.comingSoon.wishlist, data: { tone: "info" } })}
-          className="press order-2 ml-auto size-[calc(var(--sp-control-h)+6px)] rounded-4xl @[24rem]:order-3 @[24rem]:ml-0"
-        >
-          <Heart aria-hidden="true" />
-        </Button>
+        <FavoriteButton
+          name={product.name}
+          favorite={wishlist.isFavorite(product.id)}
+          pending={wishlist.isPending(product.id)}
+          onToggle={() => wishlist.toggle(product.id)}
+          className="order-2 ml-auto size-[calc(var(--sp-control-h)+6px)] @[24rem]:order-3 @[24rem]:ml-0"
+        />
         <Button
           size="lg"
           disabled={!available}

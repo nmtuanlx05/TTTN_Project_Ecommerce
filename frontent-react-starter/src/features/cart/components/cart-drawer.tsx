@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ComponentProps } from "react"
 import { StorefrontDrawer } from "@/components/storefront/storefront-drawer"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -14,7 +14,19 @@ import { FreeShippingBar } from "./free-shipping-bar"
  * bo góc và hover đảo màu của nút đúng như trang. Mở ngăn kéo thì làm mới giỏ nền: đã có cache thì hiện luôn (không khung chờ, không nháy), cập nhật khi dữ liệu mới về;
  * chỉ khi CHƯA có dữ liệu mà lỗi mới hiện nút "Thử lại". Danh sách cuộn, đầu và chân cố định. Vùng `aria-live` đọc thông báo xóa dòng.
  */
-function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+function CartDrawer({
+  open,
+  onOpenChange,
+  handoffIn = false,
+  finalFocus,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  /** Giỏ vừa được mở từ ngăn kéo khác (yêu thích): chuyển cảnh liền mạch, xem `DrawerHandoff`. Mặc định tắt, ngăn kéo hoạt động y như cũ. */
+  handoffIn?: boolean
+  /** Nơi nhận focus khi đóng giỏ; chỉ truyền khi giỏ mở từ ngăn kéo khác (mặc định về phần tử đã mở). */
+  finalFocus?: ComponentProps<typeof StorefrontDrawer>["finalFocus"]
+}) {
   const { data: cart, isError, refetch } = useCart({ enabled: true })
   const refresh = useRefreshCart()
   const [announcement, setAnnouncement] = useState("")
@@ -55,6 +67,8 @@ function CartDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (open
       title="Giỏ hàng của bạn"
       hideHeader
       titleInChildren
+      handoff={handoffIn ? "in" : undefined}
+      finalFocus={finalFocus}
       className="soft-ui w-full max-w-none sm:max-w-[27rem] sm:rounded-l-panel"
     >
       <CartDrawerHeader itemCount={cart ? cart.itemCount : null} />

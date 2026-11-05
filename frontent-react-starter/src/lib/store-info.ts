@@ -76,8 +76,6 @@ interface StoreNewsletter {
 
 /** Thông báo (toast, tone info) của các điểm tương tác GIẢ chưa có tính năng thật; cùng giọng "… sẽ sớm có mặt" (docs/storefront-design.md mục 13). */
 interface StoreComingSoon {
-  /** Nút trái tim ở header và trên thẻ sản phẩm. */
-  wishlist: string
   /** Link "Hướng dẫn chọn size" ở trang chi tiết sản phẩm. */
   sizeGuide: string
   /** Thẻ "Thanh toán online" ở trang thanh toán (backend mới hỗ trợ COD). */
@@ -128,7 +126,6 @@ export const STORE: StoreInfo = {
     submitLabel: "ĐĂNG KÝ",
   },
   comingSoon: {
-    wishlist: "Yêu thích sẽ sớm có mặt",
     sizeGuide: "Hướng dẫn chọn size sẽ sớm có mặt",
     onlinePayment: "Thanh toán online sắp có",
   },

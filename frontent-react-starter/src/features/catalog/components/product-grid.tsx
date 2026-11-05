@@ -25,7 +25,7 @@ function ProductGrid({
   layout: GridLayout
   /** Số thẻ đầu tải ảnh ngay; lưới nằm dưới màn hình đầu (sản phẩm cùng danh mục) truyền 0. */
   eagerCount?: number
-  /** Bật nút trái tim và "Thêm nhanh" (giả) trên thẻ; chỉ các khối trang chủ bật, xem `ProductCard`. */
+  /** Bật nút trái tim yêu thích và "Thêm nhanh" trên thẻ; chỉ các khối trang chủ bật, xem `ProductCard`. */
   quickActions?: boolean
   className?: string
 }) {

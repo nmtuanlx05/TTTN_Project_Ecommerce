@@ -16,7 +16,7 @@ function mergeRelated(same: CatalogProductListItem[], extra: CatalogProductListI
 }
 
 /**
- * "Có thể bạn cũng thích": tối đa 4 thẻ (bật `quickActions`, giao diện giả). Ưu tiên cùng danh mục (gồm danh mục con), loại chính sản phẩm đang xem, mới nhất
+ * "Có thể bạn cũng thích": tối đa 4 thẻ (bật `quickActions`: trái tim yêu thích và "Thêm nhanh"). Ưu tiên cùng danh mục (gồm danh mục con), loại chính sản phẩm đang xem, mới nhất
  * trước; ít hơn 4 thì gọi thêm MỘT lần `GET /products` không lọc danh mục để bổ sung (chỉ khi cần). Thiếu dữ liệu (đang tải, lỗi, không có gì) thì không hiện gì:
  * đây là khối phụ, không đáng chặn hay báo lỗi. "Xem tất cả" về danh sách theo danh mục. Hiện dần khi cuộn tới (một lần); ảnh nằm dưới màn hình đầu nên không thẻ nào `eager`.
  */

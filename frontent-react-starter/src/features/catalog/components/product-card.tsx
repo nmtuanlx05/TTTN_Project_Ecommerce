@@ -16,7 +16,7 @@ import { ProductStockBadge } from "./product-stock-badge"
  * ảnh mờ đi và tên chuyển sang `ink-muted` (chỉ làm dịu, không dựa vào màu; chữ vẫn ≥ 4,5:1). Không hiện SKU.
  * `eager`: ảnh ở hàng đầu tiên tải ngay, còn lại lazy.
  *
- * `quickActions` (mặc định TẮT; chỉ "Best sellers" và "Sản phẩm mới về" ở trang chủ bật): thêm nút trái tim và "Thêm nhanh" (GIAO DIỆN GIẢ, xem `QuickActions`). Khi bật, thẻ
+ * `quickActions` (mặc định TẮT; chỉ "Best sellers" và "Sản phẩm mới về" ở trang chủ bật): thêm nút trái tim và "Thêm nhanh" (trái tim yêu thích thật + "Thêm nhanh", xem `QuickActions`). Khi bật, thẻ
  * `<a>` được bọc trong `div.group/card` để hover/focus vào BẤT KỲ chỗ nào của thẻ (kể cả hai nút) vừa hiện nút vừa phóng ảnh, chuột đi từ ảnh sang nút không bị thu rồi phóng lại; thẻ
  * `<a>` khi đó không tự làm `group/card`. Thẻ hẹp thì huy hiệu tồn kho dời xuống dưới hàng nút trái tim. Khi tắt, cây DOM giữ nguyên như cũ.
  *
