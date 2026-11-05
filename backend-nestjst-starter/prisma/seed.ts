@@ -1,6 +1,6 @@
 // 1) Tạo tài khoản ADMIN đầu tiên từ ADMIN_EMAIL / ADMIN_PASSWORD trong .env.development (hoặc .env.production).
 // 2) Tạo danh mục và sản phẩm mẫu (kèm biến thể) cho dev frontend.
-// 3) Tạo voucher mẫu (SALE10, GIAM50K, MIN500, HETHAN, HETLUOT, DATAT).
+// 3) Tạo voucher mẫu (SALE10, GIAM50K, MIN500, MONO10, WELCOME50, HETHAN, HETLUOT, DATAT).
 // Chạy lại an toàn: email/slug/SKU đã tồn tại thì bỏ qua, không ghi đè dữ liệu đang có.
 // Chạy: npx prisma db seed (production: npm run db:seed:prod)
 import { config } from 'dotenv';
@@ -51,6 +51,32 @@ const VOUCHERS = [
     maxDiscount: null,
     minOrderValue: 500_000,
     usageLimit: 500,
+    usedCount: 0,
+    startsAt: '2026-11-01T00:00:00+07:00',
+    expiresAt: '2027-06-30T23:59:59+07:00',
+    isActive: true,
+  },
+  {
+    code: 'MONO10',
+    description: 'Giảm 10%, tối đa 100.000₫ cho đơn từ 300.000₫',
+    discountType: 'PERCENT',
+    discountValue: 10,
+    maxDiscount: 100_000,
+    minOrderValue: 300_000,
+    usageLimit: null,
+    usedCount: 0,
+    startsAt: '2026-11-01T00:00:00+07:00',
+    expiresAt: '2027-06-30T23:59:59+07:00',
+    isActive: true,
+  },
+  {
+    code: 'WELCOME50',
+    description: 'Giảm 50.000₫ cho đơn từ 400.000₫',
+    discountType: 'FIXED',
+    discountValue: 50_000,
+    maxDiscount: null,
+    minOrderValue: 400_000,
+    usageLimit: null,
     usedCount: 0,
     startsAt: '2026-11-01T00:00:00+07:00',
     expiresAt: '2027-06-30T23:59:59+07:00',

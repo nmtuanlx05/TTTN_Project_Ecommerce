@@ -69,6 +69,18 @@ Client **không** được gửi giá/tổng/phí (trường thừa → 400).
 
 ## Endpoint của khách
 
+### `GET /vouchers/available`: voucher khả dụng cho trang thanh toán
+
+Chỉ CUSTOMER (ADMIN/STAFF → 403, chưa đăng nhập → 401). Trả voucher đang bật, `startsAt <= now <= expiresAt` (cùng mốc `now` UTC và quy tắc như
+lúc đặt đơn) và còn lượt (`usageLimit` rỗng hoặc `usedCount < usageLimit`); sắp `expiresAt` tăng dần rồi `code`; tối đa **20** phần tử. Không lọc theo giá trị
+giỏ: voucher chưa đủ `minOrderValue` vẫn được liệt kê để giao diện hiển thị điều kiện (đơn vẫn bị `VOUCHER_MIN_ORDER` nếu không đủ). **Không** trả `id`,
+`usageLimit`, `usedCount`. Mã vẫn được kiểm lại đầy đủ khi `preview`/đặt đơn.
+
+```json
+{ "success": true, "data": [ { "code": "SALE10", "description": "Giảm 10%, tối đa 50.000đ", "discountType": "PERCENT",
+  "discountValue": 10, "maxDiscount": 50000, "minOrderValue": 0, "expiresAt": "2027-06-30T16:59:59.000Z" } ] }
+```
+
 ### `POST /orders/preview`: xem trước
 
 Chỉ đọc (không khóa, không ghi). Body `{ "voucherCode"?: string }`.

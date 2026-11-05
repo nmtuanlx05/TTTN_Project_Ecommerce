@@ -107,6 +107,7 @@ COMPLETED`, với `CANCELLED` và `RETURNED` là các nhánh phụ tách ra từ
   qua `InventoryService.shipOut` (giảm `stock` và `reserved`, ghi `StockMovement` `SALE`). Khách chỉ hủy khi `PENDING` (đơn khác → 409
   `ORDER_NOT_CANCELLABLE_BY_CUSTOMER`); Staff/Admin hủy đến hết `PACKING` kèm lý do. `COMPLETED` là trạng thái cuối, `RETURNED` để lần sau. Mọi đổi trạng thái
   ghi `order_status_histories`. Mã đơn `MS-YYMMDD-XXXX` (YYMMDD theo GMT+7 tường minh). `Idempotency-Key` (header tùy chọn) trả lại đúng đơn cũ, kiểm sau khi khóa giỏ.
+  `GET /vouchers/available` (`src/vouchers/`, chỉ CUSTOMER) liệt kê voucher còn dùng được, tối đa 20, không lộ `id`/`usageLimit`/`usedCount`.
   Voucher: không giới hạn theo từng khách (V2, cần cột `perUserLimit`); không có endpoint xóa voucher; chưa có admin CRUD voucher (voucher mẫu ở `prisma/seed.ts`).
   **Địa chỉ 3 cấp (chuẩn CŨ)**: dữ liệu dvhcvn `v20250301` (GPL-3.0, xem `src/locations/data/NOTICE.md`) nạp vào bộ nhớ; đơn lưu mã VÀ tên từng cấp;
   quận/huyện có phường/xã thì `wardCode` bắt buộc, không có (5 huyện đảo) thì phải bỏ trống. Lỗi mới có trường `code` (`AllExceptionsFilter`, helper

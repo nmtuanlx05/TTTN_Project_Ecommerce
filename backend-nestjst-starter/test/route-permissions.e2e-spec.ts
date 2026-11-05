@@ -175,6 +175,14 @@ describe('Phân quyền của mọi route (quét metadata controller)', () => {
     ).toBe(true);
   });
 
+  it('GET /vouchers/available chỉ dành cho CUSTOMER (không @Public)', () => {
+    const route = routes.find((r) => r.key === 'GET /vouchers/available');
+    expect(route).toBeDefined();
+    expect(route!.isPublic).toBe(false);
+    expect(route!.roles).toEqual(['CUSTOMER']);
+    expect(route!.hasRolesGuard).toBe(true);
+  });
+
   it('route có @Roles thì controller phải gắn RolesGuard (nếu không @Roles không có tác dụng)', () => {
     const violations = routes.filter(
       (r) => !r.isPublic && r.roles.length > 0 && !r.hasRolesGuard,
