@@ -26,22 +26,54 @@ export const normalizeVoucherCode = (code: string) => code.trim().toUpperCase();
 export const formatVnd = (amount: number) =>
   `${String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ`;
 
-// Mỗi điều kiện một thông báo + mã lỗi riêng. Thứ tự: tắt, chưa đến hạn, hết hạn, đơn tối thiểu, hết lượt.
+// Trạng thái suy ra (không lưu DB), dùng chung cho kiểm tra phía khách và màn quản trị.
+// Thứ tự ưu tiên khi nhiều điều kiện cùng đúng: tắt → chưa đến hạn → hết hạn → hết lượt → còn dùng được.
+// Biên: tại đúng startsAt và đúng expiresAt voucher vẫn ACTIVE (khớp SQL `startsAt <= now AND expiresAt >= now`).
+export const VOUCHER_STATUSES = [
+  'ACTIVE',
+  'INACTIVE',
+  'SCHEDULED',
+  'EXPIRED',
+  'EXHAUSTED',
+] as const;
+export type VoucherStatus = (typeof VOUCHER_STATUSES)[number];
+
+export type VoucherStatusInput = Pick<
+  VoucherRow,
+  'isActive' | 'startsAt' | 'expiresAt' | 'usageLimit' | 'usedCount'
+>;
+
+export function getVoucherStatus(
+  voucher: VoucherStatusInput,
+  now: Date,
+): VoucherStatus {
+  if (!voucher.isActive) return 'INACTIVE';
+  if (now < voucher.startsAt) return 'SCHEDULED';
+  if (now > voucher.expiresAt) return 'EXPIRED';
+  if (voucher.usageLimit !== null && voucher.usedCount >= voucher.usageLimit) {
+    return 'EXHAUSTED';
+  }
+  return 'ACTIVE';
+}
+
+// Mỗi điều kiện một thông báo + mã lỗi riêng. Thứ tự GIỮ NGUYÊN: tắt, chưa đến hạn, hết hạn, đơn tối thiểu, hết lượt
+// (đơn tối thiểu kiểm trước hết lượt nên không phải trạng thái; trạng thái lấy từ getVoucherStatus).
 export function assertVoucherUsable(
   voucher: VoucherRow,
   subtotal: number,
   now: Date,
 ) {
-  if (!voucher.isActive) {
+  const status = getVoucherStatus(voucher, now);
+  if (status === 'INACTIVE') {
     throw badRequest(ORDER_ERROR.VOUCHER_INACTIVE, 'Mã giảm giá đã bị tắt');
   }
-  if (now < voucher.startsAt) {
+  if (status === 'SCHEDULED') {
     throw badRequest(
       ORDER_ERROR.VOUCHER_NOT_STARTED,
       'Mã giảm giá chưa đến thời gian áp dụng',
     );
   }
-  if (now > voucher.expiresAt) {
+  if (status === 'EXPIRED') {
     throw badRequest(ORDER_ERROR.VOUCHER_EXPIRED, 'Mã giảm giá đã hết hạn');
   }
   if (subtotal < voucher.minOrderValue) {
@@ -50,7 +82,7 @@ export function assertVoucherUsable(
       `Đơn hàng cần tối thiểu ${formatVnd(voucher.minOrderValue)} để dùng mã này`,
     );
   }
-  if (voucher.usageLimit !== null && voucher.usedCount >= voucher.usageLimit) {
+  if (status === 'EXHAUSTED') {
     throw badRequest(
       ORDER_ERROR.VOUCHER_USAGE_LIMIT,
       'Mã giảm giá đã hết lượt sử dụng',

@@ -21,3 +21,9 @@ export function parseVnDate(value: string, endOfDay: boolean, field: string) {
   }
   return date;
 }
+
+// Mốc thời gian → ngày YYYY-MM-DD theo GMT+7 (ngược lại với parseVnDate). Dịch +7 giờ rồi đọc theo UTC.
+export function toVnDateString(date: Date): string {
+  const shifted = new Date(date.getTime() + VN_UTC_OFFSET_HOURS * 3_600_000);
+  return `${shifted.getUTCFullYear()}-${pad2(shifted.getUTCMonth() + 1)}-${pad2(shifted.getUTCDate())}`;
+}

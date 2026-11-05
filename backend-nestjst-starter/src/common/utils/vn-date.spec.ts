@@ -1,5 +1,5 @@
 import { HttpException } from '@nestjs/common';
-import { parseVnDate } from './vn-date';
+import { parseVnDate, toVnDateString } from './vn-date';
 
 function errorOf(fn: () => unknown) {
   try {
@@ -49,5 +49,34 @@ describe('parseVnDate', () => {
       code: 'INVALID_DATE',
       message: 'to không phải ngày hợp lệ',
     });
+  });
+});
+
+describe('toVnDateString', () => {
+  it('16:59:59.999 UTC vẫn là cùng ngày VN, 17:00 UTC sang ngày kế', () => {
+    expect(toVnDateString(new Date('2026-11-05T16:59:59.999Z'))).toBe(
+      '2026-11-05',
+    );
+    expect(toVnDateString(new Date('2026-11-05T17:00:00.000Z'))).toBe(
+      '2026-11-06',
+    );
+  });
+
+  it('chuyển năm và đệm số 0', () => {
+    expect(toVnDateString(new Date('2026-12-31T17:00:00.000Z'))).toBe(
+      '2027-01-01',
+    );
+    expect(toVnDateString(new Date('2026-02-01T00:00:00.000Z'))).toBe(
+      '2026-02-01',
+    );
+  });
+
+  it('khớp parseVnDate hai chiều (đầu và cuối ngày)', () => {
+    expect(toVnDateString(parseVnDate('2028-02-29', false, 'x'))).toBe(
+      '2028-02-29',
+    );
+    expect(toVnDateString(parseVnDate('2028-02-29', true, 'x'))).toBe(
+      '2028-02-29',
+    );
   });
 });
