@@ -1,6 +1,6 @@
 # Data Models
 
-Schema chốt cho MVP gồm 13 model (10 model gốc cộng `ProductImage`, `OrderStatusHistory`, `PaymentTransaction` thêm sau) và 7 enum, viết bằng Prisma. Bốn quyết định lớn: tách `ProductVariant` khỏi `Product`; giữ hàng bằng `reserved`; `OrderItem` lưu snapshot; voucher giảm trên `subtotal` và số tiền giảm được lưu vào `Order.discountAmount`. Staff nhập kho bằng cách cộng trực tiếp vào `ProductVariant.stock`; mỗi lần đổi `stock` ghi một dòng `StockMovement`.
+Schema chốt cho MVP gồm 14 model (10 model gốc cộng `ProductImage`, `OrderStatusHistory`, `PaymentTransaction`, `WishlistItem` thêm sau) và 7 enum, viết bằng Prisma. Bốn quyết định lớn: tách `ProductVariant` khỏi `Product`; giữ hàng bằng `reserved`; `OrderItem` lưu snapshot; voucher giảm trên `subtotal` và số tiền giảm được lưu vào `Order.discountAmount`. Staff nhập kho bằng cách cộng trực tiếp vào `ProductVariant.stock`; mỗi lần đổi `stock` ghi một dòng `StockMovement`.
 
 > Các khối schema dưới đây khớp với `prisma/schema.prisma`. Nếu hai bên lệch nhau, `prisma/schema.prisma` là bản chuẩn.
 
@@ -28,6 +28,7 @@ Schema chốt cho MVP gồm 13 model (10 model gốc cộng `ProductImage`, `Ord
 - `Category` → `Product` → `ProductVariant`: danh mục chứa sản phẩm, sản phẩm có nhiều biến thể.
 - `Product` → `ProductImage`: sản phẩm có nhiều ảnh (tối đa 6) theo thứ tự `sortOrder`. Ảnh gắn theo sản phẩm, không gắn theo màu.
 - `User` → `Cart` → `CartItem` → `ProductVariant`: mỗi khách một giỏ.
+- `User` → `WishlistItem` ← `Product`: sản phẩm yêu thích, duy nhất theo (`userId`, `productId`), theo sản phẩm chứ không theo biến thể. Hai khóa ngoại `onDelete: Cascade` (dòng này vô nghĩa nếu thiếu user hoặc sản phẩm; `User` và `Product` vẫn không bị xóa cứng).
 - `User` → `Order` → `OrderItem` → `ProductVariant`: `Order.userId` để trống với guest checkout.
 - `Order` có hai quan hệ tới `User`: `userId` (quan hệ `"OrderCustomer"`, khách đặt đơn) và `handledById` (quan hệ `"OrderHandler"`, người phụ trách (Staff hoặc Admin), gán khi xác nhận đơn, để trống khi chưa xác nhận). Phía `User` là `orders` và `handledOrders`.
 - `Voucher` → `Order`: `Order.voucherId` để trống khi đơn không dùng mã.
@@ -187,6 +188,26 @@ model StockMovement {
   @@map("stock_movements")
 }
 ```
+
+### Sản phẩm yêu thích
+
+```prisma
+model WishlistItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId, createdAt])
+  @@index([productId])
+  @@map("wishlist_items")
+}
+```
+
+Trần 100 sản phẩm/khách chỉ kiểm ở ứng dụng (khóa dòng `users` khi thêm), không có CHECK ở DB. API: `docs/api/wishlist.md`.
 
 ### Giỏ hàng
 

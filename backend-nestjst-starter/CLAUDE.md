@@ -7,8 +7,8 @@ File này cung cấp hướng dẫn cho Claude Code (claude.ai/code) khi làm vi
 Đây là một NestJS starter cho backend e-commerce thời trang. Cây thư mục `src/` hiện tại chỉ là
 scaffold mặc định của Nest (`AppModule`/`AppController`/`AppService` trả về "Hello World") — các module
 nghiệp vụ chưa được xây dựng. Đã có `docker-compose.yml` (service MySQL 8), `.env.development`/`.env.production` và `prisma.config.ts`
-(Prisma 7: URL kết nối khai báo ở đây, không nằm trong schema). `prisma/schema.prisma` (13 model) đã khớp
-`docs/05` và `docs/06`; migration `init_ecommerce`, `add_user_avatar_url`, `add_stock_movements`, `add_product_images_color_hex`, `add_order_checkout` và `remove_packing_order_status` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
+(Prisma 7: URL kết nối khai báo ở đây, không nằm trong schema). `prisma/schema.prisma` (14 model) đã khớp
+`docs/05` và `docs/06`; migration `init_ecommerce`, `add_user_avatar_url`, `add_stock_movements`, `add_product_images_color_hex`, `add_order_checkout`, `remove_packing_order_status` và `add_wishlist_items` (đã viết, chờ áp) đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
 xây dựng dựa trên đó; coi nó là nguồn thông tin chính khi triển khai tính năng, không phải code `src/`
 hiện tại. Nếu `docs/05` lệch với `prisma/schema.prisma` thì schema là bản chuẩn.
 
@@ -48,7 +48,7 @@ website e-commerce thời trang gồm khu vực mua sắm cho khách và khu v�
 - `03-yeu-cau-nghiep-vu.md` — yêu cầu nghiệp vụ, mã hóa `BR-U-*` (user), `BR-A-*` (admin),
   `BR-S-*` (staff), mỗi mục gắn nhãn MVP hoặc V2
 - `04-yeu-cau-he-thong.md` — yêu cầu chức năng (`FR-*`) và phi chức năng (`NFR-*`)
-- `05-data-models.md` — mô tả schema Prisma (13 model, khớp `prisma/schema.prisma`) và quy tắc tồn kho, voucher
+- `05-data-models.md` — mô tả schema Prisma (14 model, khớp `prisma/schema.prisma`) và quy tắc tồn kho, voucher
 - `06-thiet-ke-database.md` — các vấn đề riêng của MySQL: đặt tên bảng (`@@map` sang snake_case),
   index, và các ràng buộc CHECK mà Prisma không hỗ trợ trực tiếp (thêm bằng cách sửa tay migration
   tạo từ `prisma migrate dev --create-only`)
@@ -116,6 +116,7 @@ COMPLETED` (không có bước đóng gói; đã bỏ `PACKING`), với `CANCELL
   **Địa chỉ 3 cấp (chuẩn CŨ)**: dữ liệu dvhcvn `v20250301` (GPL-3.0, xem `src/locations/data/NOTICE.md`) nạp vào bộ nhớ; đơn lưu mã VÀ tên từng cấp;
   quận/huyện có phường/xã thì `wardCode` bắt buộc, không có (5 huyện đảo) thì phải bỏ trống. Lỗi mới có trường `code` (`AllExceptionsFilter`, helper
   `src/common/errors/coded-errors.ts`); lỗi cũ không đổi.
+- **Wishlist** (`src/wishlist/`, API ở `docs/api/wishlist.md`): chỉ `CUSTOMER` (ADMIN/STAFF 403 qua `@RolesMessage`), theo **sản phẩm** không theo biến thể, tối đa 100/khách (`WISHLIST_MAX_ITEMS`, 409 `WISHLIST_FULL`). `GET /wishlist` tái dùng `publicProductListSelect`/`toPublicListItem` + `addedAt` + `isAvailable` (sản phẩm đã tắt vẫn hiện); `GET /wishlist/ids` cho frontend tô tim (không thêm `isFavorite` vào API sản phẩm). `POST`/`DELETE /wishlist/:productId` idempotent (200 `{productId, added|removed}`); POST chỉ nhận sản phẩm bật và có biến thể bán (không thì 404 không mã), khóa dòng `users` `FOR UPDATE` để giữ trần. Chưa chạy thật trên MySQL.
 - Xóa mềm bằng `isActive` cho `Product`/`ProductVariant`/`User`/`Voucher`; `Order` và `OrderItem`
   không bao giờ xóa cứng (hủy đơn bằng `CANCELLED`).
 
@@ -150,7 +151,7 @@ Quyết định nghiệp vụ quan trọng (không tự ý thay đổi):
 - Voucher: mỗi đơn tối đa một mã, giảm trên `subtotal`, hủy đơn thì hoàn lượt (`usedCount - 1`).
 - Tiền là VND, kiểu Int.
 
-Phạm vi MVP: 13 model (User, Category, Product, ProductVariant, ProductImage, Cart, CartItem,
+Phạm vi MVP: 14 model (User, Category, Product, ProductVariant, ProductImage, Cart, CartItem,
 Order, OrderItem, OrderStatusHistory, PaymentTransaction, Voucher, StockMovement).
 Để V2: Address, Review, Supplier, AuditLog.
 
@@ -170,8 +171,8 @@ Order, OrderItem, OrderStatusHistory, PaymentTransaction, Voucher, StockMovement
 - Mỗi lần chỉ làm một module. Trước khi viết, tóm tắt lại điều sẽ làm và hỏi chỗ chưa rõ.
 - Khi code khác tài liệu, hoặc tài liệu chưa rõ, hỏi tôi, không tự đổi nghiệp vụ.
 - Không tự chạy migrate hay xóa dữ liệu khi chưa được đồng ý.
-- Bảng đặt tên snake_case số nhiều bằng `@@map`. Không cấu hình `onDelete` ở giai đoạn này, **ngoại lệ duy nhất**: `ProductImage.productId`
-  dùng `onDelete: Cascade` (bảng con thuần túy, không bảng nào tham chiếu tới; vẫn không xóa cứng `Product`).
+- Bảng đặt tên snake_case số nhiều bằng `@@map`. Không cấu hình `onDelete` ở giai đoạn này, **ngoại lệ**: `ProductImage.productId`
+  và hai khóa ngoại của `WishlistItem` (`userId`, `productId`) dùng `onDelete: Cascade` (bảng con thuần túy, không bảng nào tham chiếu tới; dòng wishlist không có nghĩa nếu thiếu user/sản phẩm; `User` và `Product` vẫn không bị xóa cứng).
 - Migration đã áp thì không sửa; CHECK mới thêm bằng migration mới. Không chạy `migrate reset`/`db push --force-reset`; sao lưu DB dev
   (`mysqldump`) trước khi `migrate deploy`.
 - Comment và tài liệu viết bằng tiếng Việt. Tên biến, hàm, file, commit message viết bằng tiếng Anh.
