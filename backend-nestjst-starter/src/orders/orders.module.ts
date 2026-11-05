@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { CartModule } from '../cart/cart.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { LocationsModule } from '../locations/locations.module';
 import { AdminOrdersController } from './admin-orders.controller';
@@ -9,7 +10,7 @@ import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 
 @Module({
-  imports: [InventoryModule, LocationsModule],
+  imports: [CartModule, InventoryModule, LocationsModule],
   controllers: [OrdersController, AdminOrdersController],
   providers: [
     OrdersService,

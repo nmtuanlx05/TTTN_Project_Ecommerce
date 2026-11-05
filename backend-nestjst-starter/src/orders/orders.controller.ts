@@ -15,7 +15,7 @@ import type { AuthUser } from '../auth/auth.types';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PreviewOrderDto } from './dto/preview-order.dto';
-import { QueryOrdersDto } from './dto/query-orders.dto';
+import { QueryMyOrdersDto } from './dto/query-orders.dto';
 import { OrdersService } from './orders.service';
 
 // Đơn của khách: chỉ CUSTOMER, id luôn lấy từ token. Route cố định (preview) đặt trước route có :code.
@@ -42,13 +42,25 @@ export class OrdersController {
   }
 
   @Get()
-  findAll(@Query() query: QueryOrdersDto, @CurrentUser() user: AuthUser) {
+  findAll(@Query() query: QueryMyOrdersDto, @CurrentUser() user: AuthUser) {
     return this.ordersService.findMine(user.id, query);
+  }
+
+  // Đặt trước ':code' để 'summary' không bị hiểu là mã đơn
+  @Get('summary')
+  summary(@CurrentUser() user: AuthUser) {
+    return this.ordersService.summaryMine(user.id);
   }
 
   @Get(':code')
   findOne(@Param('code') code: string, @CurrentUser() user: AuthUser) {
     return this.ordersService.findMineByCode(user.id, code);
+  }
+
+  // Đưa các dòng của đơn vào giỏ (cùng quy tắc giỏ hàng); dòng không thêm được nằm trong `skipped`
+  @Post(':code/reorder')
+  reorder(@Param('code') code: string, @CurrentUser() user: AuthUser) {
+    return this.ordersService.reorderMine(user.id, code);
   }
 
   @Post(':code/cancel')

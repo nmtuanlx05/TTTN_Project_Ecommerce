@@ -15,6 +15,19 @@ const itemNotFound = () =>
 const isPrismaCode = (error: unknown, code: string) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
 
+// Kết quả từng dòng của addManyBestEffort: added = số lượng thực sự thêm vào giỏ; reason null = thêm đủ
+export type AddManyReason =
+  | 'UNAVAILABLE'
+  | 'OUT_OF_STOCK'
+  | 'MAX_QUANTITY_REACHED'
+  | 'QUANTITY_REDUCED';
+export interface AddManyResult {
+  variantId: number;
+  quantity: number;
+  added: number;
+  reason: AddManyReason | null;
+}
+
 @Injectable()
 export class CartService {
   constructor(private readonly prisma: PrismaService) {}
@@ -87,10 +100,79 @@ export class CartService {
     return this.getCart(userId);
   }
 
+  // Thêm nhiều món một lượt (mua lại đơn cũ), cùng khóa giỏ và cùng quy tắc với addItem nhưng KHÔNG ném lỗi theo từng dòng:
+  // mỗi dòng trả kết quả riêng. Số lượng thêm được = min(muốn thêm, 10 - đang có, tồn khả dụng - đang có).
+  async addManyBestEffort(
+    userId: number,
+    lines: { variantId: number; quantity: number }[],
+  ): Promise<AddManyResult[]> {
+    return this.writeInTransaction(async (tx) => {
+      const cartId = await this.lockCart(tx, userId, true);
+      const results: AddManyResult[] = [];
+      for (const line of lines) {
+        const variant = await tx.productVariant.findUnique({
+          where: { id: line.variantId },
+          select: {
+            stock: true,
+            reserved: true,
+            isActive: true,
+            product: { select: { isActive: true } },
+          },
+        });
+        if (!variant || !isPurchasable(variant)) {
+          results.push({ ...line, added: 0, reason: 'UNAVAILABLE' });
+          continue;
+        }
+        const available = getAvailable(variant);
+        if (available <= 0) {
+          results.push({ ...line, added: 0, reason: 'OUT_OF_STOCK' });
+          continue;
+        }
+
+        const existing = await tx.cartItem.findUnique({
+          where: { cartId_variantId: { cartId, variantId: line.variantId } },
+          select: { id: true, quantity: true },
+        });
+        const current = existing?.quantity ?? 0;
+        const wanted = current + line.quantity;
+        const target = Math.min(wanted, MAX_QUANTITY_PER_ITEM, available);
+        const added = target - current;
+        if (added <= 0) {
+          // Giỏ đã chạm trần 10 hoặc đã có đủ số còn bán được
+          results.push({
+            ...line,
+            added: 0,
+            reason:
+              current >= MAX_QUANTITY_PER_ITEM
+                ? 'MAX_QUANTITY_REACHED'
+                : 'OUT_OF_STOCK',
+          });
+          continue;
+        }
+        if (existing) {
+          await tx.cartItem.update({
+            where: { id: existing.id },
+            data: { quantity: target },
+          });
+        } else {
+          await tx.cartItem.create({
+            data: { cartId, variantId: line.variantId, quantity: target },
+          });
+        }
+        results.push({
+          ...line,
+          added,
+          reason: target < wanted ? 'QUANTITY_REDUCED' : null,
+        });
+      }
+      return results;
+    });
+  }
+
   // Chạy lại khi MySQL báo deadlock/write conflict (P2034); P2002 lọt qua khóa thì trả 409 rõ ràng
-  private async writeInTransaction(
-    work: (tx: Prisma.TransactionClient) => Promise<void>,
-  ) {
+  private async writeInTransaction<T>(
+    work: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
     for (let attempt = 1; ; attempt++) {
       try {
         return await this.prisma.$transaction(work);

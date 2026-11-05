@@ -19,7 +19,9 @@ import type { AuthUser } from '../auth/auth.types';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PreviewOrderDto } from './dto/preview-order.dto';
-import { QueryOrdersDto } from './dto/query-orders.dto';
+import { QueryMyOrdersDto } from './dto/query-orders.dto';
+import { CartService } from '../cart/cart.service';
+import type { AddManyReason } from '../cart/cart.service';
 import { generateOrderCode } from './order-code';
 import { OrderWorkflowService } from './order-workflow.service';
 import {
@@ -30,9 +32,9 @@ import {
 } from './orders.constants';
 import {
   customerOrderSelect,
-  orderListSelect,
+  myOrderListSelect,
   toCustomerOrder,
-  toOrderListItem,
+  toMyOrderListItem,
 } from './orders.mapper';
 import { calculatePricing } from './orders.pricing';
 import { isPrismaCode, runWithRetry } from './orders.tx';
@@ -91,6 +93,26 @@ function describeLineProblem(line: LineInfo): string | null {
   return null;
 }
 
+const REORDER_MESSAGES: Record<
+  AddManyReason,
+  (label: string, got: number, wanted: number) => string
+> = {
+  UNAVAILABLE: (label) => `${label} hiện không còn được bán`,
+  OUT_OF_STOCK: (label) => `${label} đã hết hàng`,
+  MAX_QUANTITY_REACHED: (label) =>
+    `${label} đã đạt số lượng tối đa trong giỏ hàng`,
+  QUANTITY_REDUCED: (label, got, wanted) =>
+    `${label} chỉ thêm được ${got}/${wanted} sản phẩm do giới hạn tồn kho hoặc số lượng tối đa mỗi sản phẩm trong giỏ`,
+};
+
+function reorderMessage(
+  item: { productName: string; size: string; color: string },
+  result: { added: number; quantity: number; reason: AddManyReason | null },
+) {
+  const label = `${item.productName} (${item.size}, ${item.color})`;
+  return REORDER_MESSAGES[result.reason!](label, result.added, result.quantity);
+}
+
 const toVoucherInfo = (voucher: VoucherRow) => ({
   code: voucher.code,
   description: voucher.description,
@@ -117,6 +139,7 @@ export class OrdersService {
     private readonly prisma: PrismaService,
     private readonly locations: LocationsService,
     private readonly workflow: OrderWorkflowService,
+    private readonly cart: CartService,
   ) {}
 
   // ===== Xem trước =====
@@ -473,23 +496,118 @@ export class OrdersService {
 
   // ===== Xem và hủy đơn của tôi =====
 
-  async findMine(userId: number, query: QueryOrdersDto) {
-    const { page, limit, status, sortBy, order } = query;
+  // Một truy vấn có include (đơn + dòng hàng) nên không N+1. q khớp một phần mã đơn; collation utf8mb4_unicode_ci của DB
+  // không phân biệt hoa thường, và luôn chỉ trong đơn của chính khách (where.userId).
+  async findMine(userId: number, query: QueryMyOrdersDto) {
+    const { page, limit, status, q, sortBy, order } = query;
     const where: Prisma.OrderWhereInput = {
       userId,
-      ...(status && { status }),
+      ...(status && status.length > 0 && { status: { in: status } }),
+      ...(q && { code: { contains: q } }),
     };
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.order.findMany({
         where,
-        select: orderListSelect,
+        select: myOrderListSelect,
         orderBy: [{ [sortBy]: order }, { id: order }],
         skip: (page - 1) * limit,
         take: limit,
       }),
       this.prisma.order.count({ where }),
     ]);
-    return new Paginated(rows.map(toOrderListItem), { page, limit, total });
+    return new Paginated(rows.map(toMyOrderListItem), { page, limit, total });
+  }
+
+  // Số đơn theo nhóm, một truy vấn groupBy; `active` (pending + processing) dùng cho huy hiệu
+  async summaryMine(userId: number) {
+    const groups = await this.prisma.order.groupBy({
+      by: ['status'],
+      where: { userId },
+      _count: { _all: true },
+    });
+    const byStatus = new Map<OrderStatus, number>(
+      groups.map((g) => [g.status, g._count._all]),
+    );
+    const sum = (statuses: OrderStatus[]) =>
+      statuses.reduce((total, s) => total + (byStatus.get(s) ?? 0), 0);
+    const pending = sum([OrderStatus.PENDING, OrderStatus.PENDING_PAYMENT]);
+    const processing = sum([
+      OrderStatus.CONFIRMED,
+      OrderStatus.PACKING,
+      OrderStatus.SHIPPING,
+    ]);
+    return {
+      total: sum(Object.values(OrderStatus)),
+      pending,
+      processing,
+      completed: sum([OrderStatus.COMPLETED]),
+      cancelled: sum([OrderStatus.CANCELLED]),
+      active: pending + processing,
+    };
+  }
+
+  // Mua lại: đưa dòng của đơn (của chính khách) vào giỏ bằng CartService (cùng khóa giỏ, retry P2034, quy tắc tồn và tối đa 10)
+  async reorderMine(userId: number, code: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { code, userId },
+      select: {
+        items: {
+          select: {
+            variantId: true,
+            productName: true,
+            size: true,
+            color: true,
+            quantity: true,
+          },
+          orderBy: { id: 'asc' },
+        },
+      },
+    });
+    if (!order) throw orderNotFound();
+
+    const results = await this.cart.addManyBestEffort(
+      userId,
+      order.items.map((i) => ({
+        variantId: i.variantId,
+        quantity: i.quantity,
+      })),
+    );
+
+    let added = 0;
+    const skipped: {
+      productName: string;
+      size: string;
+      color: string;
+      reason: AddManyReason;
+      message: string;
+    }[] = [];
+    results.forEach((result, index) => {
+      const item = order.items[index];
+      if (result.added > 0) added += 1;
+      if (result.reason) {
+        skipped.push({
+          productName: item.productName,
+          size: item.size,
+          color: item.color,
+          reason: result.reason,
+          message: reorderMessage(item, result),
+        });
+      }
+    });
+
+    if (added === 0) {
+      throw conflict(
+        ORDER_ERROR.REORDER_NOTHING_ADDED,
+        'Không có sản phẩm nào trong đơn này có thể thêm vào giỏ hàng',
+        {
+          errors: skipped.map((s, i) => ({
+            field: `items.${i}`,
+            message: s.message,
+          })),
+        },
+      );
+    }
+    return { added, skipped };
   }
 
   // Lọc theo userId nên đơn của người khác trả 404 như đơn không tồn tại
