@@ -26,6 +26,14 @@ export function useCart({ enabled }: { enabled: boolean }) {
   })
 }
 
+/** Ép làm mới giỏ (khác `useRefreshCart`, không bỏ qua khi giỏ vừa ghi): dùng sau thao tác ghi giỏ ở feature khác, vd. mua lại một đơn cũ. */
+export function useInvalidateCart() {
+  const queryClient = useQueryClient()
+  return useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: cartKeys.all })
+  }, [queryClient])
+}
+
 /** Giỏ vừa được ghi (mutation trả giỏ mới) trong khoảng này thì không làm mới lại khi mở ngăn kéo: dữ liệu đã mới nhất, khỏi một GET thừa và khỏi đổi nội dung giữa lúc ngăn kéo đang trượt. */
 const JUST_WRITTEN_MS = 3_000
 

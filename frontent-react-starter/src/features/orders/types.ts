@@ -31,12 +31,36 @@ export interface ShippingAddress {
 
 export type OrderPaymentMethod = "COD" | "ONLINE"
 
+/** Đúng các giá trị enum `OrderStatus` của backend. Mọi bảng nhãn/màu/nhóm là `Record<OrderStatus, ...>` để thiếu một trạng thái là lỗi biên dịch. */
+export const ORDER_STATUSES = [
+  "PENDING",
+  "PENDING_PAYMENT",
+  "CONFIRMED",
+  "SHIPPING",
+  "COMPLETED",
+  "CANCELLED",
+  "RETURNED",
+] as const
+export type OrderStatus = (typeof ORDER_STATUSES)[number]
+
+export type OrderPaymentStatus = "UNPAID" | "PAID" | "REFUNDED" | "FAILED"
+
+/** Một dòng lịch sử trạng thái phía khách: có `byRole` nhưng KHÔNG có tên/id nhân viên. */
+export interface OrderHistoryEntry {
+  fromStatus: OrderStatus | null
+  toStatus: OrderStatus
+  reason: string | null
+  createdAt: string
+  byRole: "CUSTOMER" | "STAFF" | "ADMIN" | "SYSTEM"
+}
+
 export interface Order {
   id: number
   code: string
-  status: string
+  status: OrderStatus
   paymentMethod: OrderPaymentMethod
-  paymentStatus: string
+  paymentStatus: OrderPaymentStatus
+  paidAt: string | null
   items: OrderItem[]
   subtotal: number
   discountAmount: number
@@ -44,5 +68,38 @@ export interface Order {
   shippingFee: number
   totalAmount: number
   shippingAddress: ShippingAddress
+  cancelReason: string | null
+  history: OrderHistoryEntry[]
   createdAt: string
+}
+
+/** Phần tử của `GET /orders` (đủ để vẽ thẻ đơn). `itemCount` là tổng SỐ LƯỢNG, không phải số dòng. */
+export interface OrderListItem {
+  id: number
+  code: string
+  status: OrderStatus
+  paymentMethod: OrderPaymentMethod
+  paymentStatus: OrderPaymentStatus
+  totalAmount: number
+  createdAt: string
+  itemCount: number
+  items: { productName: string; imageUrl: string | null; quantity: number; size: string; color: string }[]
+}
+
+/** `GET /orders/summary`. `active` = pending + processing. */
+export interface OrdersSummary {
+  total: number
+  pending: number
+  processing: number
+  completed: number
+  cancelled: number
+  active: number
+}
+
+export type ReorderSkipReason = "UNAVAILABLE" | "OUT_OF_STOCK" | "MAX_QUANTITY_REACHED" | "QUANTITY_REDUCED"
+
+export interface ReorderResult {
+  /** Số DÒNG có thêm ít nhất 1 sản phẩm. */
+  added: number
+  skipped: { productName: string; size: string; color: string; reason: ReorderSkipReason; message: string }[]
 }
