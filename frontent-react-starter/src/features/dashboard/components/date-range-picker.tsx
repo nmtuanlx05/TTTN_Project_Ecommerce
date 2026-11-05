@@ -1,10 +1,12 @@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { todayVn } from "@/lib/format"
 import {
+  MAX_RANGE_DAYS,
+  MIN_DATE,
   PRESET_OPTIONS,
-  fromDateInputValue,
-  toDateInputValue,
+  adjustCustomRange,
   type DateRange,
   type RangePreset,
 } from "@/lib/date-range"
@@ -14,7 +16,8 @@ import {
  * riêng bên trong từng thẻ.
  *
  * "Tùy chọn" dùng <input type="date"> thay vì thư viện lịch: đi được bằng bàn
- * phím, có sẵn giao diện bản địa, và không thêm phụ thuộc nào.
+ * phím, có sẵn giao diện bản địa, và không thêm phụ thuộc nào. Khoảng chọn luôn
+ * hợp lệ (`adjustCustomRange`): không quá hôm nay (giờ VN), tối đa 366 ngày, từ ≤ đến.
  */
 function DateRangePicker({
   preset,
@@ -27,6 +30,11 @@ function DateRangePicker({
   onPresetChange: (preset: RangePreset) => void
   onCustomRangeChange: (range: DateRange) => void
 }) {
+  const today = todayVn()
+  const change = (field: "from" | "to", value: string) => {
+    if (value) onCustomRangeChange(adjustCustomRange(customRange, field, value))
+  }
+
   return (
     <div className="flex flex-col items-start gap-stack md:items-end">
       <div
@@ -76,12 +84,10 @@ function DateRangePicker({
               id="range-from"
               type="date"
               className="w-40"
-              max={toDateInputValue(customRange.to)}
-              value={toDateInputValue(customRange.from)}
-              onChange={(event) => {
-                const from = fromDateInputValue(event.target.value)
-                if (from) onCustomRangeChange({ ...customRange, from })
-              }}
+              min={MIN_DATE}
+              max={today}
+              value={customRange.from}
+              onChange={(event) => change("from", event.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -92,14 +98,13 @@ function DateRangePicker({
               id="range-to"
               type="date"
               className="w-40"
-              min={toDateInputValue(customRange.from)}
-              value={toDateInputValue(customRange.to)}
-              onChange={(event) => {
-                const to = fromDateInputValue(event.target.value)
-                if (to) onCustomRangeChange({ ...customRange, to })
-              }}
+              min={MIN_DATE}
+              max={today}
+              value={customRange.to}
+              onChange={(event) => change("to", event.target.value)}
             />
           </div>
+          <p className="pb-2 text-caption text-ink-muted">Tối đa {MAX_RANGE_DAYS} ngày</p>
         </div>
       ) : null}
     </div>

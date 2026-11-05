@@ -12,125 +12,18 @@ import {
 } from "recharts"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  formatCompactVnd,
-  formatDayMonth,
-  formatFullDate,
-  formatVnd,
-} from "@/lib/format"
-import type { DailyPoint } from "../mock"
+import { formatCompactVnd, formatDayMonth } from "@/lib/format"
+import type { DailyPoint } from "../types"
+import { mergeSeries } from "./revenue-chart-data"
+import { ChartTooltip, LastPointLabel, Legend } from "./revenue-chart-parts"
+import { RevenueChartTable } from "./revenue-chart-table"
 
 /**
- * Doanh thu theo ngày — đơn sắc, một trục.
- *
- * Màu đọc thẳng từ biến CSS trong SVG (`var(--ink)`), nên màu luôn theo token
- * mà không cần JS đọc giá trị màu. Không gradient, không đổ bóng: vùng tô là một
- * lớp mực mỏng cùng màu đường.
- *
- * Kỳ trước phân biệt bằng CẢ độ sáng lẫn nét đứt, không chỉ bằng màu — hai
- * series này gần như cùng sắc độ nên nét vẽ mới là thứ mang danh tính.
+ * Doanh thu theo ngày hoàn thành đơn — đơn sắc, một trục. Màu đọc từ biến CSS (`var(--ink)`);
+ * kỳ trước phân biệt bằng cả độ sáng lẫn nét đứt. Ca biên: toàn 0 thì cố định trục 0–100 nghìn
+ * (tránh trục suy biến); một ngày thì vẽ chấm vì một điểm không tạo được đường.
  */
-
-type MergedPoint = {
-  date: string
-  revenue: number
-  previousDate: string | null
-  previousRevenue: number | null
-}
-
-function mergeSeries(
-  series: DailyPoint[],
-  previousSeries: DailyPoint[],
-): MergedPoint[] {
-  return series.map((point, index) => {
-    const previous = previousSeries[index] ?? null
-    return {
-      date: point.date,
-      revenue: point.revenue,
-      previousDate: previous?.date ?? null,
-      previousRevenue: previous?.revenue ?? null,
-    }
-  })
-}
-
-function ChartTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean
-  payload?: { payload: MergedPoint }[]
-}) {
-  if (!active || !payload?.length) return null
-  const point = payload[0].payload
-
-  return (
-    <div className="rounded-md border border-border-default bg-surface-raised px-3 py-2 text-caption">
-      <p className="font-medium text-ink">{formatFullDate(point.date)}</p>
-      <p className="mt-1 text-ink">
-        Kỳ này: <span data-numeric>{formatVnd(point.revenue)}</span>
-      </p>
-      {point.previousRevenue !== null && point.previousDate ? (
-        <p className="text-ink-muted">
-          Kỳ trước ({formatDayMonth(point.previousDate)}):{" "}
-          <span data-numeric>{formatVnd(point.previousRevenue)}</span>
-        </p>
-      ) : null}
-    </div>
-  )
-}
-
-/** Nhãn trực tiếp cho đúng điểm cuối — không ghi số lên mọi điểm. */
-type LabelProps = {
-  x?: unknown
-  y?: unknown
-  value?: unknown
-  index?: number
-}
-
-function renderLastPointLabel(props: LabelProps, dataLength: number) {
-  const { x, y, value, index } = props
-  if (index !== dataLength - 1 || x === undefined || y === undefined) return null
-
-  return (
-    <text
-      x={Number(x)}
-      y={Number(y) - 10}
-      textAnchor="end"
-      className="text-caption"
-      fill="var(--ink)"
-      fontWeight={600}
-    >
-      {formatCompactVnd(Number(value), true)}
-    </text>
-  )
-}
-
-function Legend() {
-  return (
-    <div className="flex flex-wrap items-center gap-4 text-caption text-ink-muted">
-      <span className="inline-flex items-center gap-1.5">
-        <svg width="18" height="8" aria-hidden="true">
-          <line x1="0" y1="4" x2="18" y2="4" stroke="var(--ink)" strokeWidth="2" />
-        </svg>
-        Kỳ này
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <svg width="18" height="8" aria-hidden="true">
-          <line
-            x1="0"
-            y1="4"
-            x2="18"
-            y2="4"
-            stroke="var(--ink-subtle)"
-            strokeWidth="2"
-            strokeDasharray="4 3"
-          />
-        </svg>
-        Kỳ trước
-      </span>
-    </div>
-  )
-}
+const EMPTY_AXIS_MAX = 100_000
 
 function RevenueChart({
   series,
@@ -140,6 +33,8 @@ function RevenueChart({
   previousSeries: DailyPoint[]
 }) {
   const isMobile = useIsMobile()
+  const allZero = series.every((p) => p.revenue === 0) && previousSeries.every((p) => p.revenue === 0)
+  const singleDay = series.length === 1
   const data = useMemo(
     () => mergeSeries(series, previousSeries),
     [series, previousSeries],
@@ -156,7 +51,7 @@ function RevenueChart({
             Doanh thu theo ngày
           </h2>
           <p className="mt-0.5 text-caption text-ink-muted">
-            Chỉ tính đơn đã giao
+            Doanh thu theo ngày hoàn thành đơn
           </p>
         </div>
         <Legend />
@@ -183,6 +78,7 @@ function RevenueChart({
             />
             <YAxis
               width={isMobile ? 52 : 68}
+              domain={allZero ? [0, EMPTY_AXIS_MAX] : [0, "auto"]}
               tickFormatter={(value: number) => formatCompactVnd(value, isMobile)}
               axisLine={false}
               tickLine={false}
@@ -200,7 +96,7 @@ function RevenueChart({
               stroke="var(--ink-subtle)"
               strokeWidth={1.5}
               strokeDasharray="4 3"
-              dot={false}
+              dot={singleDay ? { r: 3, fill: "var(--ink-subtle)", strokeWidth: 0 } : false}
               activeDot={false}
               isAnimationActive={false}
               connectNulls
@@ -213,7 +109,7 @@ function RevenueChart({
               strokeWidth={2}
               fill="var(--ink)"
               fillOpacity={0.07}
-              dot={false}
+              dot={singleDay ? { r: 4, fill: "var(--ink)", strokeWidth: 0 } : false}
               activeDot={{
                 r: 4,
                 fill: "var(--ink)",
@@ -224,54 +120,14 @@ function RevenueChart({
             >
               <LabelList
                 dataKey="revenue"
-                content={(props) => renderLastPointLabel(props, data.length)}
+                content={(props) => <LastPointLabel {...props} dataLength={data.length} />}
               />
             </Area>
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Bản bảng tương đương — mọi giá trị đọc được không cần rê chuột */}
-      <details className="text-caption">
-        <summary className="cursor-pointer rounded-xs text-ink-muted outline-none hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-          Xem dạng bảng
-        </summary>
-        <div className="mt-stack max-h-64 overflow-auto rounded-xs border border-border-subtle">
-          <table className="w-full text-caption">
-            <caption className="sr-only">
-              Doanh thu từng ngày của kỳ này và kỳ trước
-            </caption>
-            <thead className="sticky top-0 bg-surface-sunken">
-              <tr>
-                <th scope="col" className="px-3 py-1.5 text-left text-ink-muted">
-                  Ngày
-                </th>
-                <th scope="col" className="px-3 py-1.5 text-right text-ink-muted">
-                  Kỳ này
-                </th>
-                <th scope="col" className="px-3 py-1.5 text-right text-ink-muted">
-                  Kỳ trước
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((point) => (
-                <tr key={point.date} className="border-t border-border-subtle">
-                  <td className="px-3 py-1.5 text-ink">{formatDayMonth(point.date)}</td>
-                  <td data-numeric className="px-3 py-1.5 text-right text-ink">
-                    {formatVnd(point.revenue)}
-                  </td>
-                  <td data-numeric className="px-3 py-1.5 text-right text-ink-muted">
-                    {point.previousRevenue === null
-                      ? "—"
-                      : formatVnd(point.previousRevenue)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
+      <RevenueChartTable data={data} />
     </section>
   )
 }

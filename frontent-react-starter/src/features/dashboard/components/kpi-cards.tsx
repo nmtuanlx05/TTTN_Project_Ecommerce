@@ -7,7 +7,7 @@ import {
   formatSignedPercent,
   formatVnd,
 } from "@/lib/format"
-import type { KpiSnapshot } from "../mock"
+import type { KpiSnapshot } from "../types"
 
 type Metric = {
   key: keyof KpiSnapshot
@@ -37,7 +37,7 @@ const METRICS: Metric[] = [
   {
     key: "averageOrderValue",
     label: "Giá trị đơn trung bình",
-    note: "Doanh thu đã giao ÷ mọi đơn",
+    note: "Doanh thu ÷ số đơn hoàn thành",
     format: (value) => formatCompactVnd(value),
     title: (value) => formatVnd(value),
   },
@@ -49,15 +49,19 @@ const METRICS: Metric[] = [
   },
 ]
 
-function changeRatio(current: number, previous: number): number | null {
-  if (previous === 0) return null
+/** Kỳ trước bằng 0 thì không chia: "Mới" nếu kỳ này có số, "—" nếu cả hai đều 0. */
+function changeRatio(current: number, previous: number): number | "new" | "none" {
+  if (previous === 0) return current > 0 ? "new" : "none"
   return (current - previous) / previous
 }
 
-function Delta({ ratio, invert }: { ratio: number | null; invert?: boolean }) {
-  if (ratio === null) {
+function Delta({ ratio, invert }: { ratio: number | "new" | "none"; invert?: boolean }) {
+  if (ratio === "new" || ratio === "none") {
     return (
-      <span className="text-caption text-ink-muted">Kỳ trước không có dữ liệu</span>
+      <span className="inline-flex items-center gap-1 text-caption text-ink-muted">
+        <span className="font-medium">{ratio === "new" ? "Mới" : "—"}</span>
+        so với kỳ trước
+      </span>
     )
   }
 

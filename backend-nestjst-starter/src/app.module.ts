@@ -13,6 +13,7 @@ import { LocationsModule } from './locations/locations.module';
 import { OrdersModule } from './orders/orders.module';
 import { VouchersModule } from './vouchers/vouchers.module';
 import { UploadModule } from './uploads/upload.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { ENV_FILE } from './config/env-file';
 import { validateEnv } from './config/env.validation';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
@@ -36,6 +37,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     OrdersModule,
     VouchersModule,
     UploadModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [

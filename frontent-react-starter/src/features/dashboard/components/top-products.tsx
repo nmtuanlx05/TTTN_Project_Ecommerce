@@ -7,10 +7,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { ImagePreview } from "@/components/shared/image-preview"
 import { EmptyState } from "@/components/ui/empty-state"
 import { PackageSearch } from "lucide-react"
 import { formatNumber, formatVnd } from "@/lib/format"
-import type { TopProduct } from "../mock"
+import type { TopProduct } from "../types"
 
 function TopProducts({ products }: { products: TopProduct[] }) {
   return (
@@ -23,7 +24,7 @@ function TopProducts({ products }: { products: TopProduct[] }) {
           Top 5 bán chạy
         </h2>
         <p className="mt-0.5 text-caption text-ink-muted">
-          Xếp theo doanh thu trong kỳ
+          Xếp theo số lượng bán, đơn hoàn thành trong kỳ
         </p>
       </div>
 
@@ -39,17 +40,22 @@ function TopProducts({ products }: { products: TopProduct[] }) {
             <TableRow>
               <TableHead>Sản phẩm</TableHead>
               <TableHead className="text-right">Đã bán</TableHead>
-              <TableHead className="text-right">Doanh thu</TableHead>
+              <TableHead className="text-right">Doanh thu hàng hóa</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {products.map((product) => (
               <TableRow key={product.id}>
                 <TableCell>
-                  <span className="block text-ink">{product.name}</span>
-                  <span data-numeric className="block text-caption text-ink-muted">
-                    {product.sku}
-                  </span>
+                  <div className="flex items-center gap-inline">
+                    <ImagePreview
+                      src={product.imageUrl}
+                      alt={product.name}
+                      shape="portrait"
+                      className="w-9 shrink-0"
+                    />
+                    <span className="text-ink">{product.name}</span>
+                  </div>
                 </TableCell>
                 <TableCell data-numeric className="text-right">
                   {formatNumber(product.quantitySold)}

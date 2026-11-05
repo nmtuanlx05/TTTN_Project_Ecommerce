@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { badRequest, notFound } from '../common/errors/coded-errors';
 import { Paginated } from '../common/paginated';
+import { parseVnDate } from '../common/utils/vn-date';
 import { Prisma } from '../generated/prisma/client';
 import { OrderStatus } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,7 +9,7 @@ import type { AuthUser } from '../auth/auth.types';
 import { QueryAdminOrdersDto } from './dto/query-admin-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrderWorkflowService } from './order-workflow.service';
-import { ORDER_ERROR, VN_UTC_OFFSET_HOURS } from './orders.constants';
+import { ORDER_ERROR } from './orders.constants';
 import {
   adminOrderSelect,
   orderListSelect,
@@ -19,24 +20,6 @@ import { runWithRetry } from './orders.tx';
 
 const orderNotFound = () =>
   notFound(ORDER_ERROR.ORDER_NOT_FOUND, 'Không tìm thấy đơn hàng');
-
-const pad2 = (n: number) => String(n).padStart(2, '0');
-
-// Ngày YYYY-MM-DD theo GMT+7 → mốc thời gian; ngày không có thật (2026-02-31) thì 400
-function parseVnDate(value: string, endOfDay: boolean, field: string) {
-  const time = endOfDay ? '23:59:59.999' : '00:00:00.000';
-  const date = new Date(`${value}T${time}+${pad2(VN_UTC_OFFSET_HOURS)}:00`);
-  const [y, m, d] = value.split('-').map(Number);
-  const probe = new Date(Date.UTC(y, m - 1, d));
-  if (
-    Number.isNaN(date.getTime()) ||
-    probe.getUTCMonth() !== m - 1 ||
-    probe.getUTCDate() !== d
-  ) {
-    throw badRequest('INVALID_DATE', `${field} không phải ngày hợp lệ`);
-  }
-  return date;
-}
 
 @Injectable()
 export class AdminOrdersService {

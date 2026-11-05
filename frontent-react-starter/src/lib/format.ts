@@ -96,11 +96,51 @@ export function formatFullDate(value: Date | string): string {
   return format(toDate(value), "EEEE, dd/MM/yyyy", { locale: vi })
 }
 
-/** Khoảng ngày gọn: "06/09 – 05/10/2026". */
-export function formatDateRange(from: Date, to: Date): string {
-  return `${format(from, "dd/MM", { locale: vi })} – ${format(to, "dd/MM/yyyy", { locale: vi })}`
+/** Khoảng ngày gọn: "06/09 – 05/10/2026". Nhận Date hoặc chuỗi YYYY-MM-DD. */
+export function formatDateRange(from: Date | string, to: Date | string): string {
+  return `${format(toDate(from), "dd/MM", { locale: vi })} – ${format(toDate(to), "dd/MM/yyyy", { locale: vi })}`
 }
 
+const YMD_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/
+
+/**
+ * Chuỗi đúng dạng YYYY-MM-DD là NGÀY LỊCH (không có giờ) nên dựng theo giờ địa phương;
+ * `new Date("2026-11-05")` là nửa đêm UTC và lùi một ngày ở máy múi giờ âm.
+ * Chuỗi ISO có giờ giữ nguyên hành vi cũ.
+ */
 function toDate(value: Date | string): Date {
-  return typeof value === "string" ? new Date(value) : value
+  if (typeof value !== "string") return value
+  const match = YMD_REGEX.exec(value)
+  if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+  return new Date(value)
+}
+
+const ymdVn = new Intl.DateTimeFormat("en-CA", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  timeZone: TIME_ZONE,
+})
+
+const dayMonthTimeVn = new Intl.DateTimeFormat("vi-VN", {
+  day: "2-digit",
+  month: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: TIME_ZONE,
+})
+
+/** Hôm nay theo GMT+7 dạng YYYY-MM-DD, bất kể múi giờ máy. */
+export function todayVn(): string {
+  return ymdVn.format(new Date())
+}
+
+/** Giờ đặt đơn theo GMT+7: hôm nay (giờ VN) → "14:05", ngày khác → "04/11 14:05". */
+export function formatOrderTime(value: Date | string): string {
+  const date = typeof value === "string" ? new Date(value) : value
+  if (ymdVn.format(date) === todayVn()) return formatTime(date)
+  // Ghép từ các phần để giữ đúng thứ tự dd/MM HH:mm (vi-VN mặc định đặt giờ trước ngày)
+  const part = (type: string) =>
+    dayMonthTimeVn.formatToParts(date).find((item) => item.type === type)?.value ?? ""
+  return `${part("day")}/${part("month")} ${part("hour")}:${part("minute")}`
 }

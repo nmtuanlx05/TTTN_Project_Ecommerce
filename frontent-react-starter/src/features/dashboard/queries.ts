@@ -1,39 +1,33 @@
-import { useEffect, useState } from "react"
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query"
+import type { ApiError } from "@/lib/api-error"
 import type { DateRange } from "@/lib/date-range"
-import {
-  MOCK_LATENCY_MS,
-  getDashboardData,
-  type DashboardData,
-} from "./mock"
+import { getDashboard } from "./api"
+import type { DashboardData } from "./types"
+
+/** Đủ ngắn để sau khi xác nhận đơn rồi quay lại, "Đơn cần xử lý" không cũ quá lâu. */
+const STALE_TIME_MS = 30_000
+
+export const dashboardKeys = {
+  all: ["dashboard"] as const,
+  range: (from: string, to: string) => ["dashboard", from, to] as const,
+}
 
 /**
- * Điểm sẽ thay bằng react-query khi nối API thật: hiện đây là `useEffect` +
- * `setTimeout` giả lập độ trễ trên dữ liệu mock. Khi có `api.ts`, viết lại thân
- * hook bằng `useQuery({ queryKey: ["dashboard", range], queryFn })` và giữ nguyên
- * giá trị trả về (`data`, `isRefreshing`) để component không phải sửa.
+ * Số liệu Tổng quan theo khoảng ngày. Đổi khoảng thì giữ dữ liệu cũ (`isPlaceholderData`) thay vì nháy skeleton.
+ * `updatedAt` là thời điểm tải xong của đúng khoảng đang hiện: khi đang hiện dữ liệu cũ, query mới chưa có
+ * `dataUpdatedAt` nên đọc từ cache của khoảng cũ (xác định bằng `data.range`).
  */
-export function useDashboardData(range: DateRange) {
-  // Giữ cả khoảng đã tải cùng dữ liệu, nên "đang tải" là thứ suy ra được chứ
-  // không phải một state thứ hai phải đồng bộ tay.
-  const [loaded, setLoaded] = useState<{
-    range: DateRange
-    data: DashboardData
-  } | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    const timer = setTimeout(() => {
-      if (!cancelled) setLoaded({ range, data: getDashboardData(range) })
-    }, MOCK_LATENCY_MS)
-
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-    }
-  }, [range])
-
-  const data = loaded?.data ?? null
-  const isRefreshing = loaded?.range !== range
-
-  return { data, isRefreshing }
+export function useDashboard(range: DateRange) {
+  const queryClient = useQueryClient()
+  const query = useQuery<DashboardData, ApiError>({
+    queryKey: dashboardKeys.range(range.from, range.to),
+    queryFn: ({ signal }) => getDashboard(range, signal),
+    placeholderData: keepPreviousData,
+    staleTime: STALE_TIME_MS,
+  })
+  const shown = query.data?.range
+  const updatedAt = shown
+    ? queryClient.getQueryState(dashboardKeys.range(shown.from, shown.to))?.dataUpdatedAt
+    : undefined
+  return { ...query, updatedAt }
 }
