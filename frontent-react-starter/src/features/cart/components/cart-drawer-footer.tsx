@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { CheckoutButton } from "./checkout-button"
 
 /**
- * Chân ngăn kéo (cố định, không cuộn theo danh sách): tạm tính, chú thích phí vận chuyển, hai nút. "Thanh toán ngay" là STUB (`CheckoutButton`).
+ * Chân ngăn kéo (cố định, không cuộn theo danh sách): tạm tính, chú thích phí vận chuyển, hai nút. "Thanh toán ngay" dẫn tới /thanh-toan (`CheckoutButton`), bấm thì đóng ngăn kéo.
  */
 function CartDrawerFooter({
   subtotal,
@@ -31,7 +31,7 @@ function CartDrawerFooter({
       >
         Xem giỏ hàng chi tiết
       </Link>
-      <CheckoutButton disabled={!canCheckout} />
+      <CheckoutButton disabled={!canCheckout} onNavigate={onNavigate} />
     </div>
   )
 }

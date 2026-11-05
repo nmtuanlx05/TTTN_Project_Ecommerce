@@ -8,7 +8,7 @@ import { FreeShippingBar } from "./free-shipping-bar"
 
 /**
  * Thẻ tóm tắt bên phải trang /gio-hang: nền be bo `panel` (cùng thẻ thông tin ở trang chi tiết). Chỉ tạm tính và dải miễn phí vận chuyển; KHÔNG có phí vận chuyển cụ thể hay mã giảm giá
- * (chưa làm). Từ `lg` thẻ dính dưới header. "Thanh toán ngay" là STUB.
+ * (chưa làm). Từ `lg` thẻ dính dưới header. "Thanh toán ngay" dẫn tới /thanh-toan.
  */
 function CartSummary({ cart }: { cart: Cart }) {
   return (

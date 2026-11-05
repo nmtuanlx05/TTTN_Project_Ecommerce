@@ -77,8 +77,8 @@ interface StoreComingSoon {
   wishlist: string
   /** Link "Hướng dẫn chọn size" ở trang chi tiết sản phẩm. */
   sizeGuide: string
-  /** Nút "Thanh toán ngay" ở ngăn kéo giỏ và trang giỏ hàng (chưa có bước đặt đơn). */
-  checkout: string
+  /** Thẻ "Thanh toán online" ở trang thanh toán (backend mới hỗ trợ COD). */
+  onlinePayment: string
 }
 
 interface StoreInfo {
@@ -126,7 +126,7 @@ export const STORE: StoreInfo = {
   comingSoon: {
     wishlist: "Yêu thích sẽ sớm có mặt",
     sizeGuide: "Hướng dẫn chọn size sẽ sớm có mặt",
-    checkout: "Thanh toán sẽ sớm có mặt",
+    onlinePayment: "Thanh toán online sắp có",
   },
   // Slug "phu-kien" và "qua-tang" là slug mà backend sẽ sinh từ tên danh mục; mục chỉ hiện khi danh mục đó có trong GET /categories.
   navItems: [

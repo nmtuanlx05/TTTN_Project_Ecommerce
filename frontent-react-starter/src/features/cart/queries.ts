@@ -56,6 +56,15 @@ function useCartMutation<TVariables>(mutationFn: (variables: TVariables) => Prom
   })
 }
 
+/** Sau khi đặt đơn thành công: giỏ rỗng ngay (huy hiệu về 0, ngăn kéo rỗng) rồi đồng bộ lại với máy chủ. Trang ghép truyền hàm này cho `features/checkout`. */
+export function useResetCart() {
+  const queryClient = useQueryClient()
+  return useCallback(() => {
+    queryClient.setQueryData<Cart>(cartKeys.all, { items: [], subtotal: 0, itemCount: 0, unavailableCount: 0 })
+    void queryClient.invalidateQueries({ queryKey: cartKeys.all })
+  }, [queryClient])
+}
+
 export function useAddToCart() {
   return useCartMutation<AddToCartInput>(addCartItem)
 }
