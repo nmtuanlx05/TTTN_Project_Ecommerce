@@ -1,7 +1,7 @@
 # API Orders (Đặt đơn và quản lý đơn)
 
 Viết theo code (`src/orders/`, `src/locations/`, `src/common/`). Có unit test với Prisma giả (`src/orders/*.spec.ts`,
-`src/inventory/test/inventory.shipout.spec.ts`) và e2e với service giả (`test/orders.e2e-spec.ts`).
+`src/orders/orders.my-orders.spec.ts` cho danh sách/summary/mua lại, `src/inventory/test/inventory.shipout.spec.ts`) và e2e với service giả (`test/orders.e2e-spec.ts`).
 **Khóa dòng (`FOR UPDATE`), thứ tự khóa, chống bán vượt tồn và chống dùng quá lượt voucher khi nhiều request chạy đồng thời CHƯA được
 chạy thử trên MySQL thật**: chỉ được bảo vệ bằng thiết kế (khóa theo thứ tự cố định + câu UPDATE có điều kiện + kiểm số dòng bị
 ảnh hưởng). Cần chạy thử tay.
@@ -99,7 +99,8 @@ Chỉ đọc (không khóa, không ghi). Body `{ "voucherCode"?: string }`.
 
 - `items[]` là **mọi dòng trong giỏ** (kể cả dòng không đặt được), cùng dạng với `items[]` của `GET /cart` (xem `docs/api/cart.md`):
   `id` (id dòng giỏ), `variantId`, `quantity`, `productId`, `name`, `slug`, `imageUrl` (ảnh đầu, có thể `null`), `size`, `color`,
-  `colorHex` (có thể `null`), `unitPrice`, `lineTotal`, `purchasable`, `inStock`, `maxQuantity`.
+  `colorHex` (có thể `null`), `unitPrice`, `lineTotal`, `purchasable`, `inStock`, `maxQuantity`. Khác `items[]` của đơn đã đặt (dòng
+  chụp lại: `productName`, `sku`, `price`... và **không** có `slug`).
 - `subtotal` chỉ tính các dòng đặt được; dòng không đặt được nằm trong `warnings` (`canCheckout = false`).
 - Giỏ rỗng → 409 `CART_EMPTY`. Voucher sai → 400 với mã `VOUCHER_*`. Không lộ `stock`/`reserved`.
 
@@ -129,15 +130,72 @@ Response: đối tượng đơn (bên dưới).
 
 ### `GET /orders`: đơn của tôi
 
-Query: `status`, `page` (≥1, mặc định 1), `limit` (1-100, mặc định 10), `sortBy` (`createdAt`|`totalAmount`, mặc định `createdAt`),
-`order` (`asc`|`desc`, mặc định `desc`). Phân trang `{ data, meta }`; mỗi phần tử gồm `id, code, status, paymentMethod, paymentStatus, subtotal,
-discountAmount, voucherCode, shippingFee, totalAmount, customerName, customerPhone, createdAt, items[]`.
+Query (trường lạ → 400):
+
+| Tham số | Mô tả |
+| --- | --- |
+| `status` | Một **hoặc nhiều** trạng thái phân tách bằng dấu phẩy, vd `status=CONFIRMED,PACKING,SHIPPING`. Bỏ khoảng trắng, phần tử rỗng và giá trị lặp. Giá trị ngoài enum → 400 "status chỉ nhận các giá trị: ..." |
+| `q` | Khớp **một phần** mã đơn (không phân biệt hoa thường, đã `trim`, tối đa 50 ký tự), chỉ trong đơn của chính khách |
+| `page` | ≥ 1, mặc định 1 |
+| `limit` | 1-100, mặc định 10 |
+| `sortBy`, `order` | `createdAt`\|`totalAmount`, `asc`\|`desc`; mặc định mới nhất trước |
+
+Phân trang `{ data, meta }`. Mỗi phần tử đủ để vẽ thẻ đơn (một truy vấn có include, không N+1; **không** có địa chỉ, SĐT hay trường nội bộ):
+
+```json
+{ "id": 12, "code": "MS-261105-ABCD", "status": "PENDING", "paymentMethod": "COD", "paymentStatus": "UNPAID",
+  "totalAmount": 420000, "createdAt": "2026-11-05T03:00:00.000Z", "itemCount": 3,
+  "items": [ { "productName": "Áo thun basic", "imageUrl": "https://.../a.jpg", "quantity": 2, "size": "M", "color": "Đen" } ] }
+```
+
+`itemCount` là **tổng số lượng** các dòng (không phải số dòng). `items[].imageUrl` là ảnh đã chụp lúc đặt, có thể `null`. (Trước đây danh sách
+còn trả `subtotal`, `discountAmount`, `shippingFee`, `customerName`... Các trường này đã bỏ; xem chi tiết ở `GET /orders/:code`.)
+
+### `GET /orders/summary`: số đơn theo nhóm
+
+Một truy vấn `groupBy`, chỉ đơn của khách. Dùng cho huy hiệu/tab của trang "Đơn hàng của tôi".
+
+```json
+{ "success": true, "data": { "total": 14, "pending": 3, "processing": 4, "completed": 4, "cancelled": 3, "active": 7 } }
+```
+
+`pending` = `PENDING` + `PENDING_PAYMENT`; `processing` = `CONFIRMED` + `PACKING` + `SHIPPING`; `completed` = `COMPLETED`; `cancelled` = `CANCELLED`;
+`active` = `pending + processing`; `total` = mọi đơn (kể cả `RETURNED`, chưa dùng).
+
+### `POST /orders/:code/reorder`: mua lại
+
+Chỉ đơn của chính khách (đơn người khác hoặc không tồn tại → 404 `ORDER_NOT_FOUND`). Đưa các dòng của đơn vào **giỏ** qua `CartService`
+(`addManyBestEffort`), cùng quy tắc và cùng cách khóa với `POST /cart/items`: khóa dòng `carts` (`FOR UPDATE`) trong một transaction, gặp P2034 thì
+chạy lại tối đa 3 lần. Không tạo đơn, không giữ hàng, **giá lấy theo giá hiện tại** khi xem giỏ. Với mỗi dòng (không dùng giá/tên đã chụp):
+
+- số thêm = `min(số lượng trong đơn, 10 - đang có trong giỏ, (stock - reserved) - đang có trong giỏ)`; cộng dồn vào dòng đã có.
+- không thêm được dòng nào cả hoặc phải giảm số lượng → ghi vào `skipped`.
+
+```json
+{ "success": true, "data": { "added": 2, "skipped": [
+  { "productName": "Quần jean", "size": "30", "color": "Xanh", "reason": "OUT_OF_STOCK", "message": "Quần jean (30, Xanh) đã hết hàng" },
+  { "productName": "Áo thun basic", "size": "M", "color": "Đen", "reason": "QUANTITY_REDUCED",
+    "message": "Áo thun basic (M, Đen) chỉ thêm được 3/5 sản phẩm do giới hạn tồn kho hoặc số lượng tối đa mỗi sản phẩm trong giỏ" } ] } }
+```
+
+`added` là số **dòng** có thêm ít nhất 1 sản phẩm (kể cả khi bị giảm số lượng). `skipped[].reason`:
+
+| `reason` | Ý nghĩa |
+| --- | --- |
+| `UNAVAILABLE` | Biến thể hoặc sản phẩm đã ẩn/ngừng bán |
+| `OUT_OF_STOCK` | Hết hàng (`stock - reserved <= 0`), hoặc giỏ đã có đủ số còn bán được |
+| `MAX_QUANTITY_REACHED` | Dòng trong giỏ đã đạt 10, không thêm được nữa |
+| `QUANTITY_REDUCED` | Thêm được **một phần** (dòng vẫn được tính vào `added`) |
+
+Không dòng nào thêm được → **409 `REORDER_NOTHING_ADDED`** kèm `errors[]` (`field: "items.<thứ tự dòng trong đơn>"`, `message` như trên).
 
 ### `GET /orders/:code`: chi tiết
 
 ### `POST /orders/:code/cancel`: khách tự hủy
 
 Body `{ "reason"?: string }` (mặc định "Khách tự hủy"). Chỉ khi `PENDING`; trả lại giữ chỗ và lượt voucher.
+
+Route cố định (`preview`, `summary`) khai báo trước route có `:code`.
 
 ## Endpoint quản trị
 
@@ -217,6 +275,7 @@ trong cùng một transaction và ghi một dòng `order_status_histories` (ai, 
 | 409 | `ORDER_NOT_CANCELLABLE_BY_CUSTOMER` | Khách hủy đơn không còn `PENDING` | Đơn hàng đã được xác nhận hoặc đang xử lý, không thể tự hủy. Vui lòng liên hệ cửa hàng |
 | 400 | `ORDER_CANCEL_REASON_REQUIRED` | Admin/Staff hủy mà không có lý do | Vui lòng nhập lý do hủy đơn |
 | 400 | `INVALID_DATE` / `INVALID_DATE_RANGE` | `from`/`to` sai (vd 2026-02-31) hoặc `from` sau `to` | `from` không phải ngày hợp lệ / `from` không được sau `to` |
+| 409 | `REORDER_NOTHING_ADDED` | Mua lại mà không dòng nào thêm được vào giỏ | Không có sản phẩm nào trong đơn này có thể thêm vào giỏ hàng (chi tiết từng dòng trong `errors[]`) |
 | 409 | `SYSTEM_BUSY` | P2034 sau 3 lần chạy lại | Hệ thống đang bận, vui lòng thử lại sau ít phút |
 
 Lỗi validate chung (trường thừa, sai kiểu) vẫn là 400 `Dữ liệu không hợp lệ` kèm `errors[]` và **không có** `code` ở cấp trên cùng;
