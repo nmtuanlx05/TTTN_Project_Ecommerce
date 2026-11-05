@@ -149,6 +149,32 @@ describe('Phân quyền của mọi route (quét metadata controller)', () => {
     }).toEqual({ violations: [], huongDanSua: '' });
   });
 
+  it('route locations mới đều công khai (@Public); route đơn hàng đều có @Roles', () => {
+    const locations = routes.filter((r) => r.key.includes('/locations'));
+    expect(locations.map((r) => r.key).sort()).toEqual([
+      'GET /locations/districts/:districtCode/wards',
+      'GET /locations/provinces',
+      'GET /locations/provinces/:provinceCode/districts',
+    ]);
+    expect(locations.every((r) => r.isPublic)).toBe(true);
+
+    const orders = routes.filter(
+      (r) => r.key.includes('/orders') || r.key.includes('/admin/orders'),
+    );
+    expect(orders.length).toBeGreaterThanOrEqual(8);
+    expect(orders.every((r) => !r.isPublic && r.roles.length > 0)).toBe(true);
+    expect(
+      orders
+        .filter((r) => r.key.includes('/admin/orders'))
+        .every((r) => r.roles.includes('ADMIN') && r.roles.includes('STAFF')),
+    ).toBe(true);
+    expect(
+      orders
+        .filter((r) => !r.key.includes('/admin/'))
+        .every((r) => r.roles.length === 1 && r.roles[0] === 'CUSTOMER'),
+    ).toBe(true);
+  });
+
   it('route có @Roles thì controller phải gắn RolesGuard (nếu không @Roles không có tác dụng)', () => {
     const violations = routes.filter(
       (r) => !r.isPublic && r.roles.length > 0 && !r.hasRolesGuard,

@@ -1,0 +1,38 @@
+// Phí vận chuyển: miễn phí khi tạmTính (TRƯỚC giảm giá) >= ngưỡng. Phải cùng giá trị với giao diện
+// (FREE_SHIPPING_THRESHOLD ở frontent-react-starter/src/lib/store-info).
+export const FREE_SHIPPING_THRESHOLD = 500_000;
+export const SHIPPING_FEE = 30_000;
+
+// Mã đơn MS-YYMMDD-XXXX; XXXX lấy từ bảng ký tự không nhầm lẫn (bỏ 0, O, 1, I)
+export const ORDER_CODE_PREFIX = 'MS';
+export const ORDER_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export const ORDER_CODE_SUFFIX_LENGTH = 4;
+// Số lần sinh lại mã khi trùng
+export const MAX_ORDER_CODE_ATTEMPTS = 5;
+
+// GMT+7, tính tường minh để YYMMDD không phụ thuộc múi giờ máy chủ
+export const VN_UTC_OFFSET_HOURS = 7;
+
+export const IDEMPOTENCY_KEY_REGEX = /^[A-Za-z0-9._:-]{8,64}$/;
+
+export const MAX_REASON_LENGTH = 500;
+export const DEFAULT_CUSTOMER_CANCEL_REASON = 'Khách tự hủy';
+
+// Mã lỗi máy đọc được (trường `code` của response lỗi), liệt kê ở docs/api/orders.md
+export const ORDER_ERROR = {
+  VOUCHER_NOT_FOUND: 'VOUCHER_NOT_FOUND',
+  VOUCHER_INACTIVE: 'VOUCHER_INACTIVE',
+  VOUCHER_NOT_STARTED: 'VOUCHER_NOT_STARTED',
+  VOUCHER_EXPIRED: 'VOUCHER_EXPIRED',
+  VOUCHER_MIN_ORDER: 'VOUCHER_MIN_ORDER',
+  VOUCHER_USAGE_LIMIT: 'VOUCHER_USAGE_LIMIT',
+  CART_EMPTY: 'CART_EMPTY',
+  CART_ITEMS_UNAVAILABLE: 'CART_ITEMS_UNAVAILABLE',
+  PAYMENT_METHOD_NOT_SUPPORTED: 'PAYMENT_METHOD_NOT_SUPPORTED',
+  IDEMPOTENCY_KEY_INVALID: 'IDEMPOTENCY_KEY_INVALID',
+  ORDER_NOT_FOUND: 'ORDER_NOT_FOUND',
+  ORDER_INVALID_TRANSITION: 'ORDER_INVALID_TRANSITION',
+  ORDER_NOT_CANCELLABLE_BY_CUSTOMER: 'ORDER_NOT_CANCELLABLE_BY_CUSTOMER',
+  ORDER_CANCEL_REASON_REQUIRED: 'ORDER_CANCEL_REASON_REQUIRED',
+  SYSTEM_BUSY: 'SYSTEM_BUSY',
+} as const;

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Paginated } from '../common/paginated';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -218,6 +222,49 @@ export class InventoryService {
     });
 
     return { variant: toInventoryItem(variant), movement };
+  }
+
+  // Xuất kho theo đơn khi chuyển SHIPPING: giảm CẢ stock và reserved cùng lúc, ghi movement loại SALE.
+  // Bắt buộc chạy trong transaction của đơn (tx). Khóa dòng biến thể rồi UPDATE có điều kiện
+  // (stock >= n và reserved >= n) và kiểm số dòng bị ảnh hưởng; không đủ thì 409 và cả transaction rollback.
+  // Khi xuất nhiều biến thể, caller phải gọi theo variantId tăng dần để giữ thứ tự khóa cố định.
+  async shipOut(
+    tx: Prisma.TransactionClient,
+    variantId: number,
+    quantity: number,
+    userId: number,
+    orderCode: string,
+  ) {
+    const [locked] = await tx.$queryRaw<LockedVariant[]>(
+      Prisma.sql`SELECT id, stock, reserved FROM product_variants WHERE id = ${variantId} FOR UPDATE`,
+    );
+    if (!locked) {
+      throw variantNotFound(variantId);
+    }
+    const stockBefore = Number(locked.stock);
+
+    const affected = await tx.$executeRaw(
+      Prisma.sql`UPDATE product_variants SET stock = stock - ${quantity}, reserved = reserved - ${quantity} WHERE id = ${variantId} AND stock >= ${quantity} AND reserved >= ${quantity}`,
+    );
+    if (affected !== 1) {
+      throw new ConflictException(
+        `Không đủ tồn kho hoặc hàng giữ để xuất cho đơn ${orderCode} (biến thể #${variantId})`,
+      );
+    }
+
+    return tx.stockMovement.create({
+      data: {
+        variantId,
+        type: 'SALE',
+        quantity: -quantity,
+        stockBefore,
+        stockAfter: stockBefore - quantity,
+        reason: 'ORDER_SHIPPED',
+        note: `Xuất kho cho đơn ${orderCode}`,
+        createdById: userId,
+      },
+      select: stockMovementSelect,
+    });
   }
 
   // Đổi ngưỡng không đổi tồn nên không ghi movement
