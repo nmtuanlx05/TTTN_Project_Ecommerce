@@ -49,6 +49,9 @@ export class WishlistService {
       return {
         ...card,
         addedAt: createdAt,
+        // Còn được kinh doanh: sản phẩm bật và có ít nhất một biến thể đang bán (select chỉ lấy biến thể isActive).
+        // Đúng điều kiện để trang chi tiết công khai xem được và để POST thêm được; false = trang chi tiết 404.
+        isListed: product.isActive && product.variants.length > 0,
         // Còn bán: sản phẩm đang bật và còn hàng (inStock đã kéo theo có biến thể đang bán)
         isAvailable: product.isActive && card.inStock,
       };

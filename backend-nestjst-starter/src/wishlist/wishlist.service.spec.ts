@@ -189,6 +189,7 @@ describe('WishlistService.list', () => {
     isActive: boolean,
     stock: number,
     createdAt = new Date('2026-11-01T00:00:00Z'),
+    hasActiveVariant = true,
   ) => ({
     createdAt,
     product: {
@@ -200,9 +201,17 @@ describe('WishlistService.list', () => {
       isActive,
       category: { id: 1, name: 'Áo', slug: 'ao' },
       images: [{ url: '/a.jpg' }],
-      variants: [
-        { color: 'Đen', colorHex: '#000000', stock, reserved: 0, minStock: 0 },
-      ],
+      variants: hasActiveVariant
+        ? [
+            {
+              color: 'Đen',
+              colorHex: '#000000',
+              stock,
+              reserved: 0,
+              minStock: 0,
+            },
+          ]
+        : [],
     },
   });
 
@@ -252,4 +261,33 @@ describe('WishlistService.list', () => {
     const { data } = await service.list(USER, { page: 1, limit: 12 });
     expect(data[0]).toMatchObject({ inStock: false, isAvailable: false });
   });
+
+  // Bảng chân trị isListed / inStock / isAvailable (docs/api/wishlist.md)
+  it.each([
+    ['bình thường', true, 5, true, true, true, true],
+    ['tắt còn tồn', false, 5, true, false, true, false],
+    ['bật nhưng hết hàng', true, 0, true, true, false, false],
+    ['bật nhưng mọi biến thể bị ẩn', true, 5, false, false, false, false],
+    ['tắt và hết hàng', false, 0, true, false, false, false],
+  ])(
+    '%s',
+    async (
+      _name,
+      isActive,
+      stock,
+      hasVariant,
+      isListed,
+      inStock,
+      isAvailable,
+    ) => {
+      const { service, prisma } = setup();
+      prisma.wishlistItem.findMany.mockResolvedValue([
+        row(isActive, stock, undefined, hasVariant),
+      ]);
+      prisma.wishlistItem.count.mockResolvedValue(1);
+      const { data } = await service.list(USER, { page: 1, limit: 12 });
+      expect(data).toHaveLength(1);
+      expect(data[0]).toMatchObject({ isListed, inStock, isAvailable });
+    },
+  );
 });

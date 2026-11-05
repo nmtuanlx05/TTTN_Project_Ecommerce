@@ -31,7 +31,7 @@ tham số `userId`.
 - Chỉ **thêm** được sản phẩm đang bật **và** có ít nhất một biến thể đang bán (cùng điều kiện với trang chi tiết `GET /products/:slug`).
   Không thì **404** `Không tìm thấy sản phẩm` (không có trường `code`).
 - Sản phẩm **đã tắt / hết biến thể bán / hết hàng sau khi thêm** vẫn nằm trong wishlist và vẫn hiện ở `GET /wishlist` với
-  `isAvailable: false`, để khách tự bỏ. **Bỏ** (DELETE) luôn được, kể cả sản phẩm đã tắt.
+  `isAvailable: false` (và `isListed: false` nếu ngừng kinh doanh), để khách tự bỏ. **Bỏ** (DELETE) luôn được, kể cả sản phẩm đã tắt.
 - `POST` và `DELETE` đều **idempotent**: lặp lại không lỗi, không tạo bản trùng.
 - Không có trường `isFavorite` trong API sản phẩm công khai: frontend gọi `GET /wishlist/ids` rồi tự ghép để tô tim.
 
@@ -46,11 +46,25 @@ Danh sách có phân trang, **mới thêm trước** (`addedAt` giảm dần).
 
 Query không khai báo (vd `x=1`) hoặc ngoài giới hạn → **400** `Dữ liệu không hợp lệ` kèm `errors`.
 
-Mỗi phần tử là **đúng thẻ sản phẩm của `GET /products`** (xem `docs/api/products.md`) cộng thêm hai trường:
+Mỗi phần tử là **đúng thẻ sản phẩm của `GET /products`** (xem `docs/api/products.md`) cộng thêm ba trường:
 
 - `addedAt`: thời điểm thêm vào wishlist (ISO 8601, UTC).
-- `isAvailable`: `true` khi sản phẩm đang bật **và** còn hàng (`inStock`). Khi `false`, giao diện nên làm mờ thẻ, không cho thêm vào
-  giỏ và gợi ý bỏ khỏi danh sách.
+- `isListed`: `true` khi sản phẩm đang bật **và** có ít nhất một biến thể đang bán. Đúng điều kiện để trang chi tiết
+  `GET /products/:slug` xem được và để `POST /wishlist/:productId` thêm được. `false` = "ngừng kinh doanh": trang chi tiết **404**
+  (kể cả sản phẩm bật nhưng mọi biến thể bị ẩn). Không dùng `inStock` để suy ra điều này.
+- `isAvailable`: `true` khi sản phẩm đang bật **và** còn hàng (`inStock`). `isAvailable = true` luôn kéo theo `isListed = true`.
+
+Cách hiển thị gợi ý (`inStock` là trường sẵn có của thẻ sản phẩm; nó chỉ tính trên biến thể đang bán, **không** xét sản phẩm bật hay tắt):
+
+| Tình huống | `isListed` | `inStock` | `isAvailable` | Hiển thị gợi ý |
+| --- | --- | --- | --- | --- |
+| Bình thường | true | true | true | Thẻ bình thường, link tới trang chi tiết, cho thêm vào giỏ |
+| Bật nhưng hết hàng | true | false | false | Nhãn "Hết hàng"; **vẫn link tới trang chi tiết** (xem được) |
+| Sản phẩm tắt (còn tồn) | false | true | false | Nhãn "Ngừng kinh doanh"; **không link** (chi tiết 404); chỉ cho bỏ khỏi danh sách |
+| Bật nhưng mọi biến thể bị ẩn | false | false | false | Như "Ngừng kinh doanh" (chi tiết 404) |
+| Tắt và hết hàng | false | false | false | Như "Ngừng kinh doanh" |
+
+Quy tắc ngắn: kiểm `isListed` trước. `false` → "Ngừng kinh doanh", không link. `true` rồi mới xét `isAvailable`: `false` → "Hết hàng".
 
 Thẻ **không có khoảng giá**: chỉ có `price` (giá niêm yết, VND).
 
@@ -75,6 +89,7 @@ Ví dụ `GET /wishlist?page=1&limit=2` (**200**):
       "inStock": true,
       "lowStock": false,
       "addedAt": "2026-11-05T09:30:12.000Z",
+      "isListed": true,
       "isAvailable": true
     },
     {
@@ -89,6 +104,7 @@ Ví dụ `GET /wishlist?page=1&limit=2` (**200**):
       "inStock": false,
       "lowStock": false,
       "addedAt": "2026-10-28T14:02:45.000Z",
+      "isListed": false,
       "isAvailable": false
     }
   ],
@@ -96,8 +112,8 @@ Ví dụ `GET /wishlist?page=1&limit=2` (**200**):
 }
 ```
 
-Phần tử thứ hai ví dụ cho sản phẩm đã tắt (hoặc hết hàng): vẫn hiện, `isAvailable: false`. Với sản phẩm đã tắt, `colors` là `[]` khi
-không còn biến thể đang bán.
+Phần tử thứ hai ví dụ cho sản phẩm ngừng kinh doanh (`isListed: false`): vẫn hiện để khách bỏ khỏi danh sách. `colors` là `[]` khi
+không còn biến thể đang bán. Sản phẩm **bật nhưng hết hàng** sẽ là `isListed: true, inStock: false, isAvailable: false`.
 
 Wishlist rỗng: `{ "success": true, "data": [], "meta": { "page": 1, "limit": 12, "total": 0, "totalPages": 0 } }`.
 
