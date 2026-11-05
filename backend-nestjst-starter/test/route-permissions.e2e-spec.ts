@@ -193,6 +193,21 @@ describe('Phân quyền của mọi route (quét metadata controller)', () => {
     expect(route!.hasRolesGuard).toBe(true);
   });
 
+  it('route /wishlist chỉ dành cho CUSTOMER (không @Public), đủ 4 route', () => {
+    const wishlist = routes.filter((r) => r.key.includes('/wishlist'));
+    expect(wishlist.map((r) => r.key).sort()).toEqual([
+      'DELETE /wishlist/:productId',
+      'GET /wishlist',
+      'GET /wishlist/ids',
+      'POST /wishlist/:productId',
+    ]);
+    for (const route of wishlist) {
+      expect(route.isPublic).toBe(false);
+      expect(route.roles).toEqual(['CUSTOMER']);
+      expect(route.hasRolesGuard).toBe(true);
+    }
+  });
+
   it('route có @Roles thì controller phải gắn RolesGuard (nếu không @Roles không có tác dụng)', () => {
     const violations = routes.filter(
       (r) => !r.isPublic && r.roles.length > 0 && !r.hasRolesGuard,
