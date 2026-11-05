@@ -1,6 +1,7 @@
 import { useId } from "react"
 import { useToast } from "@/components/ui/toast"
 import { STORE } from "@/lib/store-info"
+import { cn } from "@/lib/utils"
 import type { CatalogVariant } from "../types"
 import {
   colorHexOf,
@@ -22,6 +23,7 @@ const AXES: ReadonlyArray<{ axis: Axis; label: string }> = [
 /**
  * Hai nhóm chọn: màu (chấm màu theo `colorHex` của biến thể; chưa có mã thì nút chữ) rồi size (pill). Nhãn nhóm ghi kèm giá trị đang chọn.
  * `inStockOnly` (hộp thoại "Thêm nhanh"): giá trị hết hàng bị mờ và không chọn được, lựa chọn luôn rơi vào biến thể còn hàng.
+ * `compact` (vùng chọn trong thẻ của ngăn kéo yêu thích, ~12rem): khoảng cách nhỏ hơn, bỏ link hướng dẫn size và bỏ nhóm chỉ có MỘT giá trị (vd. sản phẩm một màu), lựa chọn vẫn đầy đủ.
  * Link "Hướng dẫn chọn size" là STUB: chỉ hiện toast "chưa có tính năng" (docs/storefront-design.md mục 13), không bịa bảng số đo.
  */
 function VariantPicker({
@@ -29,24 +31,26 @@ function VariantPicker({
   choice,
   onChange,
   inStockOnly = false,
+  compact = false,
 }: {
   variants: CatalogVariant[]
   choice: VariantChoice
   onChange: (choice: VariantChoice) => void
   inStockOnly?: boolean
+  compact?: boolean
 }) {
   const id = useId()
   const toast = useToast()
 
   return (
-    <div className="flex flex-col gap-6">
-      {AXES.map(({ axis, label }) => (
+    <div className={cn("flex flex-col", compact ? "gap-4" : "gap-6")}>
+      {AXES.filter(({ axis }) => !compact || optionValues(variants, axis).length > 1).map(({ axis, label }) => (
         <div key={axis} className="flex flex-col gap-1">
           <div className="flex items-center justify-between gap-inline">
             <p id={`${id}-${axis}`} className="text-overline uppercase text-ink">
               {label} <span className="ml-1 font-normal normal-case text-ink-muted">{choice[axis]}</span>
             </p>
-            {axis === "size" ? (
+            {axis === "size" && !compact ? (
               <button
                 type="button"
                 onClick={() =>
