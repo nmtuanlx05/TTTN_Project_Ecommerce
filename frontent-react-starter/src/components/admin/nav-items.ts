@@ -34,7 +34,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Đơn hàng",
     icon: ReceiptText,
     description: "Xác nhận, giao hàng và theo dõi đơn qua từng trạng thái.",
-    ready: false,
+    ready: true,
     roles: ["ADMIN", "STAFF"],
   },
   {

@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import { Outlet } from "react-router-dom"
-import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { AdminSidebar, type NavCounts } from "@/components/admin/admin-sidebar"
 import { AdminTopbar, type AdminAccount } from "@/components/admin/admin-topbar"
 import { RouteFallback } from "@/components/shared/route-fallback"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -16,17 +16,20 @@ function AdminLayout({
   onLogout,
   loggingOut,
   onAvatarSaved,
+  navCounts,
 }: {
   account: AdminAccount
   role: Role
   onLogout: () => void
   loggingOut: boolean
   onAvatarSaved: (user: User) => void
+  /** Số đếm tùy chọn cho từng mục menu (huy hiệu). */
+  navCounts?: NavCounts
 }) {
   return (
     <TooltipProvider>
       <div className="density-admin flex min-h-dvh bg-canvas">
-        <AdminSidebar role={role} />
+        <AdminSidebar role={role} counts={navCounts} />
         <div className="flex min-w-0 flex-1 flex-col">
           <AdminTopbar
             account={account}
@@ -34,6 +37,7 @@ function AdminLayout({
             onLogout={onLogout}
             loggingOut={loggingOut}
             onAvatarSaved={onAvatarSaved}
+            navCounts={navCounts}
           />
           <main className="flex-1 px-gutter py-section">
             <Suspense fallback={<RouteFallback />}>

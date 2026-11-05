@@ -7,6 +7,8 @@ import { lazy } from "react"
 export const CategoriesPage = lazy(() => import("@/pages/admin/categories"))
 export const DashboardPage = lazy(() => import("@/pages/admin/dashboard"))
 export const InventoryPage = lazy(() => import("@/pages/admin/inventory"))
+export const OrderDetailPage = lazy(() => import("@/pages/admin/orders/detail"))
+export const OrdersPage = lazy(() => import("@/pages/admin/orders"))
 export const ProductCreatePage = lazy(() => import("@/pages/admin/products/new"))
 export const ProductEditPage = lazy(() => import("@/pages/admin/products/edit"))
 export const ProductsPage = lazy(() => import("@/pages/admin/products"))

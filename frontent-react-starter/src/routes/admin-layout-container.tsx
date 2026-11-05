@@ -1,3 +1,4 @@
+import { usePendingOrdersCount } from "@/features/admin-orders/queries"
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { useLogout } from "@/features/auth/queries"
 import { useCurrentUser } from "@/features/auth/use-current-user"
@@ -10,6 +11,7 @@ function AdminLayoutContainer() {
   const user = useCurrentUser()
   const logout = useLogout()
   const onAvatarSaved = useAvatarSaved()
+  const pendingOrders = usePendingOrdersCount()
 
   if (!user) return null
   return (
@@ -25,6 +27,9 @@ function AdminLayoutContainer() {
       onLogout={() => logout.mutate()}
       loggingOut={logout.isPending}
       onAvatarSaved={onAvatarSaved}
+      navCounts={{
+        "/admin/orders": { count: pendingOrders.data ?? 0, label: "đơn chờ xác nhận" },
+      }}
     />
   )
 }
