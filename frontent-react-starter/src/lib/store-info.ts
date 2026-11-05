@@ -1,3 +1,4 @@
+import { ACCOUNT_ORDERS_PATH } from "@/lib/account-paths"
 import { formatNumber } from "@/lib/format"
 import type { InfoPageSlug } from "@/lib/info-pages"
 
@@ -55,6 +56,8 @@ interface StoreFooter {
   description: string
   quickLinksTitle: string
   quickLinksLead: StoreFooterLink
+  /** Liên kết "Đơn hàng của tôi", đứng ĐẦU cột chính sách. */
+  ordersLink: StoreFooterLink
   policiesTitle: string
   /** Slug các trang chính sách ở cột 3, theo thứ tự hiển thị. */
   policySlugs: InfoPageSlug[]
@@ -110,6 +113,7 @@ export const STORE: StoreInfo = {
     description: "Thời trang tối giản cho mọi ngày. Chất liệu thoáng mát, form chuẩn, dễ phối.",
     quickLinksTitle: "Đường dẫn nhanh",
     quickLinksLead: { label: "Trang chủ", href: "/" },
+    ordersLink: { label: "Đơn hàng của tôi", href: ACCOUNT_ORDERS_PATH },
     policiesTitle: "Chính sách khách hàng",
     policySlugs: ["doi-tra", "van-chuyen", "huong-dan-chon-size", "bao-mat"],
     legalLinks: [

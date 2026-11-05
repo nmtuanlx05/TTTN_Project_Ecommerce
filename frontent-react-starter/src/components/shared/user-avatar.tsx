@@ -8,6 +8,8 @@ const SIZE = {
   sm: { box: "size-6", text: "text-caption" },
   /** Cột tên trong bảng người dùng. */
   md: { box: "size-8", text: "text-body-sm" },
+  /** Thẻ tài khoản (thanh bên trang /tai-khoan). */
+  lg: { box: "size-11", text: "text-body" },
 } as const
 
 /**

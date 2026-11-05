@@ -160,3 +160,36 @@ function toOrderCommon(row: OrderRow) {
 export function toOrderListItem(row: OrderListRow) {
   return { ...row, items: toItems(row.items) };
 }
+
+// Danh sách "Đơn hàng của tôi": chỉ đủ để vẽ thẻ đơn. Không có địa chỉ, SĐT, giá từng dòng hay trường nội bộ.
+export const myOrderListSelect = {
+  id: true,
+  code: true,
+  status: true,
+  paymentMethod: true,
+  paymentStatus: true,
+  totalAmount: true,
+  createdAt: true,
+  items: {
+    select: {
+      productName: true,
+      imageUrl: true,
+      quantity: true,
+      size: true,
+      color: true,
+    },
+    orderBy: { id: 'asc' },
+  },
+} as const satisfies Prisma.OrderSelect;
+
+type MyOrderListRow = Prisma.OrderGetPayload<{
+  select: typeof myOrderListSelect;
+}>;
+
+export function toMyOrderListItem(row: MyOrderListRow) {
+  return {
+    ...row,
+    // Tổng số lượng (không phải số dòng)
+    itemCount: row.items.reduce((sum, item) => sum + item.quantity, 0),
+  };
+}

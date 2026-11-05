@@ -14,7 +14,6 @@ import type { OrderActor } from './orders.rules';
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   PENDING: 'Chờ xác nhận',
   CONFIRMED: 'Đã xác nhận',
-  PACKING: 'Đang đóng gói',
   SHIPPING: 'Đang giao',
   COMPLETED: 'Đã giao',
   CANCELLED: 'Đã hủy',

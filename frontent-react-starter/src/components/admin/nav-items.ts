@@ -33,7 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: "/admin/orders",
     label: "Đơn hàng",
     icon: ReceiptText,
-    description: "Xác nhận, đóng gói và theo dõi đơn qua từng trạng thái.",
+    description: "Xác nhận, giao hàng và theo dõi đơn qua từng trạng thái.",
     ready: false,
     roles: ["ADMIN", "STAFF"],
   },

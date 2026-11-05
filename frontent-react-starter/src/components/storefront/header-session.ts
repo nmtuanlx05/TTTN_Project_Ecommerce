@@ -11,4 +11,6 @@ export type HeaderSession =
       onLogout: () => void
       loggingOut: boolean
       onAvatarSaved: (user: User) => void
+      /** Mục "Đơn hàng của tôi" trong menu (chỉ CUSTOMER); `count` là số đơn đang hoạt động, 0 thì không hiện huy hiệu. */
+      ordersLink?: { count: number }
     }

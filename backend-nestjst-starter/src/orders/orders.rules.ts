@@ -1,6 +1,6 @@
 import { OrderStatus } from '../generated/prisma/enums';
 
-// Bảng chuyển trạng thái đơn (docs/02). Bản này RETURNED chưa triển khai và PENDING_PAYMENT chỉ do hệ thống
+// Bảng chuyển trạng thái đơn (docs/02): PENDING → CONFIRMED → SHIPPING → COMPLETED, hủy khi PENDING/CONFIRMED. Bản này RETURNED chưa triển khai và PENDING_PAYMENT chỉ do hệ thống
 // (cổng thanh toán, chưa làm) nên không có bước nào dẫn tới/ đi từ chúng cho người dùng.
 export type OrderActor = 'CUSTOMER' | 'STAFF' | 'ADMIN';
 
@@ -14,10 +14,7 @@ export const ORDER_TRANSITIONS: Partial<
     [OrderStatus.CANCELLED]: ['CUSTOMER', ...OPERATORS],
   },
   [OrderStatus.CONFIRMED]: {
-    [OrderStatus.PACKING]: OPERATORS,
-    [OrderStatus.CANCELLED]: OPERATORS,
-  },
-  [OrderStatus.PACKING]: {
+    // Trừ kho thật ở bước này (OrderWorkflowService → InventoryService.shipOut)
     [OrderStatus.SHIPPING]: OPERATORS,
     [OrderStatus.CANCELLED]: OPERATORS,
   },

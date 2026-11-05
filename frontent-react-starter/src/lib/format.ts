@@ -74,6 +74,18 @@ export function formatTime(value: Date | string): string {
   return timeOnly.format(typeof value === "string" ? new Date(value) : value)
 }
 
+const dateOnly = new Intl.DateTimeFormat("vi-VN", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  timeZone: TIME_ZONE,
+})
+
+/** Ngày theo GMT+7: "05/11/2026". */
+export function formatDate(value: Date | string): string {
+  return dateOnly.format(typeof value === "string" ? new Date(value) : value)
+}
+
 /** Nhãn trục X: "05/10". */
 export function formatDayMonth(value: Date | string): string {
   return format(toDate(value), "dd/MM", { locale: vi })

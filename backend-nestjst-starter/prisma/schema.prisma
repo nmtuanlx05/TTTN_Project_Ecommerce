@@ -30,9 +30,8 @@ enum PaymentStatus {
 
 enum OrderStatus {
   PENDING // vừa đặt, chờ xử lý
-  CONFIRMED // Staff đã xác nhận
-  PACKING // đang đóng gói
-  SHIPPING // đã giao cho vận chuyển, đã xuất kho
+  CONFIRMED // Staff đã xác nhận (đang giữ chỗ, chưa trừ kho thật)
+  SHIPPING // đã giao cho vận chuyển, trừ kho thật ở bước CONFIRMED -> SHIPPING
   COMPLETED // giao thành công
   CANCELLED // đã hủy
   RETURNED // hàng hoàn về (chưa triển khai, để lần sau)

@@ -1,7 +1,8 @@
 import { useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { Camera, LayoutDashboard, LogOut } from "lucide-react"
+import { Camera, LayoutDashboard, LogOut, ReceiptText } from "lucide-react"
 import { AvatarDialog } from "@/components/shared/avatar-dialog"
+import { OrdersCountBadge } from "@/components/shared/orders-count-badge"
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,6 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ACCOUNT_ORDERS_PATH } from "@/lib/account-paths"
+import { cn } from "@/lib/utils"
 import type { User } from "@/types/user"
 
 /** Thông tin hiện trong menu. Truyền từ ngoài vào vì components/ không được đọc phiên đăng nhập. */
@@ -43,15 +46,22 @@ function UserMenu({
   onLogout,
   loggingOut = false,
   onAvatarSaved,
+  ordersLink,
+  soft = false,
 }: {
   account: UserMenuAccount
   onLogout: () => void
   loggingOut?: boolean
   /** Gọi với User mới sau khi lưu ảnh đại diện: nơi gọi cập nhật phiên và cache (components/ không đọc phiên). */
   onAvatarSaved: (user: User) => void
+  /** Chỉ storefront cho CUSTOMER truyền; admin bỏ trống nên không có mục này. `count` = số đơn đang hoạt động. */
+  ordersLink?: { count: number }
+  /** Kiểu mềm của storefront: nút tài khoản bo tròn, bảng bo góc và mục bo 10px (bảng nằm ngoài `.soft-ui` nên tự gắn). Admin giữ nguyên. */
+  soft?: boolean
 }) {
   const [avatarOpen, setAvatarOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const item = cn(ITEM, soft && "rounded-xs")
 
   return (
     <>
@@ -62,7 +72,7 @@ function UserMenu({
               ref={triggerRef}
               variant="secondary"
               aria-label={`Tài khoản của ${account.name}`}
-              className="max-sm:w-control max-sm:px-0"
+              className={cn("max-sm:w-control max-sm:px-0", soft && "rounded-4xl")}
             />
           }
         >
@@ -76,7 +86,7 @@ function UserMenu({
           />
           <span className="hidden max-w-40 truncate sm:inline">{account.name}</span>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent align="end" className={cn("w-64", soft && "soft-ui rounded-card p-1.5")}>
           <DropdownMenuGroup>
             <DropdownMenuLabel className="flex flex-col gap-0.5 px-3 py-2">
               <span className="truncate text-body-sm font-semibold text-ink">{account.name}</span>
@@ -86,16 +96,23 @@ function UserMenu({
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           {account.canAccessAdmin ? (
-            <DropdownMenuItem render={<Link to="/admin" />} className={ITEM}>
+            <DropdownMenuItem render={<Link to="/admin" />} className={item}>
               <LayoutDashboard />
               Vào trang quản trị
             </DropdownMenuItem>
           ) : null}
-          <DropdownMenuItem onClick={() => setAvatarOpen(true)} className={ITEM}>
+          {ordersLink ? (
+            <DropdownMenuItem render={<Link to={ACCOUNT_ORDERS_PATH} />} className={item}>
+              <ReceiptText />
+              Đơn hàng của tôi
+              <OrdersCountBadge count={ordersLink.count} />
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuItem onClick={() => setAvatarOpen(true)} className={item}>
             <Camera />
             Ảnh đại diện
           </DropdownMenuItem>
-          <DropdownMenuItem disabled={loggingOut} onClick={onLogout} className={ITEM}>
+          <DropdownMenuItem disabled={loggingOut} onClick={onLogout} className={item}>
             <LogOut />
             Đăng xuất
           </DropdownMenuItem>

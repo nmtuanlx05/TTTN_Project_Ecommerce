@@ -2,6 +2,7 @@ import { Check } from "lucide-react"
 import { Link } from "react-router-dom"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { orderDetailPath } from "../constants"
 import type { Order } from "../types"
 import { SuccessRows } from "./success-rows"
 
@@ -35,6 +36,12 @@ function SuccessContent({ order }: { order: Order }) {
           Về trang chủ
         </Link>
       </div>
+      <Link
+        to={orderDetailPath(order.code)}
+        className="inline-flex min-h-control items-center text-body-sm text-ink-muted underline underline-offset-4 hover:text-ink"
+      >
+        Xem chi tiết đơn hàng
+      </Link>
     </section>
   )
 }
