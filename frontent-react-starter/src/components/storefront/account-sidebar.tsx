@@ -8,8 +8,8 @@ const ITEM =
   "flex min-h-control w-full shrink-0 items-center gap-2.5 rounded-card px-3 text-left text-body-sm whitespace-nowrap transition-colors duration-(--motion-fast) ease-smooth hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
 
 /**
- * Thanh bên tài khoản: thẻ avatar chữ cái + tên + email, rồi "Đơn hàng của tôi" (đang chọn theo URL), "Sản phẩm yêu thích" (chưa có tính năng:
- * chỉ báo "Sắp có" qua `onWishlistClick`, như trái tim ở header) và "Đăng xuất". Dưới `lg` thu thành dải một hàng cuộn ngang, ẩn email.
+ * Thanh bên tài khoản: thẻ avatar chữ cái + tên + email, rồi "Đơn hàng của tôi" (đang chọn theo URL), "Sản phẩm yêu thích" (mở ngăn kéo yêu thích qua
+ * `onWishlistClick`, như trái tim ở header) và "Đăng xuất". Dưới `lg` thu thành dải một hàng cuộn ngang, ẩn email.
  */
 function AccountSidebar({
   account,
@@ -40,12 +40,9 @@ function AccountSidebar({
             <ReceiptText aria-hidden="true" className="size-4 shrink-0" />
             Đơn hàng của tôi
           </NavLink>
-          <button type="button" onClick={onWishlistClick} className={ITEM}>
+          <button type="button" aria-haspopup="dialog" onClick={onWishlistClick} className={ITEM}>
             <Heart aria-hidden="true" className="size-4 shrink-0" />
             <span className="min-w-0 truncate">Sản phẩm yêu thích</span>
-            <span className="ml-auto shrink-0 rounded-4xl bg-surface-sunken px-2 py-0.5 text-caption text-ink-muted max-lg:hidden">
-              Sắp có
-            </span>
           </button>
           <button type="button" disabled={loggingOut} onClick={onLogout} className={ITEM}>
             <LogOut aria-hidden="true" className="size-4 shrink-0" />

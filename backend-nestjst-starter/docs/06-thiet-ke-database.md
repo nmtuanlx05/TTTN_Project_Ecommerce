@@ -1,6 +1,6 @@
 # Thiết kế Database
 
-Database gồm 13 bảng với các quan hệ khóa ngoại ở mục 1, dành cho MySQL 8 (InnoDB). Quy tắc chung: không xóa cứng dữ liệu tài chính (đơn hàng, voucher); hủy đơn bằng `status = CANCELLED`, vô hiệu voucher bằng `isActive = false`.
+Database gồm 14 bảng với các quan hệ khóa ngoại ở mục 1, dành cho MySQL 8 (InnoDB). Quy tắc chung: không xóa cứng dữ liệu tài chính (đơn hàng, voucher); hủy đơn bằng `status = CANCELLED`, vô hiệu voucher bằng `isActive = false`.
 
 ## 1. Quan hệ giữa các bảng
 
@@ -10,6 +10,8 @@ Database gồm 13 bảng với các quan hệ khóa ngoại ở mục 1, dành c
 | Category → Product | 1-N | `categoryId` | Có |
 | Product → ProductVariant | 1-N | `productId` | Có |
 | Product → ProductImage | 1-N | `productId` | Có |
+| User → WishlistItem | 1-N | `userId` | Có (cascade) |
+| Product → WishlistItem | 1-N | `productId` | Có (cascade) |
 | User → Cart | 1-1 | `userId` (unique) | Có |
 | Cart → CartItem | 1-N | `cartId` | Có |
 | ProductVariant → CartItem | 1-N | `variantId` | Có |
@@ -35,6 +37,7 @@ Quan hệ nhiều-nhiều giữa Order và ProductVariant được tách thành 
 | Product | `slug` | (`categoryId`, `isActive`) |
 | ProductVariant | `sku`; (`productId`, `size`, `color`) | — |
 | ProductImage | — | (`productId`, `sortOrder`) |
+| WishlistItem | UNIQUE (`userId`, `productId`) | (`userId`, `createdAt`), (`productId`) |
 | Cart | `userId` | — |
 | CartItem | (`cartId`, `variantId`) | — |
 | Voucher | `code` | — |
@@ -128,7 +131,7 @@ MySQL chỉ thực thi CHECK từ bản 8.0.16 trở lên. Các CHECK này là l
 
 ## 3. Đặt tên bảng
 
-Prisma mặc định tạo bảng theo tên model (`ProductVariant`). MySQL trên Linux phân biệt hoa thường ở tên bảng, nên `ProductVariant` và `productvariant` là hai tên khác nhau. Schema đặt tên bảng snake_case số nhiều bằng `@@map`, để SQL viết tay gọn và không lỗi vì hoa thường: `users`, `categories`, `products`, `product_images`, `product_variants`, `carts`, `cart_items`, `vouchers`, `orders`, `order_items`, `stock_movements`. Tên cột giữ nguyên camelCase như tên field (không dùng `@map` cho cột), nên SQL viết tay phải dùng đúng tên đó, ví dụ `totalAmount`.
+Prisma mặc định tạo bảng theo tên model (`ProductVariant`). MySQL trên Linux phân biệt hoa thường ở tên bảng, nên `ProductVariant` và `productvariant` là hai tên khác nhau. Schema đặt tên bảng snake_case số nhiều bằng `@@map`, để SQL viết tay gọn và không lỗi vì hoa thường: `users`, `categories`, `products`, `product_images`, `product_variants`, `carts`, `cart_items`, `wishlist_items`, `vouchers`, `orders`, `order_items`, `stock_movements`. Tên cột giữ nguyên camelCase như tên field (không dùng `@map` cho cột), nên SQL viết tay phải dùng đúng tên đó, ví dụ `totalAmount`.
 
 ## 4. Kiểu dữ liệu
 

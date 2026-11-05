@@ -21,7 +21,8 @@ Yêu cầu chia theo ba phía: người dùng, Admin, Staff. Ưu tiên **MVP** l
 | BR-U-12 | Sổ địa chỉ nhiều địa chỉ | V2 |
 | BR-U-13 | Áp mã giảm giá (tối đa một mã mỗi đơn); mỗi lỗi voucher có thông báo riêng | MVP |
 | BR-U-14 | Yêu cầu đổi/trả hàng | V2 |
-| BR-U-15 | Đánh giá sản phẩm, wishlist | V2 |
+| BR-U-15 | Đánh giá sản phẩm | V2 |
+| BR-U-16 | Sản phẩm yêu thích (wishlist): khách đăng nhập thêm/bỏ sản phẩm theo từng sản phẩm (không theo biến thể), tối đa 100 sản phẩm, xem lại danh sách | MVP |
 
 ## 2. Yêu cầu phía Admin
 

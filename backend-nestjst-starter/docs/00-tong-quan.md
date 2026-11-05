@@ -23,11 +23,11 @@ Dự án xây dựng website thương mại điện tử bán hàng cho một br
 
 ## Phạm vi MVP và phần để V2
 
-MVP gồm 13 model dữ liệu (thêm `OrderStatusHistory`, `PaymentTransaction` ở bước đặt đơn) và ba nhóm người dùng: Customer (kèm Guest), Staff, Admin.
+MVP gồm 14 model dữ liệu (thêm `OrderStatusHistory`, `PaymentTransaction` ở bước đặt đơn, `WishlistItem` cho sản phẩm yêu thích) và ba nhóm người dùng: Customer (kèm Guest), Staff, Admin.
 
 |            | MVP                                                                                                                 | Để V2                                                             |
 | ---------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Khách hàng | Xem, tìm, lọc sản phẩm; giỏ hàng (cần đăng nhập, giỏ tạm của Guest để V2); guest checkout; đặt đơn COD/online; áp mã giảm giá; theo dõi và tự hủy đơn | Sổ địa chỉ, đổi/trả, đánh giá, wishlist                           |
+| Khách hàng | Xem, tìm, lọc sản phẩm; giỏ hàng (cần đăng nhập, giỏ tạm của Guest để V2); guest checkout; đặt đơn COD/online; áp mã giảm giá; theo dõi và tự hủy đơn; sản phẩm yêu thích (wishlist, tối đa 100/khách) | Sổ địa chỉ, đổi/trả, đánh giá |                          |
 | Staff      | CRUD sản phẩm, biến thể, danh mục; nhập kho, điều chỉnh tồn, xem lịch sử kho; xử lý đơn; tra cứu khách                           | Phiếu nhập theo nhà cung cấp, phân quyền chi tiết theo nhóm Staff |
 | Admin      | Quản lý Staff, khóa khách, dashboard, báo cáo doanh thu, duyệt hoàn tiền, quản lý voucher, cấu hình hệ thống | Nhật ký thao tác, khuyến mãi tự động, banner, báo cáo lợi nhuận   |
 | Dữ liệu    | User, Category, Product, ProductVariant, ProductImage, Cart, CartItem, Order, OrderItem, OrderStatusHistory, PaymentTransaction, Voucher, StockMovement | Address, Supplier, Review, AuditLog |

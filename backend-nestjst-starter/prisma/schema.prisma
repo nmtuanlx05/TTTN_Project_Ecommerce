@@ -59,6 +59,7 @@ model User {
   handledOrders        Order[]              @relation("OrderHandler") // đơn user này (Staff) phụ trách
   orderStatusHistories OrderStatusHistory[] // các lần user này đổi trạng thái đơn
   stockMovements       StockMovement[] // các lần đổi tồn kho do user này thực hiện
+  wishlistItems        WishlistItem[] // sản phẩm yêu thích của user
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 
@@ -80,19 +81,20 @@ model Category {
 }
 
 model Product {
-  id          Int              @id @default(autoincrement())
-  name        String
-  slug        String           @unique
-  description String?          @db.Text
-  price       Int // giá niêm yết, VND
-  imageUrl    String? // DEPRECATED: chỉ để tương thích, nguồn thật là images (imageUrl = ảnh đầu, đồng bộ khi ghi)
-  isActive    Boolean          @default(true)
-  categoryId  Int
-  category    Category         @relation(fields: [categoryId], references: [id])
-  variants    ProductVariant[]
-  images      ProductImage[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id            Int              @id @default(autoincrement())
+  name          String
+  slug          String           @unique
+  description   String?          @db.Text
+  price         Int // giá niêm yết, VND
+  imageUrl      String? // DEPRECATED: chỉ để tương thích, nguồn thật là images (imageUrl = ảnh đầu, đồng bộ khi ghi)
+  isActive      Boolean          @default(true)
+  categoryId    Int
+  category      Category         @relation(fields: [categoryId], references: [id])
+  variants      ProductVariant[]
+  images        ProductImage[]
+  wishlistItems WishlistItem[] // khách đã thêm sản phẩm này vào yêu thích
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@index([categoryId, isActive])
   @@map("products")
@@ -110,6 +112,23 @@ model ProductImage {
 
   @@index([productId, sortOrder])
   @@map("product_images")
+}
+
+// Sản phẩm yêu thích của khách (theo SẢN PHẨM, không theo biến thể). Tối đa 100 mục/khách (kiểm ở service).
+// Ngoại lệ "không cấu hình onDelete" (cùng ProductImage): dòng wishlist vô nghĩa khi thiếu user hoặc sản phẩm,
+// nên xóa theo (Cascade). User và Product vẫn không bị xóa cứng.
+model WishlistItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId, createdAt])
+  @@index([productId])
+  @@map("wishlist_items")
 }
 
 model ProductVariant {

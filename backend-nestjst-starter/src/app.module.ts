@@ -14,6 +14,7 @@ import { OrdersModule } from './orders/orders.module';
 import { VouchersModule } from './vouchers/vouchers.module';
 import { UploadModule } from './uploads/upload.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { WishlistModule } from './wishlist/wishlist.module';
 import { ENV_FILE } from './config/env-file';
 import { validateEnv } from './config/env.validation';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
@@ -38,6 +39,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     VouchersModule,
     UploadModule,
     DashboardModule,
+    WishlistModule,
   ],
   controllers: [AppController],
   providers: [
