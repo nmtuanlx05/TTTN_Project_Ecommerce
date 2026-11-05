@@ -28,6 +28,7 @@ src/
 │   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/ ✓ catalog/ ✓ (dữ liệu công khai của storefront: danh sách và chi tiết sản phẩm)
 │   │  newsletter/ ✓ (form đăng ký nhận tin ở chân trang — mới có giao diện, chưa có backend)
 │   ├─ cart/ ✓ (giỏ hàng của CUSTOMER: types, api, queries (useCart, useAddToCart, useUpdateCartItem, useRemoveCartItem, useClearCart); components/: cart-drawer (+ header, footer, states), cart-line (+ cart-line-list), free-shipping-bar, checkout-button (STUB), cart-page-content (+ cart-summary, clear-cart-confirm))
+│   ├─ wishlist/ ✓ (yêu thích của CUSTOMER: types, api, constants, status (`wishlistStatusOf`), queries (useWishlistIds, useWishlist infinite), use-toggle-wishlist (lạc quan, khóa theo sản phẩm), cache-updates; components/: wishlist-drawer (+ header, grid, card, states); nhận slot `renderAddToCart` nên không import features/catalog)
 │   ├─ admin-orders/ ✓ (đơn hàng phía admin: danh sách + lọc trên URL, chi tiết, đổi trạng thái qua hộp xác nhận, huy hiệu đơn chờ xác nhận ở sidebar; không import `features/orders`)
 │   ├─ orders/ ✓ (đơn của khách: danh sách + lọc trên URL, tóm tắt, chi tiết + mốc thời gian, hủy, mua lại; constants.ts có Record<OrderStatus, ...>; `OrderStatusPill` riêng cho storefront)
 │   ├─ admin-vouchers/ ✓ (voucher phía admin, API `/admin/vouchers`: danh sách + lọc trên URL, công tắc bật/tắt (tắt voucher đang chạy qua hộp xác nhận), hộp thoại tạo/sửa (khóa các ô giá trị khi voucher đã được dùng), khối thống kê, dòng "Ví dụ minh họa"; không import `features/checkout`)
@@ -38,7 +39,7 @@ src/
 │   ├─ storefront/  ✓ khung khách và phần dựng sẵn dùng ở nhiều trang storefront: storefront-layout, storefront-header
 │   │                 (+ header-session, header-account, header-nav (+ header-nav-link, header-nav-panel: bảng toàn chiều rộng, header-nav-styles — thanh điều hướng và mega menu từ `xl`),
 │   │                 mobile-nav-drawer (+ mobile-nav-list, mobile-nav-accordion, mobile-nav-styles — ngăn kéo dưới `xl`), mobile-account, search-panel;
-│   │                 nút giỏ hàng `CartButton` (kèm huy hiệu số lượng) là hàm nội bộ trong storefront-header; cart-ui-context.ts — cầu nối giỏ hàng cho trang/thẻ sản phẩm, quantity-stepper (props pill/compact/min/max/disabled), storefront-dialog — hộp thoại nhỏ ở giữa màn hình), storefront-footer, storefront-drawer (ngăn kéo/khung trượt dựng trên Base UI Dialog),
+│   │                 nút giỏ hàng `CartButton` và `WishlistButton` (kèm huy hiệu số lượng) là hàm nội bộ trong storefront-header; cart-ui-context.ts — cầu nối giỏ hàng cho trang/thẻ sản phẩm, wishlist-ui-context.ts — cầu nối yêu thích (cùng mẫu), favorite-button (nút tim), count-badge (huy hiệu số lượng của icon header), quantity-stepper (props pill/compact/min/max/disabled), storefront-dialog — hộp thoại nhỏ ở giữa màn hình), storefront-footer, storefront-drawer (ngăn kéo/khung trượt dựng trên Base UI Dialog),
 │   │                 (liên kết bỏ qua `SkipLink` là hàm nội bộ trong storefront-layout),
 │   │                 account-shell + account-sidebar (khung hai cột của các trang /tai-khoan, thanh bên dính), breadcrumbs, pagination (số trang, dạng liên kết), product-image (khung 3:4, shimmer, fade, ảnh dự phòng),
 │   │                 reveal (hiện dần khi cuộn), state-message (rỗng/lỗi/404), section-heading (nhãn + tiêu đề + mô tả + liên kết phụ; dùng qua home-section), page-container (khung nội dung `max-w-7xl` + gutter),
@@ -98,7 +99,7 @@ features/newsletter/
 Chân trang (`components/storefront/storefront-footer`) nhận form qua slot `newsletter`; `routes/storefront-layout-container.tsx` dựng `<NewsletterForm />`
 rồi truyền xuống, vì components/ không import features/.
 Cổng đăng nhập cho hành động mua nằm ở `features/auth/use-require-login.ts`; trang (`pages/`) và `routes/storefront-layout-container.tsx`
-lấy hook rồi truyền xuống bằng props, vì features không import lẫn nhau. Riêng giỏ hàng: `routes/storefront-layout-container.tsx` cung cấp `CartUiContext` (cổng đăng nhập + thêm vào giỏ + mở ngăn kéo) cho trang chi tiết và thẻ sản phẩm (`useCartUi()`), cũng vì features/catalog không import features/cart.
+lấy hook rồi truyền xuống bằng props, vì features không import lẫn nhau. Riêng giỏ hàng: `routes/storefront-layout-container.tsx` cung cấp `CartUiContext` (cổng đăng nhập + thêm vào giỏ + mở ngăn kéo) cho trang chi tiết và thẻ sản phẩm (`useCartUi()`), cũng vì features/catalog không import features/cart. Tương tự yêu thích: `WishlistUiContext` (tim, mở ngăn kéo) và slot `renderAddToCart` của ngăn kéo yêu thích do `routes/storefront-layout-container.tsx` (+ `use-wishlist-wiring.ts`, `render-inline-add.tsx`) cung cấp; `InlineAddToCart` nằm ở features/catalog.
 
 ## 3. Khuôn của một feature
 ````
@@ -173,6 +174,7 @@ Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 4
 | Danh mục ✓, sản phẩm ✓ | features/categories/ ✓, features/products/ ✓ |
 | Kho ✓ | features/inventory/ ✓ |
 | Giỏ hàng ✓ | features/cart/, pages/storefront/cart, components/storefront/cart-ui-context.ts, lib/cart-rules.ts |
+| Yêu thích ✓ (ngăn kéo, không có trang) | features/wishlist/, components/storefront/wishlist-ui-context.ts, favorite-button.tsx, routes/use-wishlist-wiring.ts |
 | Đơn hàng, voucher | features/orders/, vouchers/ |
 | Storefront khung + catalog ✓ | components/storefront/, pages/storefront/catalog + product-detail, features/catalog/ |
 | Storefront: thanh thông báo, thẻ sản phẩm mới, chân trang, trang thông tin ✓ | features/newsletter/, pages/storefront/info/ |
