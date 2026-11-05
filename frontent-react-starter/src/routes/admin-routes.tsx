@@ -1,7 +1,6 @@
 import type { ReactElement } from "react"
 import { Outlet, Route } from "react-router-dom"
 import { navRoles } from "@/components/admin/nav-items"
-import PlaceholderPage from "@/pages/admin/placeholder"
 import NotFoundPage from "@/pages/not-found"
 import {
   CategoriesPage,
@@ -13,6 +12,7 @@ import {
   ProductEditPage,
   ProductsPage,
   UsersPage,
+  VouchersPage,
 } from "./admin-pages"
 import { AdminIndexRedirect } from "./admin-index-redirect"
 import { AdminLayoutContainer } from "./admin-layout-container"
@@ -47,7 +47,7 @@ export const adminRoutes = (
         </Route>
         <Route path="categories/*" element={guarded("/admin/categories", <CategoriesPage />)} />
         <Route path="inventory" element={guarded("/admin/inventory", <InventoryPage />)} />
-        <Route path="vouchers/*" element={guarded("/admin/vouchers", <PlaceholderPage />)} />
+        <Route path="vouchers" element={guarded("/admin/vouchers", <VouchersPage />)} />
         <Route path="users/*" element={guarded("/admin/users", <UsersPage />)} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

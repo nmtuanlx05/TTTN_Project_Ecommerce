@@ -66,7 +66,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Voucher",
     icon: TicketPercent,
     description: "Tạo và quản lý mã giảm giá cho đơn hàng.",
-    ready: false,
+    ready: true,
     roles: ["ADMIN"],
   },
   {

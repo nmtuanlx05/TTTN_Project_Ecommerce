@@ -112,7 +112,7 @@ COMPLETED` (không có bước đóng gói; đã bỏ `PACKING`), với `CANCELL
   + `items[]` rút gọn (`myOrderListSelect`; danh sách quản trị vẫn dùng `orderListSelect`); `GET /orders/summary` (một `groupBy`); `POST /orders/:code/reorder`
   đưa dòng đơn vào giỏ qua `CartService.addManyBestEffort` (cùng khóa giỏ, retry P2034, tối đa 10 và `stock - reserved`; dòng không thêm được vào `skipped`,
   không dòng nào thì 409 `REORDER_NOTHING_ADDED`). Chưa chạy thật trên MySQL.
-    Voucher: không giới hạn theo từng khách (V2, cần cột `perUserLimit`); không có endpoint xóa voucher; chưa có admin CRUD voucher (voucher mẫu ở `prisma/seed.ts`).
+    Voucher: không giới hạn theo từng khách (V2, cần cột `perUserLimit`); **không có DELETE voucher** (chỉ tắt). **Admin voucher** (`src/vouchers/admin-vouchers.*`, API ở `docs/api/vouchers.md`, chỉ ADMIN): `status` suy ra (`INACTIVE > SCHEDULED > EXPIRED > EXHAUSTED > ACTIVE`) tính bằng `getVoucherStatus` ở `src/orders/vouchers.rules.ts`, dùng chung với `assertVoucherUsable`; ngày nhận `YYYY-MM-DD` giờ VN (trùng ngày đang lưu thì giữ mốc giờ cũ); `usedCount = 0` sửa được mọi trường, `> 0` khóa `code`/loại/giá trị/`maxDiscount`/`startsAt`; sửa khóa dòng voucher `FOR UPDATE`. Voucher mẫu ở `prisma/seed.ts`.
   **Địa chỉ 3 cấp (chuẩn CŨ)**: dữ liệu dvhcvn `v20250301` (GPL-3.0, xem `src/locations/data/NOTICE.md`) nạp vào bộ nhớ; đơn lưu mã VÀ tên từng cấp;
   quận/huyện có phường/xã thì `wardCode` bắt buộc, không có (5 huyện đảo) thì phải bỏ trống. Lỗi mới có trường `code` (`AllExceptionsFilter`, helper
   `src/common/errors/coded-errors.ts`); lỗi cũ không đổi.
@@ -345,7 +345,7 @@ Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy tr�
   (chỉ chặn được bằng cách khóa user hoặc đổi `JWT_REFRESH_SECRET`). Cân nhắc lưu hash refresh token / `tokenVersion` ở V2.
 - **Đặt đơn chưa kiểm chứng trên MySQL thật**: khóa `FOR UPDATE`, thứ tự khóa, chống bán vượt tồn và chống dùng quá lượt voucher khi hai request đồng thời chỉ được bảo vệ bằng thiết kế
   (khóa theo thứ tự cố định + UPDATE có điều kiện + kiểm số dòng); test hiện dùng Prisma giả. Chưa xác minh adapter áp dụng `isolationLevel: ReadCommitted`.
-- **Chưa có**: admin CRUD voucher, đơn hết hạn tự hủy cho thanh toán online (job định kỳ, mô tả ở `docs/api/orders.md`), hoàn hàng `RETURNED`, giới hạn voucher theo khách, guest checkout, email.
+- **Chưa có**: đơn hết hạn tự hủy cho thanh toán online (job định kỳ, mô tả ở `docs/api/orders.md`), hoàn hàng `RETURNED`, giới hạn voucher theo khách, guest checkout, email.
 - **Chưa giới hạn số lần đăng nhập sai** (chưa có rate limit/lockout) cho `/auth/login`.
 - **`test/app.e2e-spec.ts` fail từ trước**: nạp `AppModule` thật mà `@nestjs/config` chỉ có bản ESM (Jest không nạp được)
   và cần DB. `test/jest-e2e.json` đã cho Jest transform `@nestjs/jwt` và `@nestjs/passport` (cũng ESM) để test Auth chạy được.

@@ -3,7 +3,9 @@ import { DiscountType } from '../generated/prisma/enums';
 import {
   assertVoucherUsable,
   formatVnd,
+  getVoucherStatus,
   normalizeVoucherCode,
+  VOUCHER_STATUSES,
 } from './vouchers.rules';
 import type { VoucherRow } from './vouchers.rules';
 
@@ -138,5 +140,94 @@ describe('assertVoucherUsable', () => {
         NOW,
       ),
     ).not.toThrow();
+  });
+});
+
+describe('assertVoucherUsable: thứ tự giữ nguyên sau refactor', () => {
+  const codeOf = (v: VoucherRow, subtotal: number) =>
+    errorOf(() => assertVoucherUsable(v, subtotal, NOW)).body.code;
+
+  it('vừa hết lượt vừa chưa đủ đơn tối thiểu → VOUCHER_MIN_ORDER', () => {
+    const v = voucher({ usageLimit: 5, usedCount: 5, minOrderValue: 300_000 });
+    expect(codeOf(v, 100_000)).toBe('VOUCHER_MIN_ORDER');
+  });
+
+  it('đủ đơn tối thiểu mà hết lượt → VOUCHER_USAGE_LIMIT', () => {
+    const v = voucher({ usageLimit: 5, usedCount: 5 });
+    expect(codeOf(v, 400_000)).toBe('VOUCHER_USAGE_LIMIT');
+  });
+
+  it('tắt ưu tiên hơn chưa đến hạn, hết hạn, hết lượt', () => {
+    const v = voucher({
+      isActive: false,
+      startsAt: new Date('2027-01-01T00:00:00.000Z'),
+      usageLimit: 1,
+      usedCount: 1,
+    });
+    expect(codeOf(v, 0)).toBe('VOUCHER_INACTIVE');
+  });
+
+  it('hết hạn ưu tiên hơn đơn tối thiểu và hết lượt', () => {
+    const v = voucher({
+      expiresAt: new Date('2026-12-01T00:00:00.000Z'),
+      usageLimit: 1,
+      usedCount: 1,
+    });
+    expect(codeOf(v, 0)).toBe('VOUCHER_EXPIRED');
+  });
+});
+
+describe('getVoucherStatus', () => {
+  const at = (iso: string) => new Date(iso);
+  const status = (over: Partial<VoucherRow>, now: Date = NOW) =>
+    getVoucherStatus(voucher(over), now);
+
+  it('đủ điều kiện → ACTIVE; liệt kê đủ 5 trạng thái', () => {
+    expect(status({})).toBe('ACTIVE');
+    expect(VOUCHER_STATUSES).toHaveLength(5);
+  });
+
+  it('biên startsAt: trước 1ms là SCHEDULED, đúng mốc là ACTIVE', () => {
+    const startsAt = at('2026-12-06T03:00:00.000Z');
+    expect(status({ startsAt }, at('2026-12-06T02:59:59.999Z'))).toBe(
+      'SCHEDULED',
+    );
+    expect(status({ startsAt }, startsAt)).toBe('ACTIVE');
+  });
+
+  it('biên expiresAt: đúng mốc là ACTIVE, sau 1ms là EXPIRED', () => {
+    const expiresAt = at('2026-12-06T03:00:00.000Z');
+    expect(status({ expiresAt }, expiresAt)).toBe('ACTIVE');
+    expect(status({ expiresAt }, at('2026-12-06T03:00:00.001Z'))).toBe(
+      'EXPIRED',
+    );
+  });
+
+  it('biên lượt dùng: usedCount = usageLimit - 1 còn ACTIVE, = usageLimit là EXHAUSTED', () => {
+    expect(status({ usageLimit: 5, usedCount: 4 })).toBe('ACTIVE');
+    expect(status({ usageLimit: 5, usedCount: 5 })).toBe('EXHAUSTED');
+    expect(status({ usageLimit: null, usedCount: 999_999 })).toBe('ACTIVE');
+  });
+
+  it('thứ tự ưu tiên khi nhiều điều kiện cùng đúng', () => {
+    const past = at('2026-01-01T00:00:00.000Z');
+    const future = at('2030-01-01T00:00:00.000Z');
+    // tắt thắng tất cả
+    expect(status({ isActive: false, startsAt: future, expiresAt: past })).toBe(
+      'INACTIVE',
+    );
+    // hết hạn thắng hết lượt
+    expect(
+      status({ expiresAt: past, startsAt: past, usageLimit: 1, usedCount: 1 }),
+    ).toBe('EXPIRED');
+    // chưa đến hạn thắng hết lượt
+    expect(
+      status({
+        startsAt: future,
+        expiresAt: future,
+        usageLimit: 1,
+        usedCount: 1,
+      }),
+    ).toBe('SCHEDULED');
   });
 });
