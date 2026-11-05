@@ -153,13 +153,14 @@ async function apiGetPage<T>(
   return { items: body.data, meta: body.meta }
 }
 
-/** POST / PATCH / PUT / DELETE: trả thẳng `data`. */
+/** POST / PATCH / PUT / DELETE: trả thẳng `data`. `config` để gửi thêm header (VD `Idempotency-Key`). */
 async function apiSend<T>(
   method: "post" | "patch" | "put" | "delete",
   url: string,
   body?: unknown,
+  config?: AxiosRequestConfig,
 ): Promise<T> {
-  const response = await apiClient.request<Envelope<T>>({ method, url, data: body })
+  const response = await apiClient.request<Envelope<T>>({ ...config, method, url, data: body })
   return unwrap(response.data).data
 }
 

@@ -14,12 +14,15 @@ export class ApiError extends Error {
   /** 0 nghĩa là không nhận được phản hồi (mất mạng, quá thời gian chờ). */
   readonly statusCode: number
   readonly errors: FieldError[]
+  /** Mã lỗi máy đọc được (VD `VOUCHER_EXPIRED`); chỉ có ở lỗi mới của module đơn hàng/địa chỉ, lỗi cũ thì `undefined`. */
+  readonly code?: string
 
-  constructor(statusCode: number, message: string, errors: FieldError[] = []) {
+  constructor(statusCode: number, message: string, errors: FieldError[] = [], code?: string) {
     super(message)
     this.name = "ApiError"
     this.statusCode = statusCode
     this.errors = errors
+    this.code = code
   }
 
   /** `{ email: "Email không đúng định dạng" }` — lấy lỗi đầu tiên của mỗi trường. */
@@ -53,7 +56,7 @@ export class ApiError extends Error {
     }
 
     const body = response.data as
-      | { message?: unknown; errors?: unknown }
+      | { message?: unknown; errors?: unknown; code?: unknown }
       | undefined
     const message =
       typeof body?.message === "string" && body.message
@@ -66,6 +69,7 @@ export class ApiError extends Error {
         )
       : []
 
-    return new ApiError(response.status, message, errors)
+    const code = typeof body?.code === "string" ? body.code : undefined
+    return new ApiError(response.status, message, errors, code)
   }
 }
