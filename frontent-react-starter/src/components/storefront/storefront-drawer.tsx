@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode, RefObject } from "react"
+import type { ComponentProps, ReactElement, ReactNode, RefObject } from "react"
 import { Dialog } from "@base-ui/react/dialog"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,25 @@ const POPUP_MOTION =
 const BACKDROP_MOTION =
   "transition-opacity duration-(--motion-scrim) ease-smooth data-ending-style:opacity-0 data-starting-style:opacity-0"
 
+/**
+ * Chuyển cảnh giữa HAI ngăn kéo (vd. yêu thích → giỏ hàng), chỉ bật khi nơi ghép truyền `handoff`; không truyền thì mọi thứ y như cũ.
+ * Mục tiêu: nền phía sau không chớp và hai lớp phủ không cộng dồn độ mờ.
+ * - `out` (ngăn kéo thoát): lớp phủ biến mất NGAY (không mờ dần) vì lớp phủ của ngăn kéo vào hiện NGAY ở cùng độ mờ, nên độ sáng nền không đổi; bảng trượt ra ngắn (180ms)
+ *   và nằm DƯỚI ngăn kéo vào nhưng TRÊN lớp phủ của nó (`z-52`), để bảng đang đi không bị phủ mờ đột ngột.
+ * - `in` (ngăn kéo vào): lớp phủ hiện ngay (không mờ dần), bảng trượt vào 250ms (`ease-drawer`), nằm trên cùng (`z-53`).
+ * Giảm chuyển động: `global.css` ép mọi transition về 0,01ms nên cả hai tức thì.
+ */
+type DrawerHandoff = "out" | "in"
+
+const HANDOFF_BACKDROP: Record<DrawerHandoff, string> = {
+  out: "data-ending-style:opacity-0",
+  in: "",
+}
+const HANDOFF_POPUP: Record<DrawerHandoff, string> = {
+  out: "z-52 transition-transform duration-[180ms] ease-drawer",
+  in: "z-53 transition-transform duration-(--motion-drawer-out) ease-drawer data-open:duration-[250ms]",
+}
+
 type DrawerSide = keyof typeof SIDE_CLASS
 
 /**
@@ -28,7 +47,7 @@ type DrawerSide = keyof typeof SIDE_CLASS
  * giữ focus bên trong, Esc và bấm nền đều đóng, và trả focus về nút đã mở (`trigger`).
  *
  * Nền đặc `surface-raised` + viền `border-default` để thấy rõ mép; lớp phủ là `canvas` mờ
- * nên không cần màu riêng. Có thể điều khiển từ ngoài (`open`).
+ * nên không cần màu riêng. Base UI chỉ đặt `role="dialog"`, KHÔNG đặt `aria-modal` (đã đối chiếu mã nguồn), nên ngăn kéo tự thêm `aria-modal="true"`; tên đọc theo `Dialog.Title` (`aria-labelledby`). Có thể điều khiển từ ngoài (`open`).
  * `hideHeader`: bỏ thanh tiêu đề mặc định (khung tìm kiếm tự dựng); tiêu đề vẫn có cho trình đọc màn hình.
  */
 function StorefrontDrawer({
@@ -41,6 +60,8 @@ function StorefrontDrawer({
   hideHeader = false,
   titleInChildren = false,
   initialFocus,
+  finalFocus,
+  handoff,
   className,
   children,
 }: {
@@ -58,6 +79,10 @@ function StorefrontDrawer({
   /** Phần `children` tự dựng tiêu đề bằng `Dialog.Title` (vd. tiêu đề kèm số lượng, nút đóng riêng): ngăn kéo không dựng thêm tiêu đề nào, `aria-labelledby` vẫn tự nối. Dùng cùng `hideHeader`. */
   titleInChildren?: boolean
   initialFocus?: RefObject<HTMLElement | null>
+  /** Nơi nhận focus khi đóng (mặc định về phần tử đã mở). Chỉ truyền khi chuyển cảnh giữa hai ngăn kéo; `false` = không trả focus (ngăn kéo vừa mở đã nhận focus). */
+  finalFocus?: ComponentProps<typeof Dialog.Popup>["finalFocus"]
+  /** Chuyển cảnh giữa hai ngăn kéo, xem `DrawerHandoff`. */
+  handoff?: DrawerHandoff
   className?: string
   children: ReactNode
 }) {
@@ -65,12 +90,16 @@ function StorefrontDrawer({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger ? <Dialog.Trigger render={trigger}>{triggerContent}</Dialog.Trigger> : null}
       <Dialog.Portal>
-        <Dialog.Backdrop className={cn("fixed inset-0 z-50 bg-canvas/70 backdrop-blur-xs", BACKDROP_MOTION)} />
+        <Dialog.Backdrop
+          className={cn("fixed inset-0 z-50 bg-canvas/70 backdrop-blur-xs", handoff ? HANDOFF_BACKDROP[handoff] : BACKDROP_MOTION)}
+        />
         <Dialog.Popup
+          aria-modal="true"
           initialFocus={initialFocus}
+          finalFocus={finalFocus}
           className={cn(
             "fixed z-50 flex flex-col border-border-default bg-surface-raised text-ink outline-none",
-            POPUP_MOTION,
+            handoff ? HANDOFF_POPUP[handoff] : POPUP_MOTION,
             SIDE_CLASS[side],
             className,
           )}
@@ -93,3 +122,4 @@ function StorefrontDrawer({
 }
 
 export { StorefrontDrawer }
+export type { DrawerHandoff }
