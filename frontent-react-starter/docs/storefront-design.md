@@ -386,4 +386,37 @@ Dữ liệu: `features/checkout` (xem trước, đặt đơn, voucher khả dụ
 
 **Trang thành công**: `GET /orders/:code` (tải lại vẫn đúng); đơn không có hoặc của người khác → "Không tìm thấy đơn hàng". Địa chỉ ghép từ từng cấp, đơn cũ dùng `fullAddress`.
 
-**Chưa có**: thanh toán online (mục 13), theo dõi đơn/"Đơn hàng của tôi" (sẽ thêm vào `features/orders`), lưu sổ địa chỉ (V2; lúc đó tách địa chỉ khỏi `features/checkout`).
+**Chưa có**: thanh toán online (mục 13), lưu sổ địa chỉ (V2; lúc đó tách địa chỉ khỏi `features/checkout`).
+
+
+## 21. Đơn hàng của tôi (`/tai-khoan/don-hang`)
+
+Dữ liệu: `features/orders` (danh sách, tóm tắt, chi tiết, hủy, mua lại); API ở `docs/api/orders.md` của backend. Chỉ CUSTOMER (route bọc `RequireAuth`; layout `/tai-khoan` chặn ADMIN/STAFF bằng thông báo, không gọi API).
+
+**Route**: `/tai-khoan` chuyển sang `/tai-khoan/don-hang`; `/tai-khoan/don-hang/:code` là chi tiết. Layout `/tai-khoan` (`routes/account-layout-container.tsx` + `components/storefront/account-shell.tsx`, `account-sidebar.tsx`) dùng chung cho các trang tài khoản sau này; thanh bên dính từ `lg` (cùng mẫu sticky mục 19), dưới `lg` thu thành dải gọn phía trên.
+
+**Lọc trên URL**: `?status=pending|processing|completed|cancelled&q=&page=` (mặc định không ghi, giá trị lạ bị bỏ). Nhóm gửi backend: pending = `PENDING,PENDING_PAYMENT`; processing = `CONFIRMED,SHIPPING` (backend đã bỏ `PACKING`: gửi `status=PACKING` là 400); completed; cancelled. Đổi lọc/tìm kiếm `replace` + về trang 1, đổi trang `push`. Ô tìm debounce, Enter chạy ngay, tối đa 50 ký tự (đúng `MAX_MY_ORDERS_QUERY_LENGTH` của backend). Số đếm trên nút lấy từ `GET /orders/summary`, không phụ thuộc `q`. `limit` = 10.
+
+**Thẻ đơn**: `OrderStatusPill`; nút chính theo trạng thái: PENDING "Hủy đơn" (hộp xác nhận, lý do tuỳ chọn, mặc định "Khách tự hủy", tối đa 500 ký tự theo `MAX_REASON_LENGTH`), CONFIRMED/SHIPPING "Theo dõi đơn", COMPLETED/CANCELLED "Mua lại". Không có "Thanh toán ngay" (chưa hỗ trợ online).
+
+**Mốc thời gian (chi tiết)**: đúng 4 bước theo luồng mới: Đã đặt hàng (PENDING), Đã xác nhận (CONFIRMED), Đang giao hàng (SHIPPING), Giao thành công (COMPLETED); chỉ hiện các bước ĐÃ XẢY RA theo `history[]`; đơn đã hủy hiện các bước đã qua cộng bước hủy (thời điểm, lý do), không có bước mờ; chỉ đơn đang tiến hành mới hiện các bước chưa tới (mờ). Người hủy chỉ là "Khách tự hủy" hoặc "Cửa hàng hủy" (theo `byRole`), không bao giờ hiện tên hay id nhân viên.
+
+**Mua lại**: `POST /orders/:code/reorder`; `features/orders` không import cart nên trang truyền callback (làm mới giỏ bằng `useInvalidateCart`, mở ngăn kéo bằng `useCartUi().openCart`). Thêm trọn vẹn: toast ngắn rồi mở giỏ; có dòng bỏ qua: hộp thoại liệt kê kèm lý do, mở giỏ sau khi đóng. `REORDER_NOTHING_ADDED` (409): toast lỗi, không mở giỏ.
+
+**Huy hiệu ở header**: mục "Đơn hàng của tôi" trong menu người dùng (và ngăn kéo di động) kèm số đơn đang hoạt động (`active` của `/orders/summary`), ẩn khi 0. Làm mới sau khi đặt đơn (trang checkout truyền callback) và sau khi hủy.
+
+**Bảng đối chiếu nhãn trạng thái** (chủ đích khác nhau; báo cáo và tài liệu dùng nhất quán theo bảng này):
+
+| Enum | Storefront (`OrderStatusPill`) | Admin (`OrderStatusBadge`) |
+|---|---|---|
+| `PENDING` | Chờ xác nhận | Chờ xác nhận |
+| `PENDING_PAYMENT` | Chờ thanh toán (chưa dùng; gộp nhóm "Chờ xác nhận") | (chưa có) |
+| `CONFIRMED` | Đã xác nhận | Đã xác nhận |
+| `SHIPPING` | Đang giao | Đang giao |
+| `COMPLETED` | **Hoàn thành** | **Đã giao** |
+| `CANCELLED` | Đã hủy | Đã hủy |
+| `RETURNED` | Trả hàng | Trả hàng |
+
+Nhóm lọc của khách: "Chờ xác nhận" = PENDING + PENDING_PAYMENT; "Đang xử lý" = CONFIRMED + SHIPPING; "Hoàn thành" = COMPLETED; "Đã hủy" = CANCELLED. `RETURNED` chỉ hiện ở "Tất cả".
+
+Luồng đơn hiện tại: `PENDING → CONFIRMED → SHIPPING → COMPLETED`, cộng `CANCELLED`, `PENDING_PAYMENT`, `RETURNED`. Không còn bước đóng gói (`PACKING` đã bỏ ở backend); admin chuyển `CONFIRMED → SHIPPING` trực tiếp.

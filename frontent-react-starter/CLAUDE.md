@@ -134,9 +134,10 @@ Mọi cặp chữ/nền khác trong hệ thống đều ≥ 4.5. Bảng đầy �
 ### Trạng thái đơn hàng
 
 Nguyên tắc: **độ đậm của mực tăng dần theo tiến độ đơn hàng.** Yêu cầu "phân
-biệt được khi in đen trắng" buộc 7 badge phải trải rộng thang sáng, không thể
-nhét hết vào vùng pastel. Bậc xám giữa các badge liền kề ở giao diện sáng:
-1.22 → 1.28 → 1.30 → 2.20 → 1.73.
+biệt được khi in đen trắng" buộc 6 badge phải trải rộng thang sáng, không thể
+nhét hết vào vùng pastel. Bậc xám giữa các badge liền kề ở giao diện sáng
+(PENDING → CONFIRMED → SHIPPING → RETURNED → COMPLETED): 1.22 → 1.66 → 2.20 → 1.73. Luồng đơn không còn `PACKING`
+(PENDING → CONFIRMED → SHIPPING → COMPLETED, cộng CANCELLED/RETURNED/PENDING_PAYMENT).
 
 Hai nhánh phụ tách khỏi thang bằng **hình thức** chứ không chỉ bằng tông:
 `CANCELLED` là badge **rỗng, chỉ có viền** — không có gì xảy ra thì không có
@@ -151,8 +152,15 @@ Dùng `<OrderStatusBadge status="SHIPPING" />` và
 Việt và biến thể màu từ enum của Prisma. **Không tự viết badge trạng thái mới.**
 
 Nhãn tiếng Việt đã chốt (`ORDER_STATUS` trong `src/components/ui/badge.tsx`):
-Chờ xác nhận · Đã xác nhận · Đang đóng gói · Đang giao · Đã giao · Đã hủy ·
+Chờ xác nhận · Đã xác nhận · Đang giao · Đã giao · Đã hủy ·
 Trả hàng.
+
+**Hai nơi hiển thị, hai component** (chủ đích, không gộp):
+- **Admin** dùng `OrderStatusBadge` (`components/ui/badge.tsx`): thang mực ở trên.
+- **Storefront** ("Đơn hàng của tôi") dùng `OrderStatusPill` (`features/orders/components/order-status-pill.tsx`): viên thuốc tông nhạt có chấm màu
+  (token `warning/info/success/danger-*` có sẵn), nhãn và nhóm màu ở `features/orders/constants.ts`.
+- **Thêm hoặc đổi một trạng thái phải sửa CẢ HAI**: `ORDER_STATUS` ở `badge.tsx` và các bảng `Record<OrderStatus, ...>` ở `features/orders/constants.ts`.
+  Bảng đối chiếu nhãn (vd. `COMPLETED` = "Đã giao" ở admin, "Hoàn thành" ở storefront) ở `docs/storefront-design.md` mục 21.
 
 ## Thang chữ
 

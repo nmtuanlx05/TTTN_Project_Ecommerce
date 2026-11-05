@@ -15,7 +15,7 @@ src/
 ├─ main.tsx, App.tsx, global.css, vite-env.d.ts   ✓
 ├─ routes/        ✓ admin-routes, auth-routes, storefront-routes, admin-layout-container,
 │                 storefront-layout-container, admin-pages ✓ (các trang admin nạp bằng React.lazy), admin-index-redirect, can-access-path, guards/ (require-auth, require-role,
-│                 redirect-if-authenticated), use-avatar-saved ✓ (cập nhật phiên + cache sau khi đổi ảnh đại diện)
+│                 redirect-if-authenticated), account-layout-container ✓ (layout /tai-khoan), use-avatar-saved ✓ (cập nhật phiên + cache sau khi đổi ảnh đại diện)
 ├─ pages/         MỎNG: chỉ ghép
 │   ├─ auth/        login ✓, register ✓
 │   ├─ admin/       dashboard ✓, users ✓, categories ✓, products ✓ (index, new, edit; form có danh sách nhiều ảnh `product-images-field` + vùng kéo-thả file `product-image-dropzone` (dùng `use-file-drop` chung) + hàng đợi tải `use-multi-image-upload`, mã màu hex của biến thể `variant-color-hex-field`), orders,
@@ -23,12 +23,13 @@ src/
 │   ├─ styleguide/  ✓ trang nội bộ cho dev (route /styleguide: index + color-data — dữ liệu bảng màu), không thuộc admin
 │   ├─ forbidden.tsx ✓ (403), not-found.tsx ✓ (404)
 │   ├─ storefront/  home ✓ (hero carousel, danh mục nổi bật, best sellers, câu chuyện, sản phẩm mới về, dải cam kết), catalog ✓ (/products), product-detail ✓ (/products/:slug), stores ✓ (/dia-chi), not-found ✓ (404 trong khung khách),
-│   │               cart, checkout, order-success, my-orders, account
+│   │               cart ✓, checkout ✓, order-success ✓, my-orders ✓ (/tai-khoan/don-hang), my-order-detail ✓ (/tai-khoan/don-hang/:code)
 ├─ features/      mỗi thực thể một thư mục theo khuôn mục 3
 │   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/ ✓ catalog/ ✓ (dữ liệu công khai của storefront: danh sách và chi tiết sản phẩm)
 │   │  newsletter/ ✓ (form đăng ký nhận tin ở chân trang — mới có giao diện, chưa có backend)
 │   ├─ cart/ ✓ (giỏ hàng của CUSTOMER: types, api, queries (useCart, useAddToCart, useUpdateCartItem, useRemoveCartItem, useClearCart); components/: cart-drawer (+ header, footer, states), cart-line (+ cart-line-list), free-shipping-bar, checkout-button (STUB), cart-page-content (+ cart-summary, clear-cart-confirm))
-│   └─ checkout/ orders/ vouchers/ payments/ account/
+│   ├─ orders/ ✓ (đơn của khách: danh sách + lọc trên URL, tóm tắt, chi tiết + mốc thời gian, hủy, mua lại; constants.ts có Record<OrderStatus, ...>; `OrderStatusPill` riêng cho storefront)
+│   └─ checkout/ ✓ vouchers/ payments/ account/
 ├─ components/
 │   ├─ ui/          shadcn, KHÔNG sửa ✓ (ngoại lệ: được THÊM lớp `soft:` vào variant của button.tsx, một commit riêng)
 │   ├─ admin/       khung admin và thứ dùng chung nhiều tính năng ✓ (admin-layout, admin-sidebar, admin-topbar, nav-items, page-header, table-pagination, search-input — ô tìm kiếm debounce, confirm-dialog; category-select ✓ — ô chọn danh mục dạng cây thụt lề, dùng ở products và inventory)
@@ -37,7 +38,7 @@ src/
 │   │                 mobile-nav-drawer (+ mobile-nav-list, mobile-nav-accordion, mobile-nav-styles — ngăn kéo dưới `xl`), mobile-account, search-panel;
 │   │                 nút giỏ hàng `CartButton` (kèm huy hiệu số lượng) là hàm nội bộ trong storefront-header; cart-ui-context.ts — cầu nối giỏ hàng cho trang/thẻ sản phẩm, quantity-stepper (props pill/compact/min/max/disabled), storefront-dialog — hộp thoại nhỏ ở giữa màn hình), storefront-footer, storefront-drawer (ngăn kéo/khung trượt dựng trên Base UI Dialog),
 │   │                 (liên kết bỏ qua `SkipLink` là hàm nội bộ trong storefront-layout),
-│   │                 breadcrumbs, pagination (số trang, dạng liên kết), product-image (khung 3:4, shimmer, fade, ảnh dự phòng),
+│   │                 account-shell + account-sidebar (khung hai cột của các trang /tai-khoan, thanh bên dính), breadcrumbs, pagination (số trang, dạng liên kết), product-image (khung 3:4, shimmer, fade, ảnh dự phòng),
 │   │                 reveal (hiện dần khi cuộn), state-message (rỗng/lỗi/404), section-heading (nhãn + tiêu đề + mô tả + liên kết phụ; dùng qua home-section), page-container (khung nội dung `max-w-7xl` + gutter),
 │                 static-image (ảnh tĩnh trong `public/` có khung trung tính khi thiếu/lỗi), hscroll-list (danh sách cuộn ngang có snap), tab-bar (tablist điều khiển bằng mũi tên),
 │                 home/ (các khối trang chủ chỉ nhận props, không import features: home-hero + hero-slide + hero-controls + hero-progress, category-showcase + category-card, brand-story, assurance-strip + assurance-item, home-section — bộ khung chung của các khối có tiêu đề, hero-layout — bề rộng cột chữ của hero dùng chung với hero-slide), view-all-link (liên kết "Xem tất cả →"),
