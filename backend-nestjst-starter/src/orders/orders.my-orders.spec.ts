@@ -346,8 +346,7 @@ describe('OrdersService.summaryMine', () => {
     const statuses = [
       ['PENDING', 2],
       ['PENDING_PAYMENT', 1],
-      ['CONFIRMED', 1],
-      ['PACKING', 2],
+      ['CONFIRMED', 3],
       ['SHIPPING', 1],
       ['COMPLETED', 4],
       ['CANCELLED', 3],

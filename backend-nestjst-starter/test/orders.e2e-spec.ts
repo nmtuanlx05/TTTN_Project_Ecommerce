@@ -431,6 +431,7 @@ describe('Orders API (e2e, service giả)', () => {
     it.each([
       'status=XYZ',
       'status=PENDING,NOPE',
+      'status=CONFIRMED,PACKING',
       'page=0',
       'limit=101',
       'sortBy=password',
@@ -487,12 +488,12 @@ describe('Orders API (e2e, service giả)', () => {
     it('lọc theo trạng thái, ngày, từ khóa; phân trang', async () => {
       await as('STAFF')(
         request(server()).get(
-          '/admin/orders?status=PACKING&from=2026-11-01&to=2026-11-05&q=0912&page=2&limit=20',
+          '/admin/orders?status=CONFIRMED&from=2026-11-01&to=2026-11-05&q=0912&page=2&limit=20',
         ),
       ).expect(200);
       expect(adminOrdersService.findAll).toHaveBeenCalledWith(
         expect.objectContaining({
-          status: 'PACKING',
+          status: 'CONFIRMED',
           from: '2026-11-01',
           to: '2026-11-05',
           q: '0912',
@@ -502,14 +503,16 @@ describe('Orders API (e2e, service giả)', () => {
       );
     });
 
-    it.each(['from=05/11/2026', 'to=2026-1-5', 'status=NOPE'])(
-      'query sai %s → 400',
-      async (q) => {
-        await as('ADMIN')(request(server()).get(`/admin/orders?${q}`)).expect(
-          400,
-        );
-      },
-    );
+    it.each([
+      'from=05/11/2026',
+      'to=2026-1-5',
+      'status=NOPE',
+      'status=PACKING',
+    ])('query sai %s → 400', async (q) => {
+      await as('ADMIN')(request(server()).get(`/admin/orders?${q}`)).expect(
+        400,
+      );
+    });
 
     it('PATCH status: gửi status + reason, actor là user từ token', async () => {
       await as('STAFF')(request(server()).patch('/admin/orders/5/status'))

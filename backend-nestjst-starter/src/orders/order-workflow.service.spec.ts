@@ -175,33 +175,63 @@ describe('OrderWorkflowService.transition', () => {
       expect(tx.order.update).not.toHaveBeenCalled();
     });
 
-    it.each([OrderStatus.PACKING, OrderStatus.SHIPPING])(
-      'khách hủy đơn %s → ORDER_NOT_CANCELLABLE_BY_CUSTOMER',
+    it.each([
+      OrderStatus.CONFIRMED,
+      OrderStatus.SHIPPING,
+      OrderStatus.COMPLETED,
+    ])(
+      'khách hủy đơn %s → 409 ORDER_NOT_CANCELLABLE_BY_CUSTOMER, không đổi gì',
       async (status) => {
-        const { run } = setup({ status });
-        expect(
-          (await errorOf(run(OrderStatus.CANCELLED, 'CUSTOMER'))).code,
-        ).toBe('ORDER_NOT_CANCELLABLE_BY_CUSTOMER');
+        const { tx, run } = setup({ status });
+        const e = await errorOf(run(OrderStatus.CANCELLED, 'CUSTOMER'));
+        expect(e.status).toBe(409);
+        expect(e.code).toBe('ORDER_NOT_CANCELLABLE_BY_CUSTOMER');
+        expect(tx.order.update).not.toHaveBeenCalled();
       },
     );
 
-    it.each([OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PACKING])(
-      'staff hủy đơn %s được',
-      async (status) => {
-        const { tx, run } = setup({ status });
-        await run(OrderStatus.CANCELLED, 'STAFF', 'Khách đổi ý qua điện thoại');
-        expect(tx.order.update).toHaveBeenCalled();
-      },
-    );
-
-    it('không hủy được đơn đang giao hoặc đã giao (409)', async () => {
-      for (const status of [OrderStatus.SHIPPING, OrderStatus.COMPLETED]) {
-        const { tx, run } = setup({ status });
-        const e = await errorOf(run(OrderStatus.CANCELLED, 'ADMIN', 'x'));
-        expect(e.code).toBe('ORDER_INVALID_TRANSITION');
-        expect(tx.$executeRaw).not.toHaveBeenCalled();
-      }
+    it('khách hủy đơn PENDING được', async () => {
+      const { tx, run } = setup({ status: OrderStatus.PENDING });
+      await run(OrderStatus.CANCELLED, 'CUSTOMER', 'Đổi ý');
+      expect(tx.order.update.mock.calls[0][0].data.status).toBe('CANCELLED');
     });
+
+    it.each([
+      ['STAFF', OrderStatus.PENDING],
+      ['STAFF', OrderStatus.CONFIRMED],
+      ['ADMIN', OrderStatus.PENDING],
+      ['ADMIN', OrderStatus.CONFIRMED],
+    ] as const)(
+      '%s hủy đơn %s được: chỉ nhả reserved, không đụng stock',
+      async (role, status) => {
+        const { tx, inventory, run } = setup({ status });
+        await run(OrderStatus.CANCELLED, role, 'Khách đổi ý qua điện thoại');
+        expect(tx.order.update).toHaveBeenCalled();
+        expect(tx.order.update.mock.calls[0][0].data.cancelReason).toBe(
+          'Khách đổi ý qua điện thoại',
+        );
+        expect(inventory.shipOut).not.toHaveBeenCalled();
+        const sqls = tx.$executeRaw.mock.calls.map((c) => sqlText(c));
+        expect(sqls.some((t) => t.includes('SET reserved = reserved -'))).toBe(
+          true,
+        );
+        expect(sqls.some((t) => t.includes('stock = stock -'))).toBe(false);
+      },
+    );
+
+    it.each(['STAFF', 'ADMIN'] as const)(
+      '%s không hủy được đơn SHIPPING hoặc COMPLETED (409 ORDER_INVALID_TRANSITION), không đổi kho',
+      async (role) => {
+        for (const status of [OrderStatus.SHIPPING, OrderStatus.COMPLETED]) {
+          const { tx, run } = setup({ status });
+          const e = await errorOf(run(OrderStatus.CANCELLED, role, 'x'));
+          expect(e.status).toBe(409);
+          expect(e.code).toBe('ORDER_INVALID_TRANSITION');
+          expect(tx.$executeRaw).not.toHaveBeenCalled();
+          expect(tx.order.update).not.toHaveBeenCalled();
+        }
+      },
+    );
 
     it('reserved không đủ để trả (dữ liệu lệch) → 409 và không đổi trạng thái', async () => {
       const { tx, run } = setup();
@@ -225,27 +255,27 @@ describe('OrderWorkflowService.transition', () => {
       expect(tx.$executeRaw).not.toHaveBeenCalled();
     });
 
-    it('CONFIRMED → PACKING không đổi kho', async () => {
+    it('CONFIRMED → SHIPPING xuất kho từng biến thể theo id tăng dần, kèm người thao tác và mã đơn', async () => {
       const { tx, inventory, run } = setup({ status: OrderStatus.CONFIRMED });
-      await run(OrderStatus.PACKING, 'ADMIN');
-      expect(inventory.shipOut).not.toHaveBeenCalled();
-      expect(tx.order.update.mock.calls[0][0].data).toEqual({
-        status: 'PACKING',
-      });
-    });
-
-    it('PACKING → SHIPPING xuất kho từng biến thể theo id tăng dần, kèm người thao tác và mã đơn', async () => {
-      const { tx, inventory, run } = setup({ status: OrderStatus.PACKING });
       await run(OrderStatus.SHIPPING, 'STAFF');
       expect(inventory.shipOut.mock.calls.map((c) => c.slice(1))).toEqual([
         [5, 2, 42, 'MS-261105-ABCD'],
         [8, 1, 42, 'MS-261105-ABCD'],
       ]);
       expect(inventory.shipOut.mock.calls[0][0]).toBe(tx);
+      expect(tx.order.update.mock.calls[0][0].data).toEqual({
+        status: 'SHIPPING',
+      });
+    });
+
+    it('xác nhận (PENDING → CONFIRMED) và hoàn tất không xuất kho', async () => {
+      const { inventory, run } = setup();
+      await run(OrderStatus.CONFIRMED, 'STAFF');
+      expect(inventory.shipOut).not.toHaveBeenCalled();
     });
 
     it('xuất kho thất bại thì lỗi lan ra (cả transaction rollback), không đổi trạng thái', async () => {
-      const { tx, inventory, run } = setup({ status: OrderStatus.PACKING });
+      const { tx, inventory, run } = setup({ status: OrderStatus.CONFIRMED });
       inventory.shipOut.mockRejectedValue(new ConflictException('không đủ'));
       await expect(run(OrderStatus.SHIPPING)).rejects.toBeInstanceOf(
         ConflictException,
@@ -278,10 +308,10 @@ describe('OrderWorkflowService.transition', () => {
 
   describe('chuyển sai', () => {
     it.each([
-      [OrderStatus.PENDING, OrderStatus.PACKING],
       [OrderStatus.PENDING, OrderStatus.SHIPPING],
       [OrderStatus.PENDING, OrderStatus.COMPLETED],
-      [OrderStatus.CONFIRMED, OrderStatus.SHIPPING],
+      [OrderStatus.CONFIRMED, OrderStatus.COMPLETED],
+      [OrderStatus.SHIPPING, OrderStatus.CONFIRMED],
       [OrderStatus.COMPLETED, OrderStatus.SHIPPING],
       [OrderStatus.CANCELLED, OrderStatus.PENDING],
       [OrderStatus.SHIPPING, OrderStatus.RETURNED],
