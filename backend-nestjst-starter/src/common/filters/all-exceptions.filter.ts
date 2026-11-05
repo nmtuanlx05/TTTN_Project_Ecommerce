@@ -12,12 +12,16 @@ import { Prisma } from '../../generated/prisma/client';
 export interface FieldError {
   field: string;
   message: string;
+  // Chỉ có ở các ràng buộc tùy biến mới (vd PHONE_INVALID); lỗi validate cũ không có
+  code?: string;
 }
 
 interface ErrorResult {
   statusCode: number;
   message: string;
   errors?: FieldError[];
+  // Mã lỗi máy đọc được (vd VOUCHER_EXPIRED); chỉ có ở các lỗi mới được đặt code
+  code?: string;
 }
 
 const INTERNAL_ERROR_MESSAGE = 'Lỗi hệ thống, vui lòng thử lại sau';
@@ -63,17 +67,20 @@ function mapHttpException(exception: HttpException): ErrorResult {
     return { statusCode, message: body };
   }
 
-  const { message, errors } = body as {
+  const { message, errors, code } = body as {
     message?: string | string[];
     errors?: FieldError[];
+    code?: unknown;
   };
+  const errorCode = typeof code === 'string' ? { code } : {};
 
-  // Lỗi validate (do exceptionFactory của ValidationPipe tạo ra)
+  // Lỗi validate (do exceptionFactory của ValidationPipe tạo ra) hoặc lỗi có code kèm danh sách lỗi theo dòng
   if (Array.isArray(errors)) {
     return {
       statusCode,
       message: typeof message === 'string' ? message : 'Dữ liệu không hợp lệ',
       errors,
+      ...errorCode,
     };
   }
 
@@ -82,6 +89,7 @@ function mapHttpException(exception: HttpException): ErrorResult {
     message: Array.isArray(message)
       ? message.join('; ')
       : (message ?? exception.message),
+    ...errorCode,
   };
 }
 
@@ -116,6 +124,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       success: false,
       statusCode: result.statusCode,
       message: result.message,
+      ...(result.code && { code: result.code }),
       ...(result.errors && { errors: result.errors }),
     });
   }

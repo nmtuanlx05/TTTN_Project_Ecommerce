@@ -9,6 +9,9 @@ import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { CartModule } from './cart/cart.module';
+import { LocationsModule } from './locations/locations.module';
+import { OrdersModule } from './orders/orders.module';
+import { VouchersModule } from './vouchers/vouchers.module';
 import { UploadModule } from './uploads/upload.module';
 import { ENV_FILE } from './config/env-file';
 import { validateEnv } from './config/env.validation';
@@ -29,6 +32,9 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     ProductsModule,
     InventoryModule,
     CartModule,
+    LocationsModule,
+    OrdersModule,
+    VouchersModule,
     UploadModule,
   ],
   controllers: [AppController],

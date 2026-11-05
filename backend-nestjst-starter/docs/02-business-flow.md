@@ -8,9 +8,9 @@ Hai luồng cốt lõi: khách đi từ lúc xem sản phẩm đến khi đặt 
 2. Chọn size, màu; hệ thống hiển thị còn hàng hay hết hàng theo từng biến thể.
 3. Thêm vào giỏ: hệ thống kiểm tra tồn kho tại thời điểm đó. Giỏ hàng **không giữ hàng**.
 4. Xem giỏ hàng, sửa số lượng, xóa món.
-5. Bấm Thanh toán: đăng nhập hoặc mua với tư cách guest.
-6. Nhập địa chỉ giao hàng, chọn COD hoặc thanh toán online.
-7. Nhập mã voucher (tùy chọn, tối đa một mã, guest cũng dùng được); hệ thống hiển thị số tiền giảm.
+5. Bấm Thanh toán: cần đăng nhập (guest checkout để V2). Đặt đơn luôn từ giỏ của Customer.
+6. Nhập địa chỉ giao hàng bằng danh sách chọn 3 cấp (tỉnh/thành → quận/huyện → phường/xã; quận/huyện không có phường/xã thì bỏ bước này), chọn COD (thanh toán online chưa triển khai).
+7. Nhập mã voucher (tùy chọn, tối đa một mã); hệ thống hiển thị số tiền giảm qua `POST /orders/preview`. Phí ship 30.000đ, miễn phí khi tạmTính (trước giảm giá) từ 500.000đ.
 8. Xem lại đơn, bấm Đặt hàng.
 9. Hệ thống kiểm tra lại tồn kho, giá và voucher (còn hiệu lực, đạt đơn tối thiểu, còn lượt dùng), tạo đơn, **giữ hàng** (tăng `reserved`) và tăng `usedCount` của voucher trong một transaction.
 10. Rẽ nhánh theo phương thức thanh toán:
@@ -18,7 +18,7 @@ Hai luồng cốt lõi: khách đi từ lúc xem sản phẩm đến khi đặt 
    - **Online:** chuyển sang cổng thanh toán.
      - Thanh toán thành công: đơn PENDING, `paymentStatus` = PAID.
      - Không thanh toán, hoặc quá 30 phút: đơn tự hủy, nhả hàng giữ, hoàn lại một lượt voucher.
-11. Gửi email xác nhận kèm mã đơn.
+11. Gửi email xác nhận kèm mã đơn (chưa triển khai).
 
 ## Luồng B: Staff và Admin xử lý đơn hàng
 
@@ -47,18 +47,19 @@ Nhánh phụ: `CANCELLED`, `RETURNED`
 | CONFIRMED | PACKING | Staff | Không đổi kho |
 | PACKING | SHIPPING | Staff | Xuất kho: giảm `stock` và `reserved` |
 | SHIPPING | COMPLETED | Staff | Đơn COD: ghi nhận đã thu tiền, `paymentStatus` chuyển PAID |
-| SHIPPING | RETURNED | Staff | Hàng hoàn về kho; kiểm đạt thì cộng lại `stock`. Không hoàn lượt voucher |
-| PENDING, CONFIRMED | CANCELLED | Customer hoặc Staff | Nhả `reserved`; `usedCount - 1`; bắt buộc ghi lý do |
-| PACKING | CANCELLED | Staff | Nhả `reserved`; `usedCount - 1`; bắt buộc ghi lý do |
+| SHIPPING | RETURNED | Staff | **Chưa triển khai (để lần sau)**: hàng hoàn về kho; kiểm đạt thì cộng lại `stock`. Không hoàn lượt voucher. Bản hiện tại `COMPLETED` là trạng thái cuối |
+| PENDING | CANCELLED | Customer, Staff hoặc Admin | Nhả `reserved`; `usedCount - 1`; lý do bắt buộc với Staff/Admin (Customer mặc định "Khách tự hủy") |
+| CONFIRMED, PACKING | CANCELLED | Staff hoặc Admin | Nhả `reserved`; `usedCount - 1`; bắt buộc ghi lý do. **Customer không tự hủy được** (409 `ORDER_NOT_CANCELLABLE_BY_CUSTOMER`) |
 | Bất kỳ trước SHIPPING, đơn đã thanh toán | CANCELLED | Staff tạo yêu cầu, Admin duyệt | Nhả `reserved`; `usedCount - 1`; `paymentStatus` chuyển REFUNDED |
 | PENDING, đơn ONLINE quá 30 phút chưa thanh toán | CANCELLED | Hệ thống | Nhả `reserved`; `usedCount - 1` |
 
 ## Quy tắc bắt buộc
 
 - Không cho chuyển trạng thái ngoài chuỗi hợp lệ ở bảng trên.
-- `handledById` chỉ gán một lần, khi xác nhận đơn (PENDING → CONFIRMED), không đổi khi người khác xử lý các bước sau. Admin có quyền Staff nên `handledById` có thể là Admin. Đơn hủy trước khi xác nhận thì để trống. Hệ thống không lưu lịch sử đổi trạng thái, nên không truy được ai đã hủy đơn hay đổi trạng thái lúc nào (chỉ có `cancelReason`).
+- `handledById` chỉ gán một lần, khi xác nhận đơn (PENDING → CONFIRMED), không đổi khi người khác xử lý các bước sau. Admin có quyền Staff nên `handledById` có thể là Admin. Đơn hủy trước khi xác nhận thì để trống. Mỗi lần đổi trạng thái ghi một dòng `order_status_histories` (trạng thái cũ/mới, người thao tác, lý do, thời điểm); người thao tác để trống khi hệ thống tự hủy.
 - Khi tạo đơn, kiểm tra lại tồn kho và giá trong một transaction; không bán vượt tồn khả dụng (`stock - reserved`).
 - Giỏ hàng chỉ là danh sách mong muốn mua, không giữ hàng.
+- Đặt đơn khóa theo thứ tự cố định để tránh deadlock: giỏ → đơn → biến thể (id tăng dần) → voucher. Gửi lại cùng `Idempotency-Key` trả đúng đơn đã tạo (chống bấm hai lần).
 - Yêu cầu hủy/hoàn tiền đơn đã thanh toán (Staff tạo, Admin duyệt): schema MVP chưa có model hoặc trường lưu yêu cầu này, cách lưu cần chốt khi triển khai (xem `06-thiet-ke-database.md`, mục 7).
 
 ## Quy tắc voucher
@@ -71,4 +72,5 @@ Nhánh phụ: `CANCELLED`, `RETURNED`
 - `totalAmount = subtotal + shippingFee - discountAmount`.
 - Kiểm tra hiệu lực, đơn tối thiểu, số lượt và tăng `usedCount` (cập nhật có điều kiện) trong cùng transaction với việc tạo đơn.
 - Đơn chuyển CANCELLED (kể cả tự hủy sau 30 phút) thì hoàn lại một lượt: `usedCount - 1`. Đơn RETURNED không hoàn lượt.
-- Chưa giới hạn số lần dùng cho mỗi khách (hoặc email, số điện thoại): một người có thể dùng lại mã đến khi hết `usageLimit`.
+- Chưa giới hạn số lần dùng cho mỗi khách: một người có thể dùng lại mã đến khi hết `usageLimit`. Để V2, cần thêm cột `perUserLimit` ở bảng `vouchers`.
+- Tiền tính ở backend (`src/orders/orders.pricing.ts`): `phíShip = tạmTính >= 500.000 ? 0 : 30.000` (tính trước giảm giá); `PERCENT` làm tròn xuống rồi bị chặn bởi `maxDiscount` và `tạmTính`; `FIXED` bị chặn bởi `tạmTính` (tổng có thể bằng 0 khi tạmTính >= 500.000).

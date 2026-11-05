@@ -22,8 +22,8 @@ Admin có mọi quyền của Staff. Bảng dưới chỉ ra ranh giới giữa 
 | Chức năng | Customer | Staff | Admin |
 | --- | --- | --- | --- |
 | Xem, tìm kiếm sản phẩm | Có | Có | Có |
-| Mua hàng (áp tối đa một voucher), quản lý giỏ, xem đơn của mình | Có | Không | Không |
-| Tự hủy đơn của mình (đến hết trạng thái CONFIRMED) | Có | Không | Không |
+| Mua hàng từ giỏ (áp tối đa một voucher), quản lý giỏ, xem đơn của mình | Có | Không | Không |
+| Tự hủy đơn của mình (chỉ khi PENDING, chờ xác nhận) | Có | Không | Không |
 | CRUD sản phẩm, biến thể, danh mục, ảnh | Không | Có | Có |
 | Nhập kho, điều chỉnh tồn | Không | Có | Có |
 | Xem và xử lý mọi đơn hàng | Không | Có | Có |

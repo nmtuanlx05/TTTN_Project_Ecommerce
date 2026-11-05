@@ -1,6 +1,6 @@
 # Thiết kế Database
 
-Database gồm 10 bảng với 13 quan hệ khóa ngoại, dành cho MySQL 8 (InnoDB). Quy tắc chung: không xóa cứng dữ liệu tài chính (đơn hàng, voucher); hủy đơn bằng `status = CANCELLED`, vô hiệu voucher bằng `isActive = false`.
+Database gồm 13 bảng với các quan hệ khóa ngoại ở mục 1, dành cho MySQL 8 (InnoDB). Quy tắc chung: không xóa cứng dữ liệu tài chính (đơn hàng, voucher); hủy đơn bằng `status = CANCELLED`, vô hiệu voucher bằng `isActive = false`.
 
 ## 1. Quan hệ giữa các bảng
 
@@ -17,6 +17,9 @@ Database gồm 10 bảng với 13 quan hệ khóa ngoại, dành cho MySQL 8 (In
 | User → Order (người phụ trách, quan hệ `OrderHandler`) | 1-N | `handledById` | Không (đơn chưa được xác nhận) |
 | Voucher → Order | 1-N | `voucherId` | Không (đơn không dùng voucher) |
 | Order → OrderItem | 1-N | `orderId` | Có |
+| Order → OrderStatusHistory | 1-N | `orderId` | Có |
+| User → OrderStatusHistory (người thao tác) | 1-N | `actorId` | Không (hệ thống tự đổi) |
+| Order → PaymentTransaction | 1-N | `orderId` | Có |
 | ProductVariant → OrderItem | 1-N | `variantId` | Có |
 | ProductVariant → StockMovement | 1-N | `variantId` | Có |
 | User → StockMovement (người thực hiện) | 1-N | `createdById` | Có |
@@ -35,8 +38,10 @@ Quan hệ nhiều-nhiều giữa Order và ProductVariant được tách thành 
 | Cart | `userId` | — |
 | CartItem | (`cartId`, `variantId`) | — |
 | Voucher | `code` | — |
-| Order | `code` | (`status`, `createdAt`); `customerPhone` |
+| Order | `code`; (`userId`, `idempotencyKey`) | (`status`, `createdAt`); `customerPhone`; (`userId`, `createdAt`) |
 | OrderItem | — | — |
+| OrderStatusHistory | — | (`orderId`, `createdAt`) |
+| PaymentTransaction | (`provider`, `providerTxnId`) | `orderId` |
 | StockMovement | — | (`variantId`, `createdAt`) |
 
 InnoDB tự tạo index cho mọi cột khóa ngoại, nên các cột như `userId`, `handledById`, `voucherId`, `orderId` hay `variantId` không cần khai báo thêm và không được liệt kê ở bảng trên. Các index còn lại, ví dụ (`status`, `createdAt`) hay `customerPhone`, cần khai báo bằng `@@index`.
@@ -65,6 +70,7 @@ Prisma chưa hỗ trợ CHECK trực tiếp, nên các CHECK dưới đây đư�
 | vouchers | `chk_vouchers_usage_limit_positive` | `usageLimit IS NULL OR usageLimit > 0` |
 | vouchers | `chk_vouchers_max_discount_positive` | `maxDiscount IS NULL OR maxDiscount > 0` |
 | vouchers | `chk_vouchers_dates` | `expiresAt > startsAt` |
+| payment_transactions | `chk_payment_transactions_amount` | `amount >= 0` (migration `add_order_checkout`) |
 
 `order_items` có hai constraint riêng (`quantity` và `price`) để thông báo lỗi chỉ rõ cột nào sai. Tên cột là camelCase nên trong SQL phải bọc dấu backtick. Không đặt CHECK lên cột khóa ngoại, vì MySQL báo lỗi 3823 khi cột có FK với `ON UPDATE CASCADE` hoặc `ON DELETE SET NULL`.
 
@@ -151,8 +157,8 @@ Schema không khai báo `onDelete` và `onUpdate`, nên Prisma dùng mặc đị
 
 | Loại FK | Cột | Hành vi |
 | --- | --- | --- |
-| Bắt buộc | `Product.categoryId`, `ProductVariant.productId`, `Cart.userId`, `CartItem.cartId`, `CartItem.variantId`, `OrderItem.orderId`, `OrderItem.variantId`, `StockMovement.variantId`, `StockMovement.createdById` | `ON DELETE RESTRICT`: không xóa được bản ghi đang được tham chiếu |
-| Tùy chọn | `Category.parentId`, `Order.userId`, `Order.handledById`, `Order.voucherId` | `ON DELETE SET NULL`: xóa bản ghi cha thì cột FK của bản ghi con thành NULL |
+| Bắt buộc | `Product.categoryId`, `ProductVariant.productId`, `Cart.userId`, `CartItem.cartId`, `CartItem.variantId`, `OrderItem.orderId`, `OrderItem.variantId`, `OrderStatusHistory.orderId`, `PaymentTransaction.orderId`, `StockMovement.variantId`, `StockMovement.createdById` | `ON DELETE RESTRICT`: không xóa được bản ghi đang được tham chiếu |
+| Tùy chọn | `Category.parentId`, `Order.userId`, `Order.handledById`, `Order.voucherId`, `OrderStatusHistory.actorId` | `ON DELETE SET NULL`: xóa bản ghi cha thì cột FK của bản ghi con thành NULL |
 | Ngoại lệ | `ProductImage.productId` | `ON DELETE CASCADE` |
 | Tất cả | mọi FK | `ON UPDATE CASCADE` |
 
@@ -162,11 +168,13 @@ Schema không khai báo `onDelete` và `onUpdate`, nên Prisma dùng mặc đị
 
 - Schema `prisma/schema.prisma` đã có `@@index`, `@@unique` và `@@map` đúng như trên.
 - Các CHECK ở mục 2 đã nằm trong file migration `init_ecommerce`; migration này chưa được áp vào database.
-- Các cột văn bản dài (`Order.shippingAddress`, `Order.note`, `Order.cancelReason`, `Product.imageUrl`, `Voucher.description`) đang là `VARCHAR(191)`: chốt có đổi sang `@db.VarChar(n)` hoặc `@db.Text` hay không.
+- Các cột văn bản dài: `Order.shippingAddress`, `Order.note`, `Order.cancelReason` đã nới lên `VARCHAR(500)` (migration `add_order_checkout`); `Product.imageUrl`, `Voucher.description` còn `VARCHAR(191)`.
+- Migration `add_order_checkout` (đặt đơn): thêm địa chỉ 3 cấp (nullable), `voucherCode`, `idempotencyKey`, `order_items.colorHex/imageUrl`, bảng `order_status_histories` và `payment_transactions`, giá trị enum mới (`PENDING_PAYMENT`, `FAILED`, `SALE`). Chỉ thêm, không đổi dữ liệu cũ.
+- Voucher: giới hạn theo từng khách để V2, cần thêm cột `perUserLimit` ở `vouchers`.
 - **Backlog ảnh sản phẩm:**
   - Dọn file ảnh mồ côi trên ổ đĩa: upload chỉ ghi file, khi ảnh bị gỡ khỏi sản phẩm file không bị xóa.
   - Cân nhắc bỏ cột `Product.imageUrl` (deprecated) ở đợt dọn dẹp sau, khi mọi client đã đọc `images`.
   - Upload khi chạy nhiều instance: ổ đĩa local không dùng chung được, cần lưu trữ ngoài (S3, Cloudinary...).
   - Lưu đường dẫn tương đối (vd `/uploads/products/x.webp`) thay vì URL đầy đủ để đổi `APP_PUBLIC_URL` không làm hỏng dữ liệu.
   - `APP_PUBLIC_URL` đang bị giới hạn độ dài theo cột 191 của `imageUrl`; nới được sau khi bỏ cột này.
-- Cách lưu yêu cầu hủy/hoàn tiền của đơn đã thanh toán (Staff tạo, Admin duyệt): schema chưa có model hoặc trường cho việc này.
+- Cách lưu yêu cầu hủy/hoàn tiền của đơn đã thanh toán (Staff tạo, Admin duyệt): schema chưa có model hoặc trường cho việc này (chưa phát sinh khi chỉ có COD; làm cùng thanh toán online).

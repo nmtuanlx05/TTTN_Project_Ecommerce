@@ -25,6 +25,7 @@ enum PaymentStatus {
   UNPAID
   PAID
   REFUNDED
+  FAILED // thanh toán online thất bại (thêm cuối enum)
 }
 
 enum OrderStatus {
@@ -34,7 +35,8 @@ enum OrderStatus {
   SHIPPING // đã giao cho vận chuyển, đã xuất kho
   COMPLETED // giao thành công
   CANCELLED // đã hủy
-  RETURNED // hàng hoàn về
+  RETURNED // hàng hoàn về (chưa triển khai, để lần sau)
+  PENDING_PAYMENT // đơn online chờ thanh toán (chưa dùng ở bản COD; thêm cuối enum)
 }
 
 enum DiscountType {
@@ -45,20 +47,21 @@ enum DiscountType {
 // ============ User ============
 
 model User {
-  id             Int             @id @default(autoincrement())
-  email          String          @unique
-  password       String
-  name           String?
-  phone          String?
-  avatarUrl      String?         @db.VarChar(191) // URL ảnh đại diện do /uploads/avatars cấp; null = chưa có
-  role           Role            @default(CUSTOMER)
-  isActive       Boolean         @default(true)
-  cart           Cart?
-  orders         Order[]         @relation("OrderCustomer") // đơn do user này đặt
-  handledOrders  Order[]         @relation("OrderHandler") // đơn user này (Staff) phụ trách
-  stockMovements StockMovement[] // các lần đổi tồn kho do user này thực hiện
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id                   Int                  @id @default(autoincrement())
+  email                String               @unique
+  password             String
+  name                 String?
+  phone                String?
+  avatarUrl            String?              @db.VarChar(191) // URL ảnh đại diện do /uploads/avatars cấp; null = chưa có
+  role                 Role                 @default(CUSTOMER)
+  isActive             Boolean              @default(true)
+  cart                 Cart?
+  orders               Order[]              @relation("OrderCustomer") // đơn do user này đặt
+  handledOrders        Order[]              @relation("OrderHandler") // đơn user này (Staff) phụ trách
+  orderStatusHistories OrderStatusHistory[] // các lần user này đổi trạng thái đơn
+  stockMovements       StockMovement[] // các lần đổi tồn kho do user này thực hiện
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 
   @@map("users")
 }
@@ -136,6 +139,15 @@ enum StockMovementType {
   IMPORT // nhập kho
   EXPORT // xuất kho thủ công (hỏng, mất, khác)
   ADJUST // điều chỉnh theo số đếm thực tế
+  SALE // xuất kho theo đơn khi chuyển SHIPPING (giảm cả stock và reserved)
+}
+
+// Trạng thái một giao dịch với cổng thanh toán online (bảng PaymentTransaction, chưa dùng ở bản COD)
+enum PaymentTransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
 }
 
 model StockMovement {
@@ -204,36 +216,51 @@ model Voucher {
 // ============ Đơn hàng ============
 
 model Order {
-  id               Int           @id @default(autoincrement())
-  code             String        @unique // ví dụ DH20260930-0001
-  userId           Int? // null = guest checkout
-  user             User?         @relation("OrderCustomer", fields: [userId], references: [id])
-  handledById      Int? // Staff phụ trách, gán khi xác nhận đơn
-  handledBy        User?         @relation("OrderHandler", fields: [handledById], references: [id])
-  customerName     String
-  customerPhone    String
-  customerEmail    String?
-  shippingAddress  String
-  note             String?
-  subtotal         Int
-  shippingFee      Int           @default(0)
-  voucherId        Int? // null = không dùng voucher
-  voucher          Voucher?      @relation(fields: [voucherId], references: [id])
-  discountAmount   Int           @default(0) // số tiền giảm từ voucher, không vượt subtotal
-  totalAmount      Int // = subtotal + shippingFee - discountAmount
-  paymentMethod    PaymentMethod
-  paymentStatus    PaymentStatus @default(UNPAID)
-  paymentRef       String? // mã giao dịch của cổng thanh toán
-  paidAt           DateTime?
-  paymentExpiresAt DateTime? // hạn thanh toán của đơn online
-  status           OrderStatus   @default(PENDING)
-  cancelReason     String?
-  items            OrderItem[]
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id                  Int                  @id @default(autoincrement())
+  code                String               @unique // ví dụ DH20260930-0001
+  userId              Int? // null = guest checkout
+  user                User?                @relation("OrderCustomer", fields: [userId], references: [id])
+  handledById         Int? // Staff phụ trách, gán khi xác nhận đơn
+  handledBy           User?                @relation("OrderHandler", fields: [handledById], references: [id])
+  customerName        String // tên người nhận
+  customerPhone       String // số điện thoại người nhận
+  customerEmail       String?
+  shippingAddress     String               @db.VarChar(500) // chuỗi địa chỉ ghép đầy đủ (để in phiếu)
+  // Địa chỉ giao hàng chụp lại theo đơn vị hành chính (mã + tên từng cấp). Nullable ở DB vì đơn cũ không có;
+  // DTO/service bắt buộc đủ cho đơn mới.
+  provinceCode        String?              @db.VarChar(10)
+  provinceName        String?
+  districtCode        String?              @db.VarChar(10)
+  districtName        String?
+  wardCode            String?              @db.VarChar(10)
+  wardName            String?
+  addressLine         String?              @db.VarChar(255) // số nhà, đường
+  note                String?              @db.VarChar(500)
+  subtotal            Int
+  shippingFee         Int                  @default(0)
+  voucherId           Int? // null = không dùng voucher
+  voucher             Voucher?             @relation(fields: [voucherId], references: [id])
+  voucherCode         String?              @db.VarChar(50) // chụp lại mã voucher (voucherId là SET NULL nếu voucher bị xóa)
+  discountAmount      Int                  @default(0) // số tiền giảm từ voucher, không vượt subtotal
+  totalAmount         Int // = subtotal + shippingFee - discountAmount
+  paymentMethod       PaymentMethod
+  paymentStatus       PaymentStatus        @default(UNPAID)
+  paymentRef          String? // mã giao dịch của cổng thanh toán
+  paidAt              DateTime?
+  paymentExpiresAt    DateTime? // hạn thanh toán của đơn online
+  status              OrderStatus          @default(PENDING)
+  cancelReason        String?              @db.VarChar(500)
+  idempotencyKey      String?              @db.VarChar(64) // header Idempotency-Key của POST /orders; null = không gửi
+  items               OrderItem[]
+  statusHistories     OrderStatusHistory[]
+  paymentTransactions PaymentTransaction[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
+  @@unique([userId, idempotencyKey])
   @@index([status, createdAt])
   @@index([customerPhone])
+  @@index([userId, createdAt])
   @@map("orders")
 }
 
@@ -247,8 +274,44 @@ model OrderItem {
   sku         String // snapshot
   size        String // snapshot
   color       String // snapshot
+  colorHex    String?        @db.VarChar(7) // snapshot
+  imageUrl    String?        @db.VarChar(500) // snapshot ảnh đầu (product_images.url) lúc mua
   quantity    Int
   price       Int // snapshot đơn giá lúc mua
 
   @@map("order_items")
+}
+
+// Lịch sử đổi trạng thái đơn: ai đổi, khi nào, lý do. actorId null = hệ thống (vd tự hủy đơn hết hạn).
+model OrderStatusHistory {
+  id         Int          @id @default(autoincrement())
+  orderId    Int
+  order      Order        @relation(fields: [orderId], references: [id])
+  fromStatus OrderStatus? // null = dòng đầu tiên (tạo đơn)
+  toStatus   OrderStatus
+  actorId    Int?
+  actor      User?        @relation(fields: [actorId], references: [id])
+  reason     String?      @db.VarChar(500)
+  createdAt  DateTime     @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_status_histories")
+}
+
+// Giao dịch với cổng thanh toán online. Tạo sẵn để cắm cổng sau (VNPay...), bản COD chưa ghi dòng nào.
+model PaymentTransaction {
+  id            Int                      @id @default(autoincrement())
+  orderId       Int
+  order         Order                    @relation(fields: [orderId], references: [id])
+  provider      String                   @db.VarChar(20) // VNPAY...
+  providerTxnId String?                  @db.VarChar(100) // mã giao dịch phía cổng
+  amount        Int // VND
+  status        PaymentTransactionStatus @default(PENDING)
+  rawData       Json? // dữ liệu thô callback, để đối soát
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+
+  @@unique([provider, providerTxnId]) // callback idempotent
+  @@index([orderId])
+  @@map("payment_transactions")
 }

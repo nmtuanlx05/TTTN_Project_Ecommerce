@@ -1,5 +1,6 @@
 // 1) Tạo tài khoản ADMIN đầu tiên từ ADMIN_EMAIL / ADMIN_PASSWORD trong .env.development (hoặc .env.production).
 // 2) Tạo danh mục và sản phẩm mẫu (kèm biến thể) cho dev frontend.
+// 3) Tạo voucher mẫu (SALE10, GIAM50K, MIN500, MONO10, WELCOME50, HETHAN, HETLUOT, DATAT).
 // Chạy lại an toàn: email/slug/SKU đã tồn tại thì bỏ qua, không ghi đè dữ liệu đang có.
 // Chạy: npx prisma db seed (production: npm run db:seed:prod)
 import { config } from 'dotenv';
@@ -11,6 +12,116 @@ import { ENV_FILE } from '../src/config/env-file';
 import { COLOR_HEX_MAP } from '../src/products/color-hex';
 
 config({ path: ENV_FILE, quiet: true });
+
+// Voucher mẫu cho demo và test (ngày demo 06/12/2026). Chỉ tạo khi `code` chưa có (upsert với update rỗng),
+// không bao giờ ghi đè voucher đã tồn tại. Mốc thời gian ghi kèm offset +07:00 để không phụ thuộc múi giờ máy chạy seed.
+// Voucher còn hiệu lực có expiresAt sau 31/12/2026.
+const VOUCHERS = [
+  {
+    code: 'SALE10',
+    description: 'Giảm 10%, tối đa 50.000đ',
+    discountType: 'PERCENT',
+    discountValue: 10,
+    maxDiscount: 50_000,
+    minOrderValue: 0,
+    usageLimit: 1000,
+    usedCount: 0,
+    startsAt: '2026-11-01T00:00:00+07:00',
+    expiresAt: '2027-06-30T23:59:59+07:00',
+    isActive: true,
+  },
+  {
+    code: 'GIAM50K',
+    description: 'Giảm 50.000đ cho mọi đơn hàng',
+    discountType: 'FIXED',
+    discountValue: 50_000,
+    maxDiscount: null,
+    minOrderValue: 0,
+    usageLimit: null,
+    usedCount: 0,
+    startsAt: '2026-11-01T00:00:00+07:00',
+    expiresAt: '2027-06-30T23:59:59+07:00',
+    isActive: true,
+  },
+  {
+    code: 'MIN500',
+    description: 'Giảm 100.000đ cho đơn từ 500.000đ',
+    discountType: 'FIXED',
+    discountValue: 100_000,
+    maxDiscount: null,
+    minOrderValue: 500_000,
+    usageLimit: 500,
+    usedCount: 0,
+    startsAt: '2026-11-01T00:00:00+07:00',
+    expiresAt: '2027-06-30T23:59:59+07:00',
+    isActive: true,
+  },
+  {
+    code: 'MONO10',
+    description: 'Giảm 10%, tối đa 100.000₫ cho đơn từ 300.000₫',
+    discountType: 'PERCENT',
+    discountValue: 10,
+    maxDiscount: 100_000,
+    minOrderValue: 300_000,
+    usageLimit: null,
+    usedCount: 0,
+    startsAt: '2026-11-01T00:00:00+07:00',
+    expiresAt: '2027-06-30T23:59:59+07:00',
+    isActive: true,
+  },
+  {
+    code: 'WELCOME50',
+    description: 'Giảm 50.000₫ cho đơn từ 400.000₫',
+    discountType: 'FIXED',
+    discountValue: 50_000,
+    maxDiscount: null,
+    minOrderValue: 400_000,
+    usageLimit: null,
+    usedCount: 0,
+    startsAt: '2026-11-01T00:00:00+07:00',
+    expiresAt: '2027-06-30T23:59:59+07:00',
+    isActive: true,
+  },
+  {
+    code: 'HETHAN',
+    description: 'Mã đã hết hạn (dùng để thử lỗi)',
+    discountType: 'PERCENT',
+    discountValue: 20,
+    maxDiscount: null,
+    minOrderValue: 0,
+    usageLimit: null,
+    usedCount: 0,
+    startsAt: '2026-01-01T00:00:00+07:00',
+    expiresAt: '2026-06-30T23:59:59+07:00',
+    isActive: true,
+  },
+  {
+    code: 'HETLUOT',
+    description: 'Mã đã hết lượt dùng (dùng để thử lỗi)',
+    discountType: 'FIXED',
+    discountValue: 30_000,
+    maxDiscount: null,
+    minOrderValue: 0,
+    usageLimit: 5,
+    usedCount: 5,
+    startsAt: '2026-11-01T00:00:00+07:00',
+    expiresAt: '2027-06-30T23:59:59+07:00',
+    isActive: true,
+  },
+  {
+    code: 'DATAT',
+    description: 'Mã đang bị tắt (dùng để thử lỗi)',
+    discountType: 'PERCENT',
+    discountValue: 15,
+    maxDiscount: null,
+    minOrderValue: 0,
+    usageLimit: null,
+    usedCount: 0,
+    startsAt: '2026-11-01T00:00:00+07:00',
+    expiresAt: '2027-06-30T23:59:59+07:00',
+    isActive: false,
+  },
+] as const;
 
 // Danh mục mẫu: gốc trước, con sau. Chỉ tạo khi slug chưa có.
 const CATEGORIES = [
@@ -232,6 +343,30 @@ async function seedCatalog(prisma: PrismaClient) {
   }
 }
 
+async function seedVouchers(prisma: PrismaClient) {
+  for (const voucher of VOUCHERS) {
+    const existing = await prisma.voucher.findUnique({
+      where: { code: voucher.code },
+      select: { id: true },
+    });
+    // upsert với update rỗng: voucher đã có thì giữ nguyên (không ghi đè, không đặt lại usedCount)
+    await prisma.voucher.upsert({
+      where: { code: voucher.code },
+      update: {},
+      create: {
+        ...voucher,
+        startsAt: new Date(voucher.startsAt),
+        expiresAt: new Date(voucher.expiresAt),
+      },
+    });
+    console.log(
+      existing
+        ? `Đã có voucher ${voucher.code}, bỏ qua.`
+        : `Đã tạo voucher: ${voucher.code}`,
+    );
+  }
+}
+
 async function main() {
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
@@ -264,6 +399,7 @@ async function main() {
   try {
     await seedAdmin(prisma, email, password);
     await seedCatalog(prisma);
+    await seedVouchers(prisma);
   } finally {
     await prisma.$disconnect();
   }

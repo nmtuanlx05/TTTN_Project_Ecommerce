@@ -54,12 +54,13 @@ Mỗi lần **`stock` thay đổi** (nhập, xuất, điều chỉnh) ghi đúng
 | `IMPORT` | `+n` | `null` | Nhập kho |
 | `EXPORT` | `-n` | **Mã** `DAMAGED`, `LOST` hoặc `OTHER` | Xuất kho thủ công |
 | `ADJUST` | `số đếm - tồn cũ` (khác 0) | **Chữ tự do** do người dùng nhập | Điều chỉnh theo số đếm thực tế |
+| `SALE` | `-n` | `ORDER_SHIPPED` | Xuất kho tự động khi đơn chuyển `SHIPPING`; `note` = "Xuất kho cho đơn {mã đơn}"; giảm cả `stock` và `reserved` |
 
 - `stockBefore` / `stockAfter`: tồn trước và sau, luôn thỏa `stockAfter = stockBefore + quantity`.
 - **Frontend phải ánh xạ mã sang nhãn** khi `type = EXPORT`: `DAMAGED` → "Hư hỏng", `LOST` → "Thất lạc/mất", `OTHER` → "Khác"
   (kèm `note`). Khi `type = ADJUST`, `reason` là chuỗi hiển thị nguyên văn, **không** ánh xạ. Khi `type = IMPORT`, `reason = null`.
-- Loại `SALE`, `RETURN` (và cột `orderId`) sẽ được thêm ở bước đơn hàng; frontend nên xử lý `type` lạ bằng cách hiển thị
-  nguyên giá trị.
+- Loại `SALE` đã thêm ở bước đơn hàng (mã đơn nằm trong `note`, chưa có cột `orderId`). Loại `RETURN` sẽ thêm khi làm `RETURNED`; frontend
+  nên xử lý `type` lạ bằng cách hiển thị nguyên giá trị.
 
 ## Đối tượng
 
