@@ -87,7 +87,8 @@ Chỉ đọc (không khóa, không ghi). Body `{ "voucherCode"?: string }`.
 
 ```json
 { "success": true, "data": {
-  "items": [ { "id": 5, "variantId": 12, "quantity": 2, "name": "Áo thun basic", "size": "M", "color": "Đen",
+  "items": [ { "id": 5, "variantId": 12, "quantity": 2, "productId": 3, "name": "Áo thun basic", "slug": "ao-thun-basic",
+               "imageUrl": "https://example.com/a.jpg", "size": "M", "color": "Đen", "colorHex": "#000000",
                "unitPrice": 200000, "lineTotal": 400000, "purchasable": true, "inStock": true, "maxQuantity": 10 } ],
   "warnings": [ { "cartItemId": 7, "variantId": 20, "message": "Quần jean (30, Xanh) đã hết hàng, vui lòng xóa khỏi giỏ hàng" } ],
   "canCheckout": false,
@@ -96,6 +97,9 @@ Chỉ đọc (không khóa, không ghi). Body `{ "voucherCode"?: string }`.
                "discountValue": 10, "maxDiscount": 50000, "minOrderValue": 0 } } }
 ```
 
+- `items[]` là **mọi dòng trong giỏ** (kể cả dòng không đặt được), cùng dạng với `items[]` của `GET /cart` (xem `docs/api/cart.md`):
+  `id` (id dòng giỏ), `variantId`, `quantity`, `productId`, `name`, `slug`, `imageUrl` (ảnh đầu, có thể `null`), `size`, `color`,
+  `colorHex` (có thể `null`), `unitPrice`, `lineTotal`, `purchasable`, `inStock`, `maxQuantity`.
 - `subtotal` chỉ tính các dòng đặt được; dòng không đặt được nằm trong `warnings` (`canCheckout = false`).
 - Giỏ rỗng → 409 `CART_EMPTY`. Voucher sai → 400 với mã `VOUCHER_*`. Không lộ `stock`/`reserved`.
 
