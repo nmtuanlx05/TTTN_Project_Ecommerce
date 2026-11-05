@@ -26,7 +26,7 @@ Hệ thống có 38 yêu cầu chức năng chia theo 11 module và 25 yêu cầ
 | Thanh toán | FR-18 | Hỗ trợ COD (đã làm); tích hợp một cổng online (VNPay hoặc MoMo): **chưa làm**, schema đã chừa chỗ (`payment_transactions`, `PENDING_PAYMENT`) |
 | | FR-19 | Nhận callback từ cổng, xác minh chữ ký, cập nhật `paymentStatus`; xử lý idempotent, không cập nhật trùng |
 | | FR-20 | Đơn online quá 30 phút chưa thanh toán tự hủy và nhả kho |
-| Quản lý đơn | FR-21 | Chuỗi trạng thái hợp lệ PENDING, CONFIRMED, PACKING, SHIPPING, COMPLETED; chặn chuyển sai |
+| Quản lý đơn | FR-21 | Chuỗi trạng thái hợp lệ PENDING, CONFIRMED, SHIPPING, COMPLETED (trừ kho thật ở CONFIRMED → SHIPPING); chặn chuyển sai |
 | | FR-22 | Khi xác nhận đơn (PENDING → CONFIRMED), gán `handledById` = người xác nhận (Staff hoặc Admin); không đổi khi người khác xử lý các bước sau |
 | | FR-23 | Hủy đơn bắt buộc có lý do (Customer tự hủy mặc định "Khách tự hủy"); đơn đã thanh toán đi qua luồng duyệt của Admin (chưa phát sinh khi chỉ có COD). Mọi đổi trạng thái ghi lịch sử (`order_status_histories`) |
 | | FR-24 | Khi chuyển SHIPPING: xuất kho, giảm `stock` và `reserved` có điều kiện, ghi `StockMovement` loại `SALE` |

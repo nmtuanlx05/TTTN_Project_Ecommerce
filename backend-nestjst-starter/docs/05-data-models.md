@@ -13,7 +13,7 @@ Schema chốt cho MVP gồm 13 model (10 model gốc cộng `ProductImage`, `Ord
 | Tồn kho | `Product.quantity` | Bỏ; dùng `ProductVariant.stock` và `reserved` | Thời trang tồn theo size và màu |
 | Danh mục | Chưa có | Thêm `Category`, `Product.categoryId` | Lọc và phân nhóm sản phẩm |
 | Giỏ hàng | Quản lý ở frontend | Thêm `Cart`, `CartItem` cho Customer đăng nhập; giỏ tạm của Guest ở trình duyệt và gộp khi đăng nhập để V2 | Không mất giỏ khi đổi thiết bị |
-| `OrderStatus` | 5 giá trị | Thêm PACKING, RETURNED, PENDING_PAYMENT (tổng 8). `RETURNED` và `PENDING_PAYMENT` chưa có luồng ở bản COD | Có bước đóng gói; nhánh hoàn hàng (làm sau); đơn online chờ thanh toán (làm sau) |
+| `OrderStatus` | 5 giá trị | Thêm RETURNED, PENDING_PAYMENT (tổng 7). `RETURNED` và `PENDING_PAYMENT` chưa có luồng ở bản COD. (`PACKING` từng được thêm rồi **đã bỏ** ở migration `remove_packing_order_status`: không có bước đóng gói riêng) | Nhánh hoàn hàng (làm sau); đơn online chờ thanh toán (làm sau) |
 | `Order` | Thông tin giao hàng, tổng tiền, trạng thái | Thêm mã đơn (`MS-YYMMDD-XXXX`), phí ship, giảm giá (`voucherId`, `voucherCode` chụp lại, `discountAmount`), phương thức và trạng thái thanh toán, mã giao dịch, hạn thanh toán, lý do hủy, `handledById`, địa chỉ chụp theo 3 cấp (`provinceCode/Name`, `districtCode/Name`, `wardCode/Name`, `addressLine`; nullable ở DB), `idempotencyKey` | Thanh toán online, voucher, địa chỉ và xử lý đơn |
 | `OrderItem` | Trỏ tới `Product`, snapshot giá | Trỏ tới `ProductVariant`, snapshot thêm tên, SKU, size, màu, `colorHex`, ảnh đầu (`imageUrl`) | Đơn cũ không đổi khi sản phẩm bị sửa |
 | Ảnh sản phẩm | Một cột `Product.imageUrl` | Thêm `ProductImage` (tối đa 6 ảnh/sản phẩm, có thứ tự `sortOrder`); `imageUrl` giữ lại nhưng **deprecated** | Gallery nhiều ảnh; cột cũ chỉ để tương thích |
@@ -59,9 +59,8 @@ enum PaymentStatus {
 
 enum OrderStatus {
   PENDING     // vừa đặt, chờ xử lý
-  CONFIRMED   // Staff đã xác nhận
-  PACKING     // đang đóng gói
-  SHIPPING    // đã giao cho vận chuyển, đã xuất kho
+  CONFIRMED   // Staff đã xác nhận (đang giữ chỗ, chưa trừ kho thật)
+  SHIPPING    // đã giao cho vận chuyển; trừ kho thật ở bước CONFIRMED -> SHIPPING
   COMPLETED   // giao thành công
   CANCELLED   // đã hủy
   RETURNED    // hàng hoàn về (chưa triển khai, để lần sau)

@@ -24,16 +24,15 @@ Hai luồng cốt lõi: khách đi từ lúc xem sản phẩm đến khi đặt 
 
 Staff đẩy đơn đi theo một chiều từ PENDING đến COMPLETED. Nhánh hủy và hoàn hàng rẽ ra từ chuỗi này. Người xác nhận đơn (Staff hoặc Admin) được gán vào `handledById` của đơn.
 
-Chuỗi chính: `PENDING` → `CONFIRMED` → `PACKING` → `SHIPPING` → `COMPLETED`
+Chuỗi chính: `PENDING` → `CONFIRMED` → `SHIPPING` → `COMPLETED` (không có bước "đóng gói" riêng; đã bỏ `PACKING`)
 
 Nhánh phụ: `CANCELLED`, `RETURNED`
 
 | Trạng thái | Ý nghĩa | Tác động chính |
 | --- | --- | --- |
 | PENDING | Vừa đặt đơn | `reserved` tăng |
-| CONFIRMED | Staff xác nhận | Gán `handledById` = người xác nhận; đơn online chỉ được xác nhận khi `paymentStatus` là PAID |
-| PACKING | Đóng gói, in phiếu giao | Không đổi kho |
-| SHIPPING | Đã giao cho vận chuyển | Xuất kho: giảm `stock` và `reserved` |
+| CONFIRMED | Staff xác nhận | Gán `handledById` = người xác nhận; vẫn giữ chỗ (`reserved`), chưa trừ kho thật; đơn online chỉ được xác nhận khi `paymentStatus` là PAID |
+| SHIPPING | Đã giao cho vận chuyển | Xuất kho thật: giảm `stock` và `reserved` (bước `CONFIRMED` → `SHIPPING`) |
 | COMPLETED | Giao thành công | Đơn COD: ghi nhận đã thu tiền |
 | CANCELLED | Đã hủy | Nhả `reserved`; hoàn lại một lượt voucher (`usedCount - 1`) |
 | RETURNED | Hàng hoàn về | Kiểm hàng đạt thì cộng lại `stock`; không hoàn lượt voucher |
@@ -44,12 +43,11 @@ Nhánh phụ: `CANCELLED`, `RETURNED`
 | --- | --- | --- | --- |
 | (khách đặt đơn) | PENDING | Hệ thống | `reserved` tăng theo số lượng từng biến thể; `usedCount` của voucher (nếu có) tăng 1 |
 | PENDING | CONFIRMED | Staff | Không đổi kho; gán `handledById`. Đơn ONLINE chỉ được xác nhận khi `paymentStatus` là PAID |
-| CONFIRMED | PACKING | Staff | Không đổi kho |
-| PACKING | SHIPPING | Staff | Xuất kho: giảm `stock` và `reserved` |
+| CONFIRMED | SHIPPING | Staff | Xuất kho: giảm `stock` và `reserved`, ghi `StockMovement` loại `SALE` |
 | SHIPPING | COMPLETED | Staff | Đơn COD: ghi nhận đã thu tiền, `paymentStatus` chuyển PAID |
 | SHIPPING | RETURNED | Staff | **Chưa triển khai (để lần sau)**: hàng hoàn về kho; kiểm đạt thì cộng lại `stock`. Không hoàn lượt voucher. Bản hiện tại `COMPLETED` là trạng thái cuối |
 | PENDING | CANCELLED | Customer, Staff hoặc Admin | Nhả `reserved`; `usedCount - 1`; lý do bắt buộc với Staff/Admin (Customer mặc định "Khách tự hủy") |
-| CONFIRMED, PACKING | CANCELLED | Staff hoặc Admin | Nhả `reserved`; `usedCount - 1`; bắt buộc ghi lý do. **Customer không tự hủy được** (409 `ORDER_NOT_CANCELLABLE_BY_CUSTOMER`) |
+| CONFIRMED | CANCELLED | Staff hoặc Admin | Nhả `reserved`; `usedCount - 1`; bắt buộc ghi lý do. **Customer không tự hủy được** (409 `ORDER_NOT_CANCELLABLE_BY_CUSTOMER`) |
 | Bất kỳ trước SHIPPING, đơn đã thanh toán | CANCELLED | Staff tạo yêu cầu, Admin duyệt | Nhả `reserved`; `usedCount - 1`; `paymentStatus` chuyển REFUNDED |
 | PENDING, đơn ONLINE quá 30 phút chưa thanh toán | CANCELLED | Hệ thống | Nhả `reserved`; `usedCount - 1` |
 

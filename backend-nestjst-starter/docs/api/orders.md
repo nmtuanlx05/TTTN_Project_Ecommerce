@@ -134,7 +134,7 @@ Query (trường lạ → 400):
 
 | Tham số | Mô tả |
 | --- | --- |
-| `status` | Một **hoặc nhiều** trạng thái phân tách bằng dấu phẩy, vd `status=CONFIRMED,PACKING,SHIPPING`. Bỏ khoảng trắng, phần tử rỗng và giá trị lặp. Giá trị ngoài enum → 400 "status chỉ nhận các giá trị: ..." |
+| `status` | Một **hoặc nhiều** trạng thái phân tách bằng dấu phẩy, vd `status=CONFIRMED,SHIPPING`. Bỏ khoảng trắng, phần tử rỗng và giá trị lặp. Giá trị ngoài enum → 400 "status chỉ nhận các giá trị: ..." |
 | `q` | Khớp **một phần** mã đơn (không phân biệt hoa thường, đã `trim`, tối đa 50 ký tự), chỉ trong đơn của chính khách |
 | `page` | ≥ 1, mặc định 1 |
 | `limit` | 1-100, mặc định 10 |
@@ -159,7 +159,7 @@ Một truy vấn `groupBy`, chỉ đơn của khách. Dùng cho huy hiệu/tab c
 { "success": true, "data": { "total": 14, "pending": 3, "processing": 4, "completed": 4, "cancelled": 3, "active": 7 } }
 ```
 
-`pending` = `PENDING` + `PENDING_PAYMENT`; `processing` = `CONFIRMED` + `PACKING` + `SHIPPING`; `completed` = `COMPLETED`; `cancelled` = `CANCELLED`;
+`pending` = `PENDING` + `PENDING_PAYMENT`; `processing` = `CONFIRMED` + `SHIPPING`; `completed` = `COMPLETED`; `cancelled` = `CANCELLED`;
 `active` = `pending + processing`; `total` = mọi đơn (kể cả `RETURNED`, chưa dùng).
 
 ### `POST /orders/:code/reorder`: mua lại
@@ -235,15 +235,15 @@ Route cố định (`preview`, `summary`) khai báo trước route có `:code`.
 | --- | --- | --- | --- | --- | --- |
 | (đặt đơn COD) | `PENDING` | Customer | +n | 0 | +1 nếu có voucher |
 | `PENDING` | `CONFIRMED` | Staff, Admin | 0 | 0 | 0; gán `handledById` |
-| `CONFIRMED` | `PACKING` | Staff, Admin | 0 | 0 | 0 |
-| `PACKING` | `SHIPPING` | Staff, Admin | −n | −n, ghi `StockMovement` loại `SALE` | 0 |
+| `CONFIRMED` | `SHIPPING` | Staff, Admin | −n | −n, ghi `StockMovement` loại `SALE` | 0 |
 | `SHIPPING` | `COMPLETED` | Staff, Admin | 0 | 0 | 0; COD: `paymentStatus = PAID`, `paidAt` |
 | `PENDING` | `CANCELLED` | **Customer**, Staff, Admin | −n | 0 | −1 |
-| `CONFIRMED`, `PACKING` | `CANCELLED` | Staff, Admin (bắt buộc lý do) | −n | 0 | −1 |
+| `CONFIRMED` | `CANCELLED` | Staff, Admin (bắt buộc lý do) | −n | 0 | −1 |
 
 Mọi bước khác → 409 `ORDER_INVALID_TRANSITION`. Đơn đang giao/đã giao không hủy được. Mọi thay đổi trạng thái, tồn kho và voucher nằm
-trong cùng một transaction và ghi một dòng `order_status_histories` (ai, khi nào, lý do). Trừ kho thật ở bước `PACKING → SHIPPING`
-(hàng chưa rời kho trước đó). Thứ tự khóa luôn: giỏ → đơn → biến thể (id tăng dần) → voucher.
+trong cùng một transaction và ghi một dòng `order_status_histories` (ai, khi nào, lý do). Trừ kho thật ở bước `CONFIRMED → SHIPPING`
+(hàng chưa rời kho trước đó; đơn `CONFIRMED` chỉ giữ chỗ).
+Không còn trạng thái `PACKING` (đã bỏ khỏi enum): `status=PACKING` ở query → 400. Thứ tự khóa luôn: giỏ → đơn → biến thể (id tăng dần) → voucher.
 
 `PENDING_PAYMENT`, `RETURNED` có trong enum nhưng **chưa có bước chuyển nào dẫn tới/đi từ chúng** ở bản này.
 

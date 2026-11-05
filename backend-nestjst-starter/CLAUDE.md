@@ -8,7 +8,7 @@ File này cung cấp hướng dẫn cho Claude Code (claude.ai/code) khi làm vi
 scaffold mặc định của Nest (`AppModule`/`AppController`/`AppService` trả về "Hello World") — các module
 nghiệp vụ chưa được xây dựng. Đã có `docker-compose.yml` (service MySQL 8), `.env.development`/`.env.production` và `prisma.config.ts`
 (Prisma 7: URL kết nối khai báo ở đây, không nằm trong schema). `prisma/schema.prisma` (13 model) đã khớp
-`docs/05` và `docs/06`; migration `init_ecommerce`, `add_user_avatar_url`, `add_stock_movements`, `add_product_images_color_hex` và `add_order_checkout` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
+`docs/05` và `docs/06`; migration `init_ecommerce`, `add_user_avatar_url`, `add_stock_movements`, `add_product_images_color_hex`, `add_order_checkout` và `remove_packing_order_status` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
 xây dựng dựa trên đó; coi nó là nguồn thông tin chính khi triển khai tính năng, không phải code `src/`
 hiện tại. Nếu `docs/05` lệch với `prisma/schema.prisma` thì schema là bản chuẩn.
 
@@ -67,8 +67,8 @@ Các quy tắc mà bất kỳ triển khai nào cũng phải giữ nguyên:
 - **Tồn khả dụng** luôn là `stock - reserved`, không bao giờ dùng riêng `stock`. `reserved` (hàng
   đang giữ) tăng khi một order (đơn hàng) được đặt và giảm khi đơn bị hủy hoặc khi đơn chuyển sang
   giao hàng (đồng thời giảm cả `stock`). Cart không bao giờ giữ/khóa tồn kho — chỉ order mới giữ.
-- **Trạng thái đơn là một chuỗi một chiều nghiêm ngặt**: `PENDING → CONFIRMED → PACKING → SHIPPING →
-COMPLETED`, với `CANCELLED` và `RETURNED` là các nhánh phụ tách ra từ chuỗi đó. Các chuyển trạng
+- **Trạng thái đơn là một chuỗi một chiều nghiêm ngặt**: `PENDING → CONFIRMED → SHIPPING →
+COMPLETED` (không có bước đóng gói; đã bỏ `PACKING`), với `CANCELLED` và `RETURNED` là các nhánh phụ tách ra từ chuỗi đó. Các chuyển trạng
   thái ngoài bảng đã tài liệu hóa (xem `02-business-flow.md`) phải bị từ chối.
 - Đơn online chưa thanh toán sau **30 phút** tự động hủy và nhả `reserved`.
 - Staff có thể hủy trực tiếp đơn chưa thanh toán (bắt buộc có lý do); với đơn **đã thanh toán**,
@@ -103,9 +103,9 @@ COMPLETED`, với `CANCELLED` và `RETURNED` là các nhánh phụ tách ra từ
   cùng giá trị giao diện); `PERCENT` làm tròn xuống rồi ≤ `maxDiscount`, mọi giảm giá ≤ tạmTính (tổng có thể = 0). Đơn lưu `subtotal`/`discountAmount`/
   `voucherCode`/`shippingFee`/`totalAmount`, không tính lại. **Thứ tự khóa cố định** (tránh deadlock): giỏ → đơn → biến thể theo `variantId` tăng dần
   (câu khóa chỉ trên `product_variants`, không JOIN; tồn lấy từ chính câu khóa) → voucher. Lượt voucher tăng bằng `UPDATE ... WHERE (usageLimit IS NULL OR
-  usedCount < usageLimit)` kiểm số dòng; hủy đơn trả `usedCount - 1` đúng một lần (kiểm trạng thái sau khi khóa đơn). Trừ kho thật ở `PACKING → SHIPPING`
+  usedCount < usageLimit)` kiểm số dòng; hủy đơn trả `usedCount - 1` đúng một lần (kiểm trạng thái sau khi khóa đơn). Trừ kho thật ở `CONFIRMED → SHIPPING`
   qua `InventoryService.shipOut` (giảm `stock` và `reserved`, ghi `StockMovement` `SALE`). Khách chỉ hủy khi `PENDING` (đơn khác → 409
-  `ORDER_NOT_CANCELLABLE_BY_CUSTOMER`); Staff/Admin hủy đến hết `PACKING` kèm lý do. `COMPLETED` là trạng thái cuối, `RETURNED` để lần sau. Mọi đổi trạng thái
+  `ORDER_NOT_CANCELLABLE_BY_CUSTOMER`); Staff/Admin hủy khi `PENDING` hoặc `CONFIRMED` kèm lý do (`SHIPPING` không hủy được). `COMPLETED` là trạng thái cuối, `RETURNED` để lần sau. Mọi đổi trạng thái
   ghi `order_status_histories`. Mã đơn `MS-YYMMDD-XXXX` (YYMMDD theo GMT+7 tường minh). `Idempotency-Key` (header tùy chọn) trả lại đúng đơn cũ, kiểm sau khi khóa giỏ.
   `GET /vouchers/available` (`src/vouchers/`, chỉ CUSTOMER) liệt kê voucher còn dùng được, tối đa 20, không lộ `id`/`usageLimit`/`usedCount`.
   **Đơn hàng của tôi**: `GET /orders` nhận `status` nhiều giá trị (phân tách dấu phẩy, `QueryMyOrdersDto`) + `q` (khớp một phần mã đơn), thẻ đơn có `itemCount`
@@ -140,9 +140,9 @@ Quyết định nghiệp vụ quan trọng (không tự ý thay đổi):
 
 - Tồn kho theo biến thể (size + màu): `ProductVariant` có `stock` và `reserved`.
   Tồn khả dụng = `stock - reserved`.
-- Thêm vào giỏ không giữ hàng. Đặt đơn tăng `reserved`. Chuyển SHIPPING thì giảm
+- Thêm vào giỏ không giữ hàng. Đặt đơn tăng `reserved`. Chuyển CONFIRMED → SHIPPING thì giảm
   cả `stock` và `reserved`.
-- Trạng thái đơn: PENDING, CONFIRMED, PACKING, SHIPPING, COMPLETED; nhánh CANCELLED, RETURNED (RETURNED chưa triển khai); PENDING_PAYMENT cho đơn online (chưa dùng).
+- Trạng thái đơn: PENDING, CONFIRMED, SHIPPING, COMPLETED; nhánh CANCELLED, RETURNED (RETURNED chưa triển khai); PENDING_PAYMENT cho đơn online (chưa dùng).
 - Đơn online quá 30 phút chưa thanh toán thì tự hủy và nhả `reserved`.
 - Đơn đã thanh toán: Staff chỉ tạo yêu cầu hủy, Admin duyệt.
 - Không xóa cứng Order, OrderItem, Voucher.
@@ -335,6 +335,11 @@ Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy tr�
     Chỉ cần đảm bảo không phát sinh thêm lỗi mới.
 
 ## Việc tồn đọng
+
+- **Trước khi `migrate deploy` ở môi trường khác** (migration `remove_packing_order_status` bỏ `PACKING` khỏi enum `OrderStatus`; còn dòng dùng thì `ALTER` lỗi 1265):
+  chạy `SELECT (SELECT COUNT(*) FROM orders WHERE status = 'PACKING') AS orders_packing, (SELECT COUNT(*) FROM order_status_histories WHERE fromStatus = 'PACKING' OR toStatus = 'PACKING') AS history_packing;`
+  cả hai phải bằng 0. Nếu khác 0: dừng, chuyển dữ liệu riêng (đơn `PACKING` → `CONFIRMED`, xử lý lịch sử để không sinh bước `CONFIRMED → CONFIRMED`) rồi mới deploy. Sao lưu mới trước khi áp (bỏ giá trị giữa enum làm MySQL dựng lại bảng).
+- **In phiếu giao hàng (BR-S-14)** chưa triển khai (V2).
 
 - **Chưa thu hồi được refresh token**: stateless nên logout chỉ xóa cookie; token bị lộ dùng được tới khi hết 7 ngày
   (chỉ chặn được bằng cách khóa user hoặc đổi `JWT_REFRESH_SECRET`). Cân nhắc lưu hash refresh token / `tokenVersion` ở V2.

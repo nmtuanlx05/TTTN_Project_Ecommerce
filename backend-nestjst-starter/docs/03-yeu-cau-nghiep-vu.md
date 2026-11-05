@@ -67,9 +67,9 @@ Yêu cầu chia theo ba phía: người dùng, Admin, Staff. Ưu tiên **MVP** l
 | --- | --- | --- |
 | BR-S-10 | Xem danh sách đơn, lọc theo trạng thái, ngày, mã đơn, số điện thoại | MVP |
 | BR-S-11 | Xác nhận đơn (hệ thống gán người xác nhận làm người phụ trách đơn, `handledById`) và chuyển trạng thái theo đúng chuỗi hợp lệ | MVP |
-| BR-S-12 | Hủy đơn chưa thanh toán (đến hết PACKING), bắt buộc ghi lý do | MVP |
+| BR-S-12 | Hủy đơn chưa thanh toán khi đơn còn `PENDING` hoặc `CONFIRMED` (đơn `SHIPPING` không hủy được), bắt buộc ghi lý do | MVP |
 | BR-S-13 | Với đơn đã thanh toán: chỉ tạo yêu cầu hủy, Admin duyệt | MVP |
-| BR-S-14 | In phiếu đóng gói, phiếu giao hàng | MVP |
+| BR-S-14 | In phiếu giao hàng | MVP (hoãn: **chưa triển khai, để V2**; không còn bước đóng gói) |
 | BR-S-15 | Xử lý hàng hoàn về, cộng lại tồn sau khi kiểm hàng | MVP (hoãn: chưa triển khai `RETURNED`, làm lần sau) |
 
 ### 3.4 Khách hàng
