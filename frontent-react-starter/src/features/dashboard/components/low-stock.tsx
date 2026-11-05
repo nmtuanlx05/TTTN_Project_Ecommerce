@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatNumber } from "@/lib/format"
-import type { LowStockVariant } from "../mock"
+import type { LowStockVariant } from "../types"
 
 /**
  * Tồn khả dụng = stock − reserved. Khả dụng = 0 nhưng stock > 0 là trường hợp
  * đáng chú ý nhất: còn hàng trong kho nhưng đã bị đơn chưa xuất giữ hết, nên
  * không bán thêm được — khác hẳn với hết hàng thật.
  */
-function LowStock({ variants }: { variants: LowStockVariant[] }) {
+function LowStock({ total, variants }: { total: number; variants: LowStockVariant[] }) {
   return (
     <section
       aria-labelledby="low-stock-title"
@@ -25,7 +25,7 @@ function LowStock({ variants }: { variants: LowStockVariant[] }) {
             Sắp hết hàng
           </h2>
           <p className="mt-0.5 text-caption text-ink-muted">
-            Tồn khả dụng = tồn kho − đang giữ
+            {total > 0 ? `${formatNumber(total)} biến thể sắp hết · ` : ""}Tồn khả dụng = tồn kho − đang giữ
           </p>
         </div>
         <Button variant="ghost" size="sm" render={<Link to="/admin/inventory" />}>
@@ -42,7 +42,7 @@ function LowStock({ variants }: { variants: LowStockVariant[] }) {
       ) : (
         <ul className="flex flex-col divide-y divide-border-subtle">
           {variants.map((variant) => {
-            const soldOut = variant.available === 0
+            const soldOut = variant.available <= 0
             return (
               <li
                 key={variant.id}
@@ -54,7 +54,8 @@ function LowStock({ variants }: { variants: LowStockVariant[] }) {
                   </p>
                   <p className="text-caption text-ink-muted">
                     Size {variant.size} · {variant.color} ·{" "}
-                    <span data-numeric>{variant.sku}</span>
+                    <span data-numeric>{variant.sku}</span> · Ngưỡng{" "}
+                    <span data-numeric>{formatNumber(variant.minStock)}</span>
                   </p>
                 </div>
 

@@ -1,4 +1,4 @@
-import type { DashboardData } from "../mock"
+import type { DashboardData } from "../types"
 import { KpiCards } from "./kpi-cards"
 import { RevenueChart } from "./revenue-chart"
 import { StatusBreakdown } from "./status-breakdown"
@@ -34,7 +34,7 @@ function DashboardContent({
           />
         </div>
         <div className="min-w-0">
-          <StatusBreakdown statusCounts={data.statusCounts} />
+          <StatusBreakdown statusCounts={data.statusCounts} range={data.range} />
         </div>
       </div>
 
@@ -43,7 +43,10 @@ function DashboardContent({
           <TopProducts products={data.topProducts} />
         </div>
         <div className="min-w-0">
-          <LowStock variants={data.lowStockVariants} />
+          <LowStock
+            total={data.lowStockVariants.total}
+            variants={data.lowStockVariants.items}
+          />
         </div>
       </div>
 

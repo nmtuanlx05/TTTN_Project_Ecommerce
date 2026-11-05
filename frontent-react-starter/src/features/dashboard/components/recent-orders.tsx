@@ -1,8 +1,8 @@
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Inbox } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/ui/empty-state"
-import { OrderStatusBadge, PaymentStatusBadge } from "@/components/ui/badge"
+import { Badge, OrderStatusBadge, PaymentStatusBadge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -12,10 +12,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { formatTime, formatVnd } from "@/lib/format"
-import type { PendingOrder } from "../mock"
+import { formatOrderTime, formatVnd } from "@/lib/format"
+import type { DashboardPaymentStatus, PendingOrder } from "../types"
+
+/** `FAILED` chưa có trong `PaymentStatusBadge` (ui/badge); xử lý cục bộ giống order-payment-cell.tsx của admin-orders. */
+function PaymentCell({ status }: { status: DashboardPaymentStatus }) {
+  return status === "FAILED" ? (
+    <Badge variant="unpaid">Thanh toán lỗi</Badge>
+  ) : (
+    <PaymentStatusBadge status={status} />
+  )
+}
 
 function RecentOrders({ orders }: { orders: PendingOrder[] }) {
+  const navigate = useNavigate()
   return (
     <section
       aria-labelledby="recent-orders-title"
@@ -46,7 +56,7 @@ function RecentOrders({ orders }: { orders: PendingOrder[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Mã đơn</TableHead>
-              <TableHead>Khách hàng</TableHead>
+              <TableHead>Người nhận</TableHead>
               <TableHead className="text-right">Tổng cộng</TableHead>
               <TableHead>Trạng thái</TableHead>
               <TableHead>Thanh toán</TableHead>
@@ -55,10 +65,15 @@ function RecentOrders({ orders }: { orders: PendingOrder[] }) {
           </TableHeader>
           <TableBody>
             {orders.map((order) => (
-              <TableRow key={order.id}>
+              <TableRow
+                key={order.id}
+                className="cursor-pointer"
+                onClick={() => navigate(`/admin/orders/${order.id}`)}
+              >
                 <TableCell>
                   <Link
-                    to={`/admin/orders/${order.code}`}
+                    to={`/admin/orders/${order.id}`}
+                    onClick={(event) => event.stopPropagation()}
                     data-numeric
                     className="rounded-xs text-ink underline-offset-4 outline-none hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
@@ -73,10 +88,10 @@ function RecentOrders({ orders }: { orders: PendingOrder[] }) {
                   <OrderStatusBadge status={order.status} />
                 </TableCell>
                 <TableCell>
-                  <PaymentStatusBadge status={order.paymentStatus} />
+                  <PaymentCell status={order.paymentStatus} />
                 </TableCell>
                 <TableCell data-numeric className="text-right text-ink-muted">
-                  {formatTime(order.createdAt)}
+                  {formatOrderTime(order.createdAt)}
                 </TableCell>
               </TableRow>
             ))}
