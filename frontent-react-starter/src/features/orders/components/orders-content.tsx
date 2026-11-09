@@ -111,7 +111,7 @@ function OrdersContent({ onReordered }: { onReordered: () => void }) {
               <OrderCard
                 order={order}
                 busy={actions.reorderingCode === order.code}
-                onCancel={(item) => actions.setCancelCode(item.code)}
+                onCancel={actions.requestCancel}
                 onReorder={(item) => actions.reorderOrder(item.code)}
               />
             </li>

@@ -2,7 +2,8 @@ import { Link } from "react-router-dom"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { formatDate, formatTime, formatVnd } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import { PAYMENT_METHOD_LABEL, orderDetailPath } from "../constants"
+import { orderPaymentPath } from "@/lib/order-paths"
+import { PAYMENT_METHOD_LABEL, canCustomerCancel, canPayNow, orderDetailPath } from "../constants"
 import type { OrderListItem } from "../types"
 import { OrderStatusPill } from "./order-status-pill"
 import { OrderThumb } from "./order-thumb"
@@ -18,10 +19,20 @@ function PaidPill() {
   )
 }
 
+/** "Chưa thanh toán" cho đơn online còn chờ chuyển khoản (đơn COD chưa trả là bình thường nên không gắn nhãn). */
+function UnpaidPill() {
+  return (
+    <span className="inline-flex w-fit items-center rounded-4xl bg-warning-tint px-3 py-0.5 text-caption font-medium text-warning-fg">
+      Chưa thanh toán
+    </span>
+  )
+}
+
 /**
  * Thẻ một đơn trong danh sách: mã + ngày (GMT+7) + viên trạng thái; hàng ảnh nhỏ (huy hiệu tròn = số lượng, quá 4 dòng thì "+N") và tên sản phẩm;
- * dưới đường kẻ: thanh toán, tổng cộng, nút. Nút chính theo trạng thái: PENDING "Hủy đơn" (nơi gọi mở hộp xác nhận), CONFIRMED/SHIPPING
- * "Theo dõi đơn", COMPLETED/CANCELLED "Mua lại". "Xem chi tiết" luôn có. Không có "Thanh toán ngay" (chưa hỗ trợ thanh toán online).
+ * dưới đường kẻ: thanh toán, tổng cộng, nút. Nút chính theo trạng thái: PENDING_PAYMENT "Thanh toán ngay" (tới trang QR; trang đó quyết định đơn đã hết hạn chưa)
+ * kèm "Hủy đơn" dạng chữ, PENDING "Hủy đơn" (chỉ khi chưa thanh toán; nơi gọi mở hộp xác nhận), CONFIRMED/SHIPPING "Theo dõi đơn",
+ * COMPLETED/CANCELLED "Mua lại". "Xem chi tiết" luôn có.
  */
 function OrderCard({
   order,
@@ -42,7 +53,20 @@ function OrderCard({
   const actionClass = "press rounded-4xl"
 
   let primary: React.ReactNode = null
-  if (status === "PENDING") {
+  if (canPayNow(order)) {
+    primary = (
+      <>
+        {canCustomerCancel(order) ? (
+          <Button type="button" variant="link" onClick={() => onCancel(order)} className="press">
+            Hủy đơn
+          </Button>
+        ) : null}
+        <Link to={orderPaymentPath(order.code)} className={cn(buttonVariants(), actionClass)}>
+          Thanh toán ngay
+        </Link>
+      </>
+    )
+  } else if (status === "PENDING" && canCustomerCancel(order)) {
     primary = (
       <Button type="button" onClick={() => onCancel(order)} className={actionClass}>
         Hủy đơn
@@ -105,6 +129,7 @@ function OrderCard({
         <div className="flex flex-col items-start gap-2">
           <p className="text-body-sm text-ink-muted">{PAYMENT_METHOD_LABEL[order.paymentMethod]}</p>
           {order.paymentStatus === "PAID" ? <PaidPill /> : null}
+          {canPayNow(order) && order.paymentMethod === "ONLINE" ? <UnpaidPill /> : null}
         </div>
         <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-3">
           <p className="flex flex-col text-right">

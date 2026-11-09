@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { StorefrontDialog } from "@/components/storefront/storefront-dialog"
+import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { DEFAULT_CANCEL_REASON, MAX_REASON_LENGTH } from "../constants"
@@ -7,7 +8,7 @@ import type { OrderActions } from "../use-order-actions"
 import { useCancelOrder } from "../queries"
 
 /** Form trong hộp thoại hủy; được dựng lại mỗi lần mở nên ô lý do luôn về mặc định. */
-function CancelForm({ code, onClose }: { code: string; onClose: () => void }) {
+function CancelForm({ code, awaitingPayment, onClose }: { code: string; awaitingPayment: boolean; onClose: () => void }) {
   const [reason, setReason] = useState(DEFAULT_CANCEL_REASON)
   const cancel = useCancelOrder()
   return (
@@ -18,6 +19,12 @@ function CancelForm({ code, onClose }: { code: string; onClose: () => void }) {
       }}
       className="flex flex-col gap-4 p-gutter"
     >
+      {awaitingPayment ? (
+        <Alert variant="warning" title="Bạn đã chuyển khoản chưa?">
+          Nếu đã chuyển khoản, đừng hủy đơn: hãy chờ hệ thống xác nhận hoặc liên hệ cửa hàng kèm mã đơn. Hủy đơn sau khi chuyển khoản có thể
+          khiến tiền phải hoàn lại thủ công.
+        </Alert>
+      ) : null}
       <div className="flex flex-col gap-2">
         <label htmlFor="cancel-reason" className="text-body-sm font-medium text-ink">
           Lý do hủy (không bắt buộc)
@@ -44,16 +51,18 @@ function CancelForm({ code, onClose }: { code: string; onClose: () => void }) {
 
 /** Hộp thoại xác nhận hủy đơn và hộp thoại kết quả mua lại (liệt kê dòng bị bỏ qua kèm lý do). */
 function OrderActionDialogs({ actions }: { actions: OrderActions }) {
-  const { cancelCode, setCancelCode, notice, noticeOpen, setNoticeOpen, onNoticeClosed } = actions
+  const { cancelTarget, closeCancel, notice, noticeOpen, setNoticeOpen, onNoticeClosed } = actions
   return (
     <>
       <StorefrontDialog
-        open={cancelCode !== null}
-        onOpenChange={(open) => (open ? undefined : setCancelCode(null))}
+        open={cancelTarget !== null}
+        onOpenChange={(open) => (open ? undefined : closeCancel())}
         title="Hủy đơn hàng?"
-        description={cancelCode ? `Đơn ${cancelCode} sẽ bị hủy và không thể khôi phục.` : undefined}
+        description={cancelTarget ? `Đơn ${cancelTarget.code} sẽ bị hủy và không thể khôi phục.` : undefined}
       >
-        {cancelCode ? <CancelForm code={cancelCode} onClose={() => setCancelCode(null)} /> : null}
+        {cancelTarget ? (
+          <CancelForm code={cancelTarget.code} awaitingPayment={cancelTarget.awaitingPayment} onClose={closeCancel} />
+        ) : null}
       </StorefrontDialog>
       <StorefrontDialog
         open={noticeOpen}
