@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 
 /**
  * Thẻ chọn kiểu radio (một trong nhóm `role="radiogroup"` do nơi dùng dựng). Chọn: viền mực đậm; không chọn: viền control.
- * `unavailable`: hiện đúng như thẻ thường nhưng không chọn được (`aria-disabled`), bấm thì chạy `onSelect` để nơi dùng báo "sắp có".
+ * `unavailable`: thẻ mờ, không chọn được (`aria-disabled`); bấm vẫn chạy `onSelect` để nơi dùng tự quyết (thường không làm gì). Lý do nên nằm ở `description`.
  */
 function RadioCard({
   checked,
@@ -31,6 +31,7 @@ function RadioCard({
         "press flex w-full items-center gap-3 rounded-card border bg-surface p-4 text-left",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         checked ? "border-2 border-ink" : "border-border-control hover:border-ink-muted",
+        unavailable && "cursor-not-allowed opacity-60 hover:border-border-control",
       )}
     >
       <span

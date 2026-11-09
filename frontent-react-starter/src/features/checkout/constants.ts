@@ -6,6 +6,8 @@ export const ERROR_CODE = {
   cartEmpty: "CART_EMPTY",
   itemsUnavailable: "CART_ITEMS_UNAVAILABLE",
   systemBusy: "SYSTEM_BUSY",
+  paymentNotSupported: "PAYMENT_METHOD_NOT_SUPPORTED",
+  paymentNotRequired: "PAYMENT_NOT_REQUIRED",
 } as const
 
 /** Mã lỗi voucher (docs/api/orders.md). */
@@ -30,3 +32,15 @@ export const LOCATION_ERROR_FIELD: Record<string, "provinceCode" | "districtCode
 }
 
 export const GENERIC_ERROR = "Không đặt được hàng, vui lòng thử lại."
+
+/**
+ * Kênh thanh toán online hiện ở ô "Chọn hình thức". Backend mới có chuyển khoản VietQR (giai đoạn A); ví điện tử và thẻ là VNPay (giai đoạn B):
+ * bật bằng cách đổi `enabled`, hoặc xóa hai dòng đó nếu cắt VNPay. Kênh `enabled` đầu tiên là kênh đang chọn.
+ */
+export const PAYMENT_CHANNELS = [
+  { id: "bank-qr", label: "Quét mã QR ngân hàng", enabled: true },
+  { id: "e-wallet", label: "Ví điện tử", enabled: false },
+  { id: "card", label: "Thẻ ATM / Visa", enabled: false },
+] as const
+
+export const CHANNEL_SOON_LABEL = "Sắp có"

@@ -16,6 +16,7 @@ export function buildCheckoutSchema(hasWards: boolean) {
     wardCode: hasWards ? z.string().min(1, "Chọn phường/xã.") : z.string(),
     addressLine: z.string().trim().min(1, "Nhập địa chỉ cụ thể.").max(255, "Địa chỉ không được vượt quá 255 ký tự."),
     note: z.string().trim().max(500, "Ghi chú không được vượt quá 500 ký tự."),
+    paymentMethod: z.enum(["COD", "ONLINE"]),
   })
 }
 
@@ -29,6 +30,7 @@ export const CHECKOUT_FIELDS = [
   "wardCode",
   "addressLine",
   "note",
+  "paymentMethod",
 ] as const
 
 /** `+84xxxxxxxxx` -> `0xxxxxxxxx` để điền sẵn từ tài khoản; số không hợp lệ thì để trống. */

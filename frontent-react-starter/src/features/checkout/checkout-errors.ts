@@ -10,6 +10,7 @@ export type PlaceOrderFailure =
   | { kind: "unavailable"; messages: string[] }
   | { kind: "voucher"; message: string }
   | { kind: "field"; field: FieldName; message: string }
+  | { kind: "payment"; message: string }
   | { kind: "busy"; message: string }
   | { kind: "general"; message: string }
 
@@ -23,6 +24,9 @@ export function classifyPlaceOrderError(error: ApiError): PlaceOrderFailure {
   if (code && VOUCHER_ERROR_CODES.includes(code)) return { kind: "voucher", message: error.message }
   const field = code ? LOCATION_ERROR_FIELD[code] : undefined
   if (field) return { kind: "field", field, message: error.message }
+  if (code === ERROR_CODE.paymentNotSupported || code === ERROR_CODE.paymentNotRequired) {
+    return { kind: "payment", message: error.message }
+  }
   if (code === ERROR_CODE.systemBusy) return { kind: "busy", message: error.message }
   if (statusCode === 403) return { kind: "general", message: "Tài khoản quản trị không dùng để mua hàng" }
   return { kind: "general", message: error.message || GENERIC_ERROR }

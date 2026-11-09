@@ -37,6 +37,20 @@ export interface OrderPreview {
   shippingFee: number
   totalAmount: number
   voucher: PreviewVoucher | null
+  availablePaymentMethods: AvailablePaymentMethods
+}
+
+export type PaymentMethod = "COD" | "ONLINE"
+
+/** `availablePaymentMethods` của xem trước. `reason` (tiếng Việt, do backend viết) có khi `enabled = false`: ONLINE chưa cấu hình hoặc tổng đơn 0đ. */
+export interface PaymentMethodAvailability {
+  enabled: boolean
+  reason?: string
+}
+
+export interface AvailablePaymentMethods {
+  cod: PaymentMethodAvailability
+  online: PaymentMethodAvailability
 }
 
 export interface AvailableVoucher extends PreviewVoucher {
@@ -57,11 +71,15 @@ export interface PlaceOrderInput {
   wardCode?: string
   addressLine: string
   note?: string
-  paymentMethod: "COD"
+  paymentMethod: PaymentMethod
   voucherCode?: string
 }
 
-/** Kết quả đặt đơn: checkout chỉ cần mã đơn để chuyển trang (chi tiết đơn thuộc `features/orders`). */
+/**
+ * Kết quả đặt đơn: checkout chỉ cần mã đơn và cách thanh toán để chọn trang kế tiếp (chi tiết đơn thuộc `features/orders`).
+ * `paymentMethod` tùy chọn vì tài liệu chỉ ghi "đối tượng đơn"; thiếu thì đi tới trang đặt hàng thành công (trang đó tự chuyển đơn chờ thanh toán sang trang QR).
+ */
 export interface PlacedOrder {
   code: string
+  paymentMethod?: PaymentMethod
 }
