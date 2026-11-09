@@ -8,7 +8,7 @@ File này cung cấp hướng dẫn cho Claude Code (claude.ai/code) khi làm vi
 scaffold mặc định của Nest (`AppModule`/`AppController`/`AppService` trả về "Hello World") — các module
 nghiệp vụ chưa được xây dựng. Đã có `docker-compose.yml` (service MySQL 8), `.env.development`/`.env.production` và `prisma.config.ts`
 (Prisma 7: URL kết nối khai báo ở đây, không nằm trong schema). `prisma/schema.prisma` (14 model) đã khớp
-`docs/05` và `docs/06`; migration `init_ecommerce`, `add_user_avatar_url`, `add_stock_movements`, `add_product_images_color_hex`, `add_order_checkout`, `remove_packing_order_status` và `add_wishlist_items` (đã viết, chờ áp) đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
+`docs/05` và `docs/06`; migration `init_ecommerce`, `add_user_avatar_url`, `add_stock_movements`, `add_product_images_color_hex`, `add_order_checkout`, `remove_packing_order_status`, `add_wishlist_items` và `add_payment_review` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
 xây dựng dựa trên đó; coi nó là nguồn thông tin chính khi triển khai tính năng, không phải code `src/`
 hiện tại. Nếu `docs/05` lệch với `prisma/schema.prisma` thì schema là bản chuẩn.
 
@@ -98,13 +98,13 @@ COMPLETED` (không có bước đóng gói; đã bỏ `PACKING`), với `CANCELL
   **không lưu giá** (đọc giá hiện tại; đơn hàng chụp giá lúc đặt). Ghi trong `$transaction` có `SELECT ... FOR UPDATE` dòng `carts`; dòng đã
   hết hàng/ẩn vẫn hiện kèm `purchasable`/`inStock`, `subtotal`/`itemCount` chỉ tính dòng mua được. Dòng của người khác trả 404.
 - **Đặt đơn, voucher, quản lý đơn** (`src/orders/`, API ở `docs/api/orders.md`; địa chỉ ở `src/locations/`, `docs/api/locations.md`): chỉ `CUSTOMER` đặt đơn
-  từ giỏ (guest checkout để V2), chỉ COD (`ONLINE` → 400 `PAYMENT_METHOD_NOT_SUPPORTED`; schema đã chừa `PENDING_PAYMENT`, `payment_transactions`).
+  từ giỏ (guest checkout để V2), COD và ONLINE chuyển khoản VietQR (xem mục **Thanh toán online** bên dưới; `ONLINE` chưa cấu hình → 400 `PAYMENT_METHOD_NOT_SUPPORTED`, tổng 0đ → 400 `PAYMENT_NOT_REQUIRED`).
   **Tiền tính ở một nơi** `orders.pricing.ts`: `phíShip = tạmTính >= 500.000 ? 0 : 30.000` (trên tạmTính TRƯỚC giảm giá; hằng số ở `orders.constants.ts`,
   cùng giá trị giao diện); `PERCENT` làm tròn xuống rồi ≤ `maxDiscount`, mọi giảm giá ≤ tạmTính (tổng có thể = 0). Đơn lưu `subtotal`/`discountAmount`/
   `voucherCode`/`shippingFee`/`totalAmount`, không tính lại. **Thứ tự khóa cố định** (tránh deadlock): giỏ → đơn → biến thể theo `variantId` tăng dần
   (câu khóa chỉ trên `product_variants`, không JOIN; tồn lấy từ chính câu khóa) → voucher. Lượt voucher tăng bằng `UPDATE ... WHERE (usageLimit IS NULL OR
   usedCount < usageLimit)` kiểm số dòng; hủy đơn trả `usedCount - 1` đúng một lần (kiểm trạng thái sau khi khóa đơn). Trừ kho thật ở `CONFIRMED → SHIPPING`
-  qua `InventoryService.shipOut` (giảm `stock` và `reserved`, ghi `StockMovement` `SALE`). Khách chỉ hủy khi `PENDING` (đơn khác → 409
+  qua `InventoryService.shipOut` (giảm `stock` và `reserved`, ghi `StockMovement` `SALE`). Khách chỉ hủy khi `PENDING`/`PENDING_PAYMENT` và **chưa thanh toán** (đơn khác hoặc đã `PAID` → 409
   `ORDER_NOT_CANCELLABLE_BY_CUSTOMER`); Staff/Admin hủy khi `PENDING` hoặc `CONFIRMED` kèm lý do (`SHIPPING` không hủy được). `COMPLETED` là trạng thái cuối, `RETURNED` để lần sau. Mọi đổi trạng thái
   ghi `order_status_histories`. Mã đơn `MS-YYMMDD-XXXX` (YYMMDD theo GMT+7 tường minh). `Idempotency-Key` (header tùy chọn) trả lại đúng đơn cũ, kiểm sau khi khóa giỏ.
   `GET /vouchers/available` (`src/vouchers/`, chỉ CUSTOMER) liệt kê voucher còn dùng được, tối đa 20, không lộ `id`/`usageLimit`/`usedCount`.
@@ -116,6 +116,15 @@ COMPLETED` (không có bước đóng gói; đã bỏ `PACKING`), với `CANCELL
   **Địa chỉ 3 cấp (chuẩn CŨ)**: dữ liệu dvhcvn `v20250301` (GPL-3.0, xem `src/locations/data/NOTICE.md`) nạp vào bộ nhớ; đơn lưu mã VÀ tên từng cấp;
   quận/huyện có phường/xã thì `wardCode` bắt buộc, không có (5 huyện đảo) thì phải bỏ trống. Lỗi mới có trường `code` (`AllExceptionsFilter`, helper
   `src/common/errors/coded-errors.ts`); lỗi cũ không đổi.
+- **Thanh toán online (chuyển khoản VietQR)** (`src/payments/`, API ở `docs/api/payments.md`): đơn `ONLINE` vào `PENDING_PAYMENT` (giữ chỗ tồn và voucher như COD, `paymentExpiresAt = now + PAYMENT_EXPIRE_MINUTES`, mặc định 30; tổng 0đ bị từ chối
+  `PAYMENT_NOT_REQUIRED`). QR do backend tự dựng (`vietqr.ts`: EMVCo TLV + CRC16-CCITT-FALSE; nội dung chuyển khoản = mã đơn bỏ ký tự đặc biệt, `MS261105PKGA`). **Chỉ một hàm xác nhận**
+  `PaymentsService.confirmBankTransfer` (idempotent theo `(provider, providerTxnId)`, khóa dòng đơn `FOR UPDATE`, `$transaction`); hai cửa vào: webhook SePay `POST /payments/webhook/sepay`
+  (`@Public`, xác thực `Authorization: Apikey <SEPAY_WEBHOOK_API_KEY>` bằng so sánh hằng thời gian, tắt hẳn/404 khi chưa có khóa, chỉ tiền vào) và Admin xác nhận thủ công
+  `POST /admin/orders/:id/confirm-payment` (chỉ ADMIN, bắt buộc ghi chú). **Không có endpoint/cờ giả lập thanh toán, đừng thêm.** Đủ/thừa tiền → `PENDING` + `PAID`; thiếu tiền, đơn đã đóng, đã trả, không khớp →
+  giao dịch `NEEDS_REVIEW` (+ `reviewReason`), **không mở lại đơn đã hủy**; hoàn tiền xử lý ngoài hệ thống. Actor `SYSTEM` (id null hoặc người xác nhận) mới chuyển `PENDING_PAYMENT → PENDING`; khách không hủy được
+  đơn `PAID`, Staff cũng không (403 `ORDER_PAID_ADMIN_ONLY`), Admin hủy thì `paymentStatus` giữ `PAID`. Hết hạn: tác vụ mỗi phút (`payment-expiry.cron.ts` + `@nestjs/schedule`, chỉ nạp ở `PaymentsSchedulerModule`
+  của `AppModule` để test không chạy cron thật) hủy qua đúng đường hủy hiện có, lý do "Hết hạn thanh toán". Thiếu/sai biến `VIETQR_*`/`PAYMENT_EXPIRE_MINUTES` chỉ tắt ONLINE (app vẫn chạy); không bao giờ log khóa hay số tài khoản.
+  Admin xem giao dịch cần xử lý: `GET /admin/payments/transactions`, `POST /admin/payments/transactions/:id/resolve` (chỉ ADMIN). Chưa chạy thật trên MySQL/SePay/app ngân hàng.
 - **Wishlist** (`src/wishlist/`, API ở `docs/api/wishlist.md`): chỉ `CUSTOMER` (ADMIN/STAFF 403 qua `@RolesMessage`), theo **sản phẩm** không theo biến thể, tối đa 100/khách (`WISHLIST_MAX_ITEMS`, 409 `WISHLIST_FULL`). `GET /wishlist` tái dùng `publicProductListSelect`/`toPublicListItem` + `addedAt` + `isListed` (bật và có biến thể bán = trang chi tiết xem được) + `isAvailable` (isListed và còn hàng; sản phẩm đã tắt vẫn hiện); `GET /wishlist/ids` cho frontend tô tim (không thêm `isFavorite` vào API sản phẩm). `POST`/`DELETE /wishlist/:productId` idempotent (200 `{productId, added|removed}`); POST chỉ nhận sản phẩm bật và có biến thể bán (không thì 404 không mã), khóa dòng `users` `FOR UPDATE` để giữ trần. Chưa chạy thật trên MySQL.
 - Xóa mềm bằng `isActive` cho `Product`/`ProductVariant`/`User`/`Voucher`; `Order` và `OrderItem`
   không bao giờ xóa cứng (hủy đơn bằng `CANCELLED`).
@@ -143,8 +152,8 @@ Quyết định nghiệp vụ quan trọng (không tự ý thay đổi):
   Tồn khả dụng = `stock - reserved`.
 - Thêm vào giỏ không giữ hàng. Đặt đơn tăng `reserved`. Chuyển CONFIRMED → SHIPPING thì giảm
   cả `stock` và `reserved`.
-- Trạng thái đơn: PENDING, CONFIRMED, SHIPPING, COMPLETED; nhánh CANCELLED, RETURNED (RETURNED chưa triển khai); PENDING_PAYMENT cho đơn online (chưa dùng).
-- Đơn online quá 30 phút chưa thanh toán thì tự hủy và nhả `reserved`.
+- Trạng thái đơn: PENDING, CONFIRMED, SHIPPING, COMPLETED; nhánh CANCELLED, RETURNED (RETURNED chưa triển khai); PENDING_PAYMENT cho đơn online chờ chuyển khoản.
+- Đơn online quá hạn thanh toán (mặc định 30 phút) thì tự hủy và nhả `reserved`.
 - Đơn đã thanh toán: Staff chỉ tạo yêu cầu hủy, Admin duyệt.
 - Không xóa cứng Order, OrderItem, Voucher.
 - Staff nhập kho cộng trực tiếp vào `stock`; mỗi lần đổi `stock` ghi một dòng `StockMovement` (giữ/nhả `reserved` không ghi).
@@ -346,7 +355,8 @@ Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy tr�
   (chỉ chặn được bằng cách khóa user hoặc đổi `JWT_REFRESH_SECRET`). Cân nhắc lưu hash refresh token / `tokenVersion` ở V2.
 - **Đặt đơn chưa kiểm chứng trên MySQL thật**: khóa `FOR UPDATE`, thứ tự khóa, chống bán vượt tồn và chống dùng quá lượt voucher khi hai request đồng thời chỉ được bảo vệ bằng thiết kế
   (khóa theo thứ tự cố định + UPDATE có điều kiện + kiểm số dòng); test hiện dùng Prisma giả. Chưa xác minh adapter áp dụng `isolationLevel: ReadCommitted`.
-- **Chưa có**: đơn hết hạn tự hủy cho thanh toán online (job định kỳ, mô tả ở `docs/api/orders.md`), hoàn hàng `RETURNED`, giới hạn voucher theo khách, guest checkout, email.
+- **Thanh toán VietQR chưa kiểm chứng thật**: khóa dòng/đua (xác nhận ↔ hết hạn, hai webhook cùng id) chỉ được bảo vệ bằng thiết kế và test Prisma giả; chưa thử với MySQL thật, webhook SePay thật, hay quét QR bằng app ngân hàng (xem danh sách ở `docs/api/payments.md`). Bảng BIN ngân hàng chỉ MB (970422) đã kiểm chứng.
+- **Chưa có**: hoàn tiền tự động và luồng "Staff tạo yêu cầu hủy, Admin duyệt" cho đơn đã thanh toán, cổng VNPay, hoàn hàng `RETURNED`, giới hạn voucher theo khách, guest checkout, email.
 - **Chưa giới hạn số lần đăng nhập sai** (chưa có rate limit/lockout) cho `/auth/login`.
 - **`test/app.e2e-spec.ts` fail từ trước**: nạp `AppModule` thật mà `@nestjs/config` chỉ có bản ESM (Jest không nạp được)
   và cần DB. `test/jest-e2e.json` đã cho Jest transform `@nestjs/jwt` và `@nestjs/passport` (cũng ESM) để test Auth chạy được.

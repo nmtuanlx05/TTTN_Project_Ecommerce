@@ -41,15 +41,18 @@ Nhánh phụ: `CANCELLED`, `RETURNED`
 
 | Từ | Sang | Ai thực hiện | Tác động đến kho và thanh toán |
 | --- | --- | --- | --- |
-| (khách đặt đơn) | PENDING | Hệ thống | `reserved` tăng theo số lượng từng biến thể; `usedCount` của voucher (nếu có) tăng 1 |
-| PENDING | CONFIRMED | Staff | Không đổi kho; gán `handledById`. Đơn ONLINE chỉ được xác nhận khi `paymentStatus` là PAID |
+| (khách đặt đơn ONLINE) | PENDING_PAYMENT | Hệ thống | Như đơn COD (giữ `reserved`, tăng `usedCount`); `paymentExpiresAt = now + 30 phút` |
+| PENDING_PAYMENT | PENDING | Hệ thống | Nhận chuyển khoản đủ/thừa (webhook hoặc Admin xác nhận thủ công): `paymentStatus = PAID`, `paidAt`; không đổi kho |
+| PENDING_PAYMENT | CANCELLED | Customer, Staff, Admin hoặc Hệ thống (quá hạn) | Nhả `reserved`; `usedCount - 1` |
+| (khách đặt đơn COD) | PENDING | Hệ thống | `reserved` tăng theo số lượng từng biến thể; `usedCount` của voucher (nếu có) tăng 1 |
+| PENDING | CONFIRMED | Staff | Không đổi kho; gán `handledById`. Đơn ONLINE vào PENDING chỉ sau khi đã PAID nên xác nhận như đơn COD |
 | CONFIRMED | SHIPPING | Staff | Xuất kho: giảm `stock` và `reserved`, ghi `StockMovement` loại `SALE` |
 | SHIPPING | COMPLETED | Staff | Đơn COD: ghi nhận đã thu tiền, `paymentStatus` chuyển PAID |
 | SHIPPING | RETURNED | Staff | **Chưa triển khai (để lần sau)**: hàng hoàn về kho; kiểm đạt thì cộng lại `stock`. Không hoàn lượt voucher. Bản hiện tại `COMPLETED` là trạng thái cuối |
 | PENDING | CANCELLED | Customer, Staff hoặc Admin | Nhả `reserved`; `usedCount - 1`; lý do bắt buộc với Staff/Admin (Customer mặc định "Khách tự hủy") |
 | CONFIRMED | CANCELLED | Staff hoặc Admin | Nhả `reserved`; `usedCount - 1`; bắt buộc ghi lý do. **Customer không tự hủy được** (409 `ORDER_NOT_CANCELLABLE_BY_CUSTOMER`) |
-| Bất kỳ trước SHIPPING, đơn đã thanh toán | CANCELLED | Staff tạo yêu cầu, Admin duyệt | Nhả `reserved`; `usedCount - 1`; `paymentStatus` chuyển REFUNDED |
-| PENDING, đơn ONLINE quá 30 phút chưa thanh toán | CANCELLED | Hệ thống | Nhả `reserved`; `usedCount - 1` |
+| Bất kỳ trước SHIPPING, đơn đã thanh toán | CANCELLED | **Chỉ Admin** hủy trực tiếp (luồng "Staff tạo yêu cầu, Admin duyệt" chưa làm); Customer không tự hủy | Nhả `reserved`; `usedCount - 1`; `paymentStatus` **giữ PAID**, hoàn tiền xử lý ngoài hệ thống |
+| PENDING_PAYMENT, đơn ONLINE quá hạn (mặc định 30 phút) chưa thanh toán | CANCELLED | Hệ thống | Nhả `reserved`; `usedCount - 1`; lý do "Hết hạn thanh toán" |
 
 ## Quy tắc bắt buộc
 

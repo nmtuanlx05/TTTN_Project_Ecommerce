@@ -19,7 +19,7 @@ Schema chốt cho MVP gồm 14 model (10 model gốc cộng `ProductImage`, `Ord
 | Ảnh sản phẩm | Một cột `Product.imageUrl` | Thêm `ProductImage` (tối đa 6 ảnh/sản phẩm, có thứ tự `sortOrder`); `imageUrl` giữ lại nhưng **deprecated** | Gallery nhiều ảnh; cột cũ chỉ để tương thích |
 | Mã màu | Chỉ có tên màu `ProductVariant.color` | Thêm `ProductVariant.colorHex` (VARCHAR(7), tùy chọn) | Hiển thị chấm màu; không tạo bảng `Color` riêng |
 | `OrderStatusHistory` | Chưa có | **Thêm** (bước đặt đơn): `fromStatus`, `toStatus`, `actorId` (null = hệ thống), `reason`, `createdAt` | Truy được ai đổi trạng thái, khi nào, vì sao; `Order.handledById` vẫn ghi người phụ trách |
-| `PaymentTransaction` | Chưa có | **Thêm** (chưa dùng ở bản COD): `provider`, `providerTxnId`, `amount`, `status`, `rawData` | Chừa chỗ cho cổng thanh toán online; unique `(provider, providerTxnId)` cho callback idempotent |
+| `PaymentTransaction` | Chưa có | **Thêm**; dùng cho thanh toán chuyển khoản VietQR (migration `add_payment_review` làm `orderId` nullable, thêm `content`, `reviewReason`, `resolvedAt/ById`, `resolutionNote`, `NEEDS_REVIEW`) | Mỗi lần nhận tiền/admin xác nhận là một dòng; unique `(provider, providerTxnId)` cho callback idempotent; `orderId` null = giao dịch không khớp đơn nào |
 | `StockMovement` | Chưa có | Thêm (thay cho `InventoryTransaction` dự kiến ở V2) | Lịch sử nhập/xuất/điều chỉnh `stock`; `reserved` không ghi; loại `SALE` (xuất kho khi SHIPPING) đã thêm ở bước đơn hàng, `RETURN` thêm khi làm hoàn hàng |
 | Giảm giá | | Thêm `Voucher`, enum `DiscountType`, `Order.voucherId`, `Order.discountAmount` | Voucher thuộc MVP |
 
@@ -65,7 +65,7 @@ enum OrderStatus {
   COMPLETED   // giao thành công
   CANCELLED   // đã hủy
   RETURNED    // hàng hoàn về (chưa triển khai, để lần sau)
-  PENDING_PAYMENT // đơn online chờ thanh toán (chưa dùng ở bản COD; thêm cuối enum)
+  PENDING_PAYMENT // đơn online chờ chuyển khoản (đang dùng; thêm cuối enum)
 }
 
 enum DiscountType {
@@ -349,28 +349,45 @@ model OrderStatusHistory {
   @@map("order_status_histories")
 }
 
-// Giao dịch với cổng thanh toán online; tạo sẵn để cắm cổng sau, bản COD chưa ghi dòng nào.
+// Trạng thái một giao dịch thanh toán online
 enum PaymentTransactionStatus {
   PENDING
   SUCCESS
   FAILED
   REFUNDED
+  NEEDS_REVIEW // đã nhận tiền nhưng chưa xác nhận đơn (thiếu tiền, không khớp, đơn đã đóng); admin xử lý
 }
 
+enum PaymentReviewReason {
+  UNMATCHED
+  UNDERPAID
+  OVERPAID
+  ORDER_CLOSED
+  DUPLICATE_PAID
+}
+
+// provider = nguồn đối soát (SEPAY, MANUAL). orderId null = không khớp đơn nào. onDelete/onUpdate: Restrict (cột nằm trong CHECK).
 model PaymentTransaction {
-  id            Int                      @id @default(autoincrement())
-  orderId       Int
-  order         Order                    @relation(fields: [orderId], references: [id])
-  provider      String                   @db.VarChar(20) // VNPAY...
-  providerTxnId String?                  @db.VarChar(100)
-  amount        Int
-  status        PaymentTransactionStatus @default(PENDING)
-  rawData       Json?
-  createdAt     DateTime                 @default(now())
-  updatedAt     DateTime                 @updatedAt
+  id             Int                      @id @default(autoincrement())
+  orderId        Int?
+  order          Order?                   @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  provider       String                   @db.VarChar(20)
+  providerTxnId  String?                  @db.VarChar(100)
+  amount         Int
+  content        String?                  @db.VarChar(500)
+  status         PaymentTransactionStatus @default(PENDING)
+  reviewReason   PaymentReviewReason?
+  resolvedAt     DateTime?
+  resolvedById   Int?
+  resolvedBy     User?                    @relation("PaymentResolver", fields: [resolvedById], references: [id])
+  resolutionNote String?                  @db.VarChar(500)
+  rawData        Json?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
 
   @@unique([provider, providerTxnId])
   @@index([orderId])
+  @@index([reviewReason, resolvedAt])
   @@map("payment_transactions")
 }
 ```
