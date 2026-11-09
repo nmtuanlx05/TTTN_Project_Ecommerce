@@ -1,14 +1,19 @@
 import { OrderStatus } from '../generated/prisma/enums';
 
-// Bảng chuyển trạng thái đơn (docs/02): PENDING → CONFIRMED → SHIPPING → COMPLETED, hủy khi PENDING/CONFIRMED. Bản này RETURNED chưa triển khai và PENDING_PAYMENT chỉ do hệ thống
-// (cổng thanh toán, chưa làm) nên không có bước nào dẫn tới/ đi từ chúng cho người dùng.
-export type OrderActor = 'CUSTOMER' | 'STAFF' | 'ADMIN';
+// Bảng chuyển trạng thái đơn (docs/02): PENDING → CONFIRMED → SHIPPING → COMPLETED, hủy khi PENDING/CONFIRMED.
+// Đơn online: PENDING_PAYMENT → PENDING (chỉ SYSTEM: đã nhận chuyển khoản) hoặc → CANCELLED (khách/nhân viên hủy, hoặc SYSTEM khi hết hạn).
+// RETURNED chưa triển khai. SYSTEM là tiến trình hệ thống (đối soát chuyển khoản, tác vụ hết hạn), không phải một user đăng nhập.
+export type OrderActor = 'CUSTOMER' | 'STAFF' | 'ADMIN' | 'SYSTEM';
 
 const OPERATORS: OrderActor[] = ['STAFF', 'ADMIN'];
 
 export const ORDER_TRANSITIONS: Partial<
   Record<OrderStatus, Partial<Record<OrderStatus, OrderActor[]>>>
 > = {
+  [OrderStatus.PENDING_PAYMENT]: {
+    [OrderStatus.PENDING]: ['SYSTEM'],
+    [OrderStatus.CANCELLED]: ['CUSTOMER', ...OPERATORS, 'SYSTEM'],
+  },
   [OrderStatus.PENDING]: {
     [OrderStatus.CONFIRMED]: OPERATORS,
     [OrderStatus.CANCELLED]: ['CUSTOMER', ...OPERATORS],
