@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useToast } from "@/components/ui/toast"
 import { useDialogTarget } from "@/hooks/use-dialog-target"
 import type { ApiError } from "@/lib/api-error"
-import { ACTION_TARGET, ERROR_CODE, type OrderAction } from "./constants"
+import { ACTION_TARGET, ERROR_CODE, PAID_ADMIN_ONLY_MESSAGE, type OrderAction } from "./constants"
 import { useUpdateOrderStatus } from "./queries"
 
 const SUCCESS_TITLE: Record<OrderAction, string> = {
@@ -18,7 +18,7 @@ const NETWORK_MESSAGE =
 /**
  * Luồng đổi trạng thái đơn. Hộp xác nhận mở theo hành động; lỗi theo mã backend (docs/api/orders.md):
  * - 409 `ORDER_INVALID_TRANSITION` (đơn vừa bị người khác đổi): đóng hộp, báo, danh sách và chi tiết tự làm mới;
- * - 404 / 403: đóng hộp, báo bằng toast;
+ * - 404 / 403 (kể cả `ORDER_PAID_ADMIN_ONLY`: STAFF hủy đơn đã thanh toán): đóng hộp, báo bằng toast;
  * - còn lại (400 lý do, `SYSTEM_BUSY`, 409 không đủ tồn khi giao và không có `code`, mất mạng): hộp vẫn mở và hiện
  *   thông báo nguyên văn của backend để người dùng đọc. Không tự thử lại vì API không có khóa chống gửi trùng.
  */
@@ -43,7 +43,7 @@ export function useOrderStatusAction(order: { id: number; code: string }) {
     } else if (statusCode === 403) {
       dialog.hide()
       toast.add({
-        title: "Bạn không đủ quyền thực hiện thao tác này",
+        title: code === ERROR_CODE.paidAdminOnly ? PAID_ADMIN_ONLY_MESSAGE : "Bạn không đủ quyền thực hiện thao tác này",
         data: { tone: "danger" },
       })
     } else {

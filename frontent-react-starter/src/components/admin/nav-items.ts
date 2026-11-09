@@ -1,6 +1,7 @@
 import {
   Boxes,
   FolderTree,
+  Landmark,
   LayoutDashboard,
   ReceiptText,
   Shirt,
@@ -36,6 +37,14 @@ export const NAV_ITEMS: NavItem[] = [
     description: "Xác nhận, giao hàng và theo dõi đơn qua từng trạng thái.",
     ready: true,
     roles: ["ADMIN", "STAFF"],
+  },
+  {
+    to: "/admin/payments",
+    label: "Giao dịch cần xem lại",
+    icon: Landmark,
+    description: "Chuyển khoản thiếu tiền, không khớp đơn hoặc đến muộn cần admin xử lý.",
+    ready: true,
+    roles: ["ADMIN"],
   },
   {
     to: "/admin/products",
