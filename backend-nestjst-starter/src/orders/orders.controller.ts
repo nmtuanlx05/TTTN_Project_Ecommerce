@@ -57,6 +57,12 @@ export class OrdersController {
     return this.ordersService.findMineByCode(user.id, code);
   }
 
+  // Thông tin chuyển khoản + chuỗi QR cho đơn online (state: AWAITING_PAYMENT | PAID | EXPIRED | CANCELLED)
+  @Get(':code/payment')
+  payment(@Param('code') code: string, @CurrentUser() user: AuthUser) {
+    return this.ordersService.getPaymentInfo(user.id, code);
+  }
+
   // Đưa các dòng của đơn vào giỏ (cùng quy tắc giỏ hàng); dòng không thêm được nằm trong `skipped`
   @Post(':code/reorder')
   reorder(@Param('code') code: string, @CurrentUser() user: AuthUser) {

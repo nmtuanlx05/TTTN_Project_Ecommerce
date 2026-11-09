@@ -57,6 +57,7 @@ describe('Orders API (e2e, service giả)', () => {
     summaryMine: jest.fn(),
     reorderMine: jest.fn(),
     cancelMine: jest.fn(),
+    getPaymentInfo: jest.fn(),
   };
   const adminOrdersService = {
     findAll: jest.fn(),
@@ -133,6 +134,7 @@ describe('Orders API (e2e, service giả)', () => {
       ['get', '/orders/summary', undefined],
       ['post', '/orders/MS-261105-ABCD/reorder', {}],
       ['get', '/orders/MS-261105-ABCD', undefined],
+      ['get', '/orders/MS-261105-ABCD/payment', undefined],
       ['post', '/orders/MS-261105-ABCD/cancel', {}],
     ];
 

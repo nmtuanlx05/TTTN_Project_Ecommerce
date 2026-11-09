@@ -9,6 +9,7 @@ import { Prisma } from '../generated/prisma/client';
 import { QueryMyOrdersDto } from './dto/query-orders.dto';
 import { OrdersService } from './orders.service';
 
+jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
 jest.mock('../prisma/prisma.service', () => ({ PrismaService: class {} }));
 jest.mock('../inventory/inventory.service', () => ({
   InventoryService: class {},
@@ -75,6 +76,8 @@ const sellable = (
   product: { isActive: true },
   ...over,
 });
+
+const PAYMENT_CONFIG_OFF = { online: { enabled: false, reason: 'test' } };
 
 function setup(
   opts: {
@@ -185,6 +188,8 @@ function setup(
     {} as never,
     {} as never,
     cart,
+    PAYMENT_CONFIG_OFF as never,
+    {} as never,
   );
   return { service, prisma, tx, cartItems, updates };
 }

@@ -165,7 +165,12 @@ describe('Phân quyền của mọi route (quét metadata controller)', () => {
     expect(orders.every((r) => !r.isPublic && r.roles.length > 0)).toBe(true);
     expect(
       orders
-        .filter((r) => r.key.includes('/admin/orders'))
+        .filter(
+          (r) =>
+            r.key.includes('/admin/orders') &&
+            // Xác nhận thanh toán thủ công chỉ ADMIN, kiểm riêng ở test payments bên dưới
+            !r.key.includes('/confirm-payment'),
+        )
         .every((r) => r.roles.includes('ADMIN') && r.roles.includes('STAFF')),
     ).toBe(true);
     expect(
@@ -173,6 +178,41 @@ describe('Phân quyền của mọi route (quét metadata controller)', () => {
         .filter((r) => !r.key.includes('/admin/'))
         .every((r) => r.roles.length === 1 && r.roles[0] === 'CUSTOMER'),
     ).toBe(true);
+  });
+
+  it('route thanh toán: tiền vào/xử lý giao dịch chỉ ADMIN; webhook SePay công khai (xác thực bằng khóa API trong controller)', () => {
+    for (const key of [
+      'POST /admin/orders/:id/confirm-payment',
+      'GET /admin/payments/transactions',
+      'POST /admin/payments/transactions/:id/resolve',
+    ]) {
+      const route = routes.find((r) => r.key === key);
+      expect(route).toBeDefined();
+      expect(route!.isPublic).toBe(false);
+      expect(route!.roles).toEqual(['ADMIN']);
+      expect(route!.hasRolesGuard).toBe(true);
+    }
+    const webhook = routes.find(
+      (r) => r.key === 'POST /payments/webhook/sepay',
+    );
+    expect(webhook).toBeDefined();
+    expect(webhook!.isPublic).toBe(true);
+    // Không có route nào khác dưới /payments công khai ngoài webhook
+    const publicPayments = routes.filter(
+      (r) => r.key.includes(' /payments') && r.isPublic,
+    );
+    expect(publicPayments.map((r) => r.key)).toEqual([
+      'POST /payments/webhook/sepay',
+    ]);
+    // Không có endpoint giả lập thanh toán
+    expect(routes.filter((r) => /simulat|fake|mock/i.test(r.key))).toEqual([]);
+  });
+
+  it('GET /orders/:code/payment chỉ dành cho CUSTOMER', () => {
+    const route = routes.find((r) => r.key === 'GET /orders/:code/payment');
+    expect(route).toBeDefined();
+    expect(route!.isPublic).toBe(false);
+    expect(route!.roles).toEqual(['CUSTOMER']);
   });
 
   it('GET /orders/summary và POST /orders/:code/reorder chỉ dành cho CUSTOMER', () => {

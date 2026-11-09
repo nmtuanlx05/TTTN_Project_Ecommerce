@@ -24,6 +24,9 @@ import { CartService } from '../cart/cart.service';
 import type { AddManyReason } from '../cart/cart.service';
 import { generateOrderCode } from './order-code';
 import { OrderWorkflowService } from './order-workflow.service';
+import { PaymentConfigService } from '../payments/payment-config.service';
+import { PaymentsService } from '../payments/payments.service';
+import { PAYMENT_ERROR } from '../payments/payments.constants';
 import {
   DEFAULT_CUSTOMER_CANCEL_REASON,
   IDEMPOTENCY_KEY_REGEX,
@@ -140,7 +143,31 @@ export class OrdersService {
     private readonly locations: LocationsService,
     private readonly workflow: OrderWorkflowService,
     private readonly cart: CartService,
+    private readonly paymentConfig: PaymentConfigService,
+    private readonly payments: PaymentsService,
   ) {}
+
+  // Thông báo cho KHÁCH khi ONLINE đang tắt: không nêu tên biến môi trường (lý do chi tiết chỉ nằm ở log khởi động)
+  private onlineUnavailableMessage() {
+    return 'Thanh toán chuyển khoản hiện chưa khả dụng, vui lòng chọn thanh toán khi nhận hàng (COD)';
+  }
+
+  // Các phương thức thanh toán đang dùng được cho đơn có tổng `totalAmount` (preview)
+  private availablePaymentMethods(totalAmount: number) {
+    const online = this.paymentConfig.online;
+    let onlineState: { enabled: boolean; reason?: string };
+    if (!online.enabled) {
+      onlineState = { enabled: false, reason: this.onlineUnavailableMessage() };
+    } else if (totalAmount === 0) {
+      onlineState = {
+        enabled: false,
+        reason: 'Đơn hàng 0đ không cần thanh toán online, vui lòng chọn COD',
+      };
+    } else {
+      onlineState = { enabled: true };
+    }
+    return { cod: { enabled: true }, online: onlineState };
+  }
 
   // ===== Xem trước =====
 
@@ -190,12 +217,16 @@ export class OrdersService {
       assertVoucherUsable(voucher, subtotal, now);
     }
 
+    const pricing = calculatePricing(subtotal, voucher);
     return {
       items: rows.map(toCartItem),
       warnings,
       canCheckout: warnings.length === 0,
-      ...calculatePricing(subtotal, voucher),
+      ...pricing,
       voucher: voucher ? toVoucherInfo(voucher) : null,
+      availablePaymentMethods: this.availablePaymentMethods(
+        pricing.totalAmount,
+      ),
     };
   }
 
@@ -207,10 +238,13 @@ export class OrdersService {
     rawIdempotencyKey?: unknown,
   ) {
     const idempotencyKey = parseIdempotencyKey(rawIdempotencyKey);
-    if (dto.paymentMethod !== PaymentMethod.COD) {
+    if (
+      dto.paymentMethod === PaymentMethod.ONLINE &&
+      !this.paymentConfig.online.enabled
+    ) {
       throw badRequest(
         ORDER_ERROR.PAYMENT_METHOD_NOT_SUPPORTED,
-        'Chưa hỗ trợ thanh toán online',
+        this.onlineUnavailableMessage(),
       );
     }
     // Kiểm địa chỉ trước khi mở transaction (dữ liệu trong bộ nhớ, không cần DB)
@@ -382,6 +416,16 @@ export class OrdersService {
     }
     const pricing = calculatePricing(subtotal, voucher);
 
+    // Đơn online tổng 0đ: không tạo QR 0 đồng và không để đơn treo ở PENDING_PAYMENT. Từ chối TRƯỚC khi tăng lượt voucher
+    // hay giữ chỗ (ném lỗi thì cả transaction rollback).
+    const online = dto.paymentMethod === PaymentMethod.ONLINE;
+    if (online && pricing.totalAmount === 0) {
+      throw badRequest(
+        PAYMENT_ERROR.PAYMENT_NOT_REQUIRED,
+        'Đơn hàng 0đ không cần thanh toán online, vui lòng chọn thanh toán khi nhận hàng (COD)',
+      );
+    }
+
     if (voucher) {
       // Tăng lượt nguyên tử: UPDATE có điều kiện, kiểm số dòng bị ảnh hưởng. 0 dòng thì rollback cả đơn.
       const affected = await tx.$executeRaw(
@@ -433,9 +477,11 @@ export class OrdersService {
       voucherCode: voucher?.code ?? null,
       discountAmount: pricing.discountAmount,
       totalAmount: pricing.totalAmount,
-      paymentMethod: PaymentMethod.COD,
+      paymentMethod: dto.paymentMethod,
       paymentStatus: PaymentStatus.UNPAID,
-      status: OrderStatus.PENDING,
+      // Đơn online chờ chuyển khoản (đã giữ chỗ tồn kho và voucher như COD) tới hạn paymentExpiresAt
+      status: online ? OrderStatus.PENDING_PAYMENT : OrderStatus.PENDING,
+      paymentExpiresAt: online ? this.paymentExpiresAt(now) : null,
       idempotencyKey: idempotencyKey ?? null,
       items: {
         create: lines.map(({ variantId, quantity, detail }) => ({
@@ -455,7 +501,7 @@ export class OrdersService {
       statusHistories: {
         create: {
           fromStatus: null,
-          toStatus: OrderStatus.PENDING,
+          toStatus: online ? OrderStatus.PENDING_PAYMENT : OrderStatus.PENDING,
           actorId: userId,
           reason: null,
         },
@@ -604,6 +650,22 @@ export class OrdersService {
       );
     }
     return { added, skipped };
+  }
+
+  private paymentExpiresAt(now: Date) {
+    const online = this.paymentConfig.online;
+    if (!online.enabled) {
+      throw badRequest(
+        ORDER_ERROR.PAYMENT_METHOD_NOT_SUPPORTED,
+        this.onlineUnavailableMessage(),
+      );
+    }
+    return new Date(now.getTime() + online.expireMinutes * 60_000);
+  }
+
+  // Thông tin chuyển khoản/QR của đơn online (chỉ chủ đơn), chi tiết ở PaymentsService
+  getPaymentInfo(userId: number, code: string) {
+    return this.payments.getOrderPayment(userId, code);
   }
 
   // Lọc theo userId nên đơn của người khác trả 404 như đơn không tồn tại
