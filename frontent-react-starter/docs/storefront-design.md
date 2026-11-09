@@ -271,7 +271,7 @@ Các câu dưới đây đang hiện trên giao diện nhưng **hệ thống ch�
 | Link "Hướng dẫn chọn size" (trang chi tiết) | `VariantPicker` | **STUB**: bấm chỉ hiện toast "Hướng dẫn chọn size sẽ sớm có mặt" (`STORE.comingSoon.sizeGuide`). Không bịa bảng số đo. Làm thật: chủ cửa hàng cung cấp bảng số đo từng loại sản phẩm, điền trang `/thong-tin/huong-dan-chon-size` (`lib/info-pages.ts`) hoặc cửa sổ bảng size rồi nối link tới đó. |
 | Ba dòng cam kết ở thẻ thông tin trang chi tiết ("Giao hàng nhanh toàn quốc", "Đổi trả dễ dàng trong 30 ngày", "Cam kết chất lượng chính hãng") | `ProductInfoCard` (lấy từ `HOME.assurances`, icon `truck`/`return`/`shield`) | Cùng nguồn và cùng việc cần làm với ba hàng tương ứng của dải cam kết ở trên; không có tuyên bố mới. |
 | Nút "Thanh toán ngay" (ngăn kéo giỏ và trang `/gio-hang`) | `CheckoutButton` (`features/cart`) | **ĐÃ NỐI THẬT**: liên kết tới `/thanh-toan` (đặt đơn COD, mục 20); bấm ở ngăn kéo thì đóng ngăn kéo. Khóa khi không có dòng nào mua được. |
-| Thẻ "Thanh toán online" ở `/thanh-toan` | `PaymentCard` (`features/checkout`) | **GIAO DIỆN GIẢ**: hiện đủ nhưng không chọn được, bấm chỉ toast "Thanh toán online sắp có" (`STORE.comingSoon.onlinePayment`). Backend mới có COD (`ONLINE` → 400 `PAYMENT_METHOD_NOT_SUPPORTED`). Làm thật: cổng thanh toán, đơn `PENDING_PAYMENT`, hủy sau 30 phút (`docs/api/orders.md`). |
+| Ô "Chọn hình thức" của thẻ "Thanh toán online" (chip "Ví điện tử", "Thẻ ATM / Visa") | `PAYMENT_CHANNELS` (`features/checkout/constants.ts`) | **GIAO DIỆN GIẢ có chủ đích**: hai chip hiện mờ, nhãn "Sắp có", không bấm được. Chỉ "Quét mã QR ngân hàng" (chuyển khoản VietQR) chạy thật (mục 22). Làm thật ví/thẻ = cổng VNPay (giai đoạn B): đổi cờ `enabled` hoặc xóa hai dòng nếu cắt VNPay. |
 | Dòng "Bằng việc đặt hàng, bạn đồng ý với Điều khoản và Chính sách bảo mật" | `OrderSummary` (`features/checkout`) | Hai liên kết trỏ `/thong-tin/dieu-khoan` và `/thong-tin/bao-mat` (cùng đích với chân trang) nhưng **hai trang này chưa có nội dung thật** ("Nội dung đang được cập nhật"). Cần: chủ cửa hàng cung cấp điều khoản và chính sách bảo mật, điền `lib/info-pages.ts`. |
 | Thông điệp "sẽ liên hệ xác nhận với bạn trong thời gian sớm nhất" | `SuccessContent` (`features/orders`) | Hệ thống **chưa có email/SMS/thông báo** và chưa có kênh liên hệ (`STORE.contact` trống); việc liên hệ do nhân viên làm tay qua số điện thoại khách nhập. Cần: kênh thông báo thật hoặc đổi câu thành không cam kết. |
 
@@ -400,7 +400,7 @@ Dữ liệu: `features/checkout` (xem trước, đặt đơn, voucher khả dụ
 
 **Trang thành công**: `GET /orders/:code` (tải lại vẫn đúng); đơn không có hoặc của người khác → "Không tìm thấy đơn hàng". Địa chỉ ghép từ từng cấp, đơn cũ dùng `fullAddress`.
 
-**Chưa có**: thanh toán online (mục 13), lưu sổ địa chỉ (V2; lúc đó tách địa chỉ khỏi `features/checkout`).
+**Thanh toán online**: thẻ (2) cho chọn COD hoặc "Thanh toán online" (chuyển khoản VietQR), xem mục 22. **Chưa có**: ví điện tử và thẻ (VNPay, mục 13), lưu sổ địa chỉ (V2; lúc đó tách địa chỉ khỏi `features/checkout`).
 
 
 ## 21. Đơn hàng của tôi (`/tai-khoan/don-hang`)
@@ -411,7 +411,7 @@ Dữ liệu: `features/orders` (danh sách, tóm tắt, chi tiết, hủy, mua l
 
 **Lọc trên URL**: `?status=pending|processing|completed|cancelled&q=&page=` (mặc định không ghi, giá trị lạ bị bỏ). Nhóm gửi backend: pending = `PENDING,PENDING_PAYMENT`; processing = `CONFIRMED,SHIPPING` (backend đã bỏ `PACKING`: gửi `status=PACKING` là 400); completed; cancelled. Đổi lọc/tìm kiếm `replace` + về trang 1, đổi trang `push`. Ô tìm debounce, Enter chạy ngay, tối đa 50 ký tự (đúng `MAX_MY_ORDERS_QUERY_LENGTH` của backend). Số đếm trên nút lấy từ `GET /orders/summary`, không phụ thuộc `q`. `limit` = 10.
 
-**Thẻ đơn**: `OrderStatusPill`; nút chính theo trạng thái: PENDING "Hủy đơn" (hộp xác nhận, lý do tuỳ chọn, mặc định "Khách tự hủy", tối đa 500 ký tự theo `MAX_REASON_LENGTH`), CONFIRMED/SHIPPING "Theo dõi đơn", COMPLETED/CANCELLED "Mua lại". Không có "Thanh toán ngay" (chưa hỗ trợ online).
+**Thẻ đơn**: `OrderStatusPill`; nút chính theo trạng thái: PENDING "Hủy đơn" (hộp xác nhận, lý do tuỳ chọn, mặc định "Khách tự hủy", tối đa 500 ký tự theo `MAX_REASON_LENGTH`), CONFIRMED/SHIPPING "Theo dõi đơn", COMPLETED/CANCELLED "Mua lại". Đơn `PENDING_PAYMENT` chưa `PAID`: nút chính "Thanh toán ngay" (tới `/thanh-toan-online/:code`) và "Hủy đơn" dạng chữ, thêm nhãn "Chưa thanh toán" cho đơn ONLINE; xem mục 22. Đơn đã `PAID` không có "Hủy đơn".
 
 **Mốc thời gian (chi tiết)**: đúng 4 bước theo luồng mới: Đã đặt hàng (PENDING), Đã xác nhận (CONFIRMED), Đang giao hàng (SHIPPING), Giao thành công (COMPLETED); chỉ hiện các bước ĐÃ XẢY RA theo `history[]`; đơn đã hủy hiện các bước đã qua cộng bước hủy (thời điểm, lý do), không có bước mờ; chỉ đơn đang tiến hành mới hiện các bước chưa tới (mờ). Người hủy chỉ là "Khách tự hủy" hoặc "Cửa hàng hủy" (theo `byRole`), không bao giờ hiện tên hay id nhân viên.
 
@@ -424,7 +424,7 @@ Dữ liệu: `features/orders` (danh sách, tóm tắt, chi tiết, hủy, mua l
 | Enum | Storefront (`OrderStatusPill`) | Admin (`OrderStatusBadge`) |
 |---|---|---|
 | `PENDING` | Chờ xác nhận | Chờ xác nhận |
-| `PENDING_PAYMENT` | Chờ thanh toán (chưa dùng; gộp nhóm "Chờ xác nhận") | (chưa có) |
+| `PENDING_PAYMENT` | Chờ thanh toán (gộp nhóm "Chờ xác nhận") | Chờ thanh toán |
 | `CONFIRMED` | Đã xác nhận | Đã xác nhận |
 | `SHIPPING` | Đang giao | Đang giao |
 | `COMPLETED` | **Hoàn thành** | **Đã giao** |
@@ -434,3 +434,19 @@ Dữ liệu: `features/orders` (danh sách, tóm tắt, chi tiết, hủy, mua l
 Nhóm lọc của khách: "Chờ xác nhận" = PENDING + PENDING_PAYMENT; "Đang xử lý" = CONFIRMED + SHIPPING; "Hoàn thành" = COMPLETED; "Đã hủy" = CANCELLED. `RETURNED` chỉ hiện ở "Tất cả".
 
 Luồng đơn hiện tại: `PENDING → CONFIRMED → SHIPPING → COMPLETED`, cộng `CANCELLED`, `PENDING_PAYMENT`, `RETURNED`. Không còn bước đóng gói (`PACKING` đã bỏ ở backend); admin chuyển `CONFIRMED → SHIPPING` trực tiếp.
+
+## 22. Thanh toán online (chuyển khoản VietQR)
+
+Dữ liệu: `features/payments` (khách, `GET /orders/:code/payment`), `features/admin-payments` (admin, giao dịch cần xem lại và xác nhận thủ công); API ở `docs/api/payments.md`, `orders.md` của backend. Không có nút giả lập thanh toán và frontend không giữ khóa hay thông tin tài khoản: số tài khoản, tên, ngân hàng, nội dung, `qrPayload` đều do backend trả.
+
+**Checkout**: thẻ (2) có COD và "Thanh toán online". Chọn online thì mở ô "Chọn hình thức" (`payment-method-panel.tsx`, kênh khai báo ở `PAYMENT_CHANNELS`). `POST /orders/preview` trả `availablePaymentMethods`; `online.enabled = false` (chưa cấu hình VietQR hoặc tổng 0đ) thì thẻ online mờ, không chọn được và hiện `reason` của backend ngay trên thẻ; phương thức gửi đi tự về COD (`paymentMethod` thực sự gửi được suy ra, không phải giá trị người dùng chọn). Đặt đơn ONLINE dùng cùng `Idempotency-Key`; thành công thì chuyển sang `/thanh-toan-online/:code` (đơn COD sang `/dat-hang-thanh-cong/:code`). `PAYMENT_METHOD_NOT_SUPPORTED`/`PAYMENT_NOT_REQUIRED` → về COD, báo, tải lại preview.
+
+**Trang `/thanh-toan-online/:code`** (`pages/storefront/payment`, chỉ CUSTOMER): QR vẽ ngay trên trình duyệt từ `qrPayload` bằng `qrcode.react` 4.2.0 (nền trắng cố định để quét được, không dùng dịch vụ ảnh ngoài), nút "Lưu ảnh QR" (PNG) cho điện thoại, số tiền, nội dung chuyển khoản, ngân hàng, số tài khoản, chủ tài khoản (có nút sao chép cho số tiền, nội dung, số tài khoản), hướng dẫn 3 bước, dòng "không sửa nội dung chuyển khoản", gợi ý lưu ảnh QR, và dòng liên hệ lấy từ `STORE.contact` (chưa có thông tin thì chỉ ghi "Liên hệ cửa hàng", không bịa số). Trạng thái theo `state` của backend: `AWAITING_PAYMENT` (QR + đếm ngược), `PAID` (thành công, link xem đơn), `EXPIRED`/`CANCELLED` (thông báo, quay lại cửa hàng). Tải lại trang giữa chừng vẫn đúng vì mọi thứ lấy theo mã trên URL.
+
+**Polling và đếm ngược**: `usePaymentInfo` hỏi lại mỗi 4 giây CHỈ khi `AWAITING_PAYMENT`; dừng khi sang trạng thái khác (rồi làm mới `["orders"]`), tạm dừng khi tab ẩn và hỏi ngay khi về tab; 401/403/404/409 dừng hẳn, mất mạng/5xx giữ dữ liệu cũ và thử tiếp (dải "Mất kết nối"). `useCountdown` tính lại từ đồng hồ mỗi giây (không trừ dần), dọn timer khi rời trang. Về 0 thì hỏi lại backend đúng một lần; QR vẫn hiện tới khi backend trả `EXPIRED`. Đồng hồ khách chỉ để hiển thị, backend luôn quyết định (API không trả giờ máy chủ nên đồng hồ lệch có thể làm số đếm sai vài giây).
+
+**Đơn hàng của tôi**: danh sách `GET /orders` KHÔNG có `paymentExpiresAt` nên không biết đơn đã hết hạn chưa: "Thanh toán ngay" hiện cho mọi đơn `PENDING_PAYMENT` chưa `PAID`, trang thanh toán quyết định (đơn quá hạn ở đó hiện "hết hạn"; tác vụ nền hủy trong vòng một phút). Khách hủy được đơn chờ thanh toán; hộp thoại cảnh báo "đã chuyển khoản thì đừng hủy, hãy chờ hoặc liên hệ cửa hàng" (hủy sau khi chuyển khoản làm tiền rơi vào "Giao dịch cần xem lại" và phải hoàn thủ công). Đơn đã `PAID` ẩn "Hủy đơn"; `ORDER_NOT_CANCELLABLE_BY_CUSTOMER` (một mã cho hai nguyên nhân: đã xác nhận, đã thanh toán) hiện câu chung cho cả hai. `/dat-hang-thanh-cong/:code` của đơn ONLINE còn chờ thanh toán tự chuyển sang trang QR.
+
+**Giới hạn hiện tại, chưa xử lý**: sau khi đặt đơn backend xóa mọi dòng giỏ (`orders.service.ts`), và hủy đơn hoặc hết hạn thanh toán KHÔNG khôi phục giỏ. Khách có đơn ONLINE bị hủy/hết hạn phải bấm "Mua lại" ở đơn đã hủy (`POST /orders/:code/reorder`) hoặc thêm lại từng món. Đề xuất (chưa làm): thêm nút "Mua lại" ngay trên màn EXPIRED/CANCELLED (cần trang ghép truyền `onReorder`, vì `features/payments` không import `features/orders`), hoặc backend khôi phục giỏ khi hủy đơn chưa trả.
+
+**Admin**: lọc "Chờ thanh toán" ở danh sách đơn. Đơn `PENDING_PAYMENT` chỉ có "Hủy đơn" (không có nút nào chuyển sang `PENDING`: chỉ hệ thống làm khi nhận tiền, hoặc ADMIN bấm "Xác nhận đã nhận tiền"). "Xác nhận đã nhận tiền" (`POST /admin/orders/:id/confirm-payment`): chỉ ADMIN, chỉ đơn online chờ chuyển khoản, ghi chú bắt buộc (1-300 ký tự); nút nằm ở `features/admin-payments` và được trang `pages/admin/orders/detail` đưa vào panel của `features/admin-orders` (features không import nhau). Đơn đã `PAID`: STAFF không thấy "Hủy đơn" (backend trả 403 `ORDER_PAID_ADMIN_ONLY`), ADMIN hủy được nhưng hộp thoại nhắc hệ thống không hoàn tiền và `paymentStatus` vẫn là PAID. Trang `/admin/payments` ("Giao dịch cần xem lại", chỉ ADMIN, menu chỉ hiện cho ADMIN): lọc chưa xử lý/đã xử lý/tất cả trên URL, lý do bằng tiếng Việt kèm việc cần làm; "Xác nhận cho đơn" chỉ với giao dịch thiếu tiền đã gắn đơn chờ thanh toán (xác nhận thẳng) và giao dịch không khớp (phải tìm đơn `PENDING_PAYMENT` theo mã/SĐT/tên); hộp thoại hiện cả số tiền giao dịch gốc và TỔNG ĐƠN sẽ được ghi nhận (backend ghi nhận bằng tổng đơn). Thừa tiền, đơn đã đóng, trả trùng chỉ có "Đánh dấu đã xử lý" (ghi chú bắt buộc; hoàn tiền làm ở ngân hàng).
