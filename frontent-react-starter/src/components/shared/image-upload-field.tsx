@@ -9,14 +9,15 @@ import {
   IMAGE_UPLOAD_RULES,
 } from "@/lib/image-rules"
 import { cn } from "@/lib/utils"
-import type { ImageUploadKind } from "@/types/upload"
+import type { ImageUploadKind, UploadedImage } from "@/types/upload"
 import { ImagePreview } from "./image-preview"
 import { ImageUploadMessage } from "./image-upload-message"
 import { ImageUploadProgress } from "./image-upload-progress"
 
 /**
- * Ô chọn và upload MỘT ảnh, dùng chung cho sản phẩm và (sau này) ảnh đại diện. Chỉ gọi
- * `POST /uploads/<kind>` rồi trả URL qua `onChange`; việc lưu URL vào dữ liệu do form làm.
+ * Ô chọn và upload MỘT ảnh, dùng chung cho sản phẩm và ảnh đại diện. Chỉ gọi
+ * `POST /uploads/<kind>` rồi trả URL qua `onChange` (kèm thông tin ảnh vừa tải, có `assetId`, để form gắn ảnh bằng `assetId`);
+ * việc lưu vào dữ liệu do form làm. "Xóa ảnh" gọi `onChange(null)` không kèm ảnh.
  *
  * - `value` là URL hiện tại (kể cả URL ngoài), `null` = chưa có ảnh. Hiển thị được mọi URL.
  * - "Xóa ảnh" chỉ đặt `onChange(null)`, KHÔNG xóa file trên server.
@@ -39,7 +40,7 @@ function ImageUploadField({
   onUploadingChange,
 }: {
   value: string | null
-  onChange: (url: string | null) => void
+  onChange: (url: string | null, uploaded?: UploadedImage) => void
   kind: ImageUploadKind
   shape: "square" | "circle"
   label: string
@@ -51,7 +52,7 @@ function ImageUploadField({
 }) {
   const id = useId()
   const inputRef = useRef<HTMLInputElement>(null)
-  const upload = useImageUpload({ kind, onUploaded: onChange })
+  const upload = useImageUpload({ kind, onUploaded: (image) => onChange(image.url, image) })
   const locked = disabled || upload.isUploading
   const drop = useFileDrop({ disabled: locked, onFiles: upload.selectFiles })
   const rules = IMAGE_UPLOAD_RULES[kind]

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { ApiError } from "@/lib/api-error"
 import { validateImageFile } from "@/lib/image-rules"
+import { describeUploadError, isFileProblem } from "@/lib/upload-errors"
 import { uploadImage } from "@/lib/upload-image"
+import type { UploadedImage } from "@/types/upload"
 
 export interface UploadItem {
   id: number
@@ -27,10 +29,14 @@ function overflowNotice(room: number, names: string[]) {
 /**
  * Hàng đợi tải NHIỀU ảnh sản phẩm lên `POST /uploads/products`, mỗi file một request và lần lượt từng file (không song song).
  * Kiểm tra file phía client ngay khi chọn (loại, dung lượng); file lỗi thành một mục lỗi riêng, KHÔNG ảnh hưởng ảnh đã có hay các file khác.
- * Lỗi mạng/server thì mục ở lại với nút thử lại. Tải xong thì gọi `onUploaded(url)` và gỡ mục khỏi hàng đợi. Gỡ component thì hủy request đang chạy.
+ * Lỗi mạng/server/hạn mức thì mục ở lại với nút thử lại; lỗi do file (413, 415 từ server) thì chỉ cho bỏ qua. Tải xong thì gọi `onUploaded(url, image)` (`image.assetId` để gắn vào sản phẩm) và gỡ mục khỏi hàng đợi. Gỡ component thì hủy request đang chạy.
  * Hook không biết danh sách ảnh: nơi gọi truyền số chỗ còn trống (`free`) mỗi lần thêm file.
  */
-export function useMultiImageUpload({ onUploaded }: { onUploaded: (url: string) => void }) {
+export function useMultiImageUpload({
+  onUploaded,
+}: {
+  onUploaded: (url: string, image: UploadedImage) => void
+}) {
   const [items, setItems] = useState<UploadItem[]>([])
   const [notice, setNotice] = useState<string | null>(null)
   const nextId = useRef(1)
@@ -55,16 +61,17 @@ export function useMultiImageUpload({ onUploaded }: { onUploaded: (url: string) 
       signal: abort.signal,
       onProgress: (progress) => patch(head.id, { progress }),
     })
-      .then((url) => {
+      .then((image) => {
         setItems((list) => list.filter((item) => item.id !== head.id))
-        onUploadedRef.current(url)
+        onUploadedRef.current(image.url, image)
       })
       .catch((error: unknown) => {
         if (abort.signal.aborted) return
+        const apiError = ApiError.from(error)
         patch(head.id, {
           status: "error",
-          error: ApiError.from(error).message,
-          retryable: true,
+          error: describeUploadError(apiError),
+          retryable: !isFileProblem(apiError),
         })
       })
       .finally(() => {
