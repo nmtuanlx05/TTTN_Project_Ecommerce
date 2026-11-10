@@ -172,14 +172,17 @@ Schema không khai báo `onDelete` và `onUpdate`, nên Prisma dùng mặc đị
 
 - Schema `prisma/schema.prisma` đã có `@@index`, `@@unique` và `@@map` đúng như trên.
 - Các CHECK ở mục 2 đã nằm trong file migration `init_ecommerce`; migration này chưa được áp vào database.
-- Các cột văn bản dài: `Order.shippingAddress`, `Order.note`, `Order.cancelReason` đã nới lên `VARCHAR(500)` (migration `add_order_checkout`); `Product.imageUrl`, `Voucher.description` còn `VARCHAR(191)`.
+- Các cột văn bản dài: `Order.shippingAddress`, `Order.note`, `Order.cancelReason` đã nới lên `VARCHAR(500)` (migration `add_order_checkout`); `Voucher.description` còn `VARCHAR(191)`; `Product.imageUrl` và `User.avatarUrl` đã nới lên `VARCHAR(500)` (migration `add_media_assets`).
 - Migration `add_order_checkout` (đặt đơn): thêm địa chỉ 3 cấp (nullable), `voucherCode`, `idempotencyKey`, `order_items.colorHex/imageUrl`, bảng `order_status_histories` và `payment_transactions`, giá trị enum mới (`PENDING_PAYMENT`, `FAILED`, `SALE`). Chỉ thêm, không đổi dữ liệu cũ.
 - Voucher: giới hạn theo từng khách để V2, cần thêm cột `perUserLimit` ở `vouchers`.
-- **Backlog ảnh sản phẩm:**
-  - Dọn file ảnh mồ côi trên ổ đĩa: upload chỉ ghi file, khi ảnh bị gỡ khỏi sản phẩm file không bị xóa.
-  - Cân nhắc bỏ cột `Product.imageUrl` (deprecated) ở đợt dọn dẹp sau, khi mọi client đã đọc `images`.
-  - Upload khi chạy nhiều instance: ổ đĩa local không dùng chung được, cần lưu trữ ngoài (S3, Cloudinary...).
-  - Lưu đường dẫn tương đối (vd `/uploads/products/x.webp`) thay vì URL đầy đủ để đổi `APP_PUBLIC_URL` không làm hỏng dữ liệu.
-  - `APP_PUBLIC_URL` đang bị giới hạn độ dài theo cột 191 của `imageUrl`; nới được sau khi bỏ cột này.
+- Migration `add_media_assets` (lưu trữ ảnh Cloudinary): bảng `media_assets` (`publicId`, `secureUrl`, kích thước, `kind`, `status`, `sourceUrl`, `deleteAttempts`, `lastError`...), `product_images.assetId` và
+  `users.avatarAssetId` (FK **`ON DELETE RESTRICT`**), `media_assets.uploadedById` (FK **`ON DELETE SET NULL`**, lý do: user không bị xóa cứng, ảnh vẫn tồn tại để dọn đúng),
+  `order_items.imagePublicId` (có index), nới `users.avatarUrl` và `products.imageUrl` lên `VARCHAR(500)`. Chỉ thêm/nới, không đổi dữ liệu cũ.
+  **`publicId` và `imagePublicId` dùng collation `utf8mb4_bin`** (Cloudinary phân biệt hoa/thường), sửa tay trong file migration vì Prisma không biểu diễn được collation, nên `migrate diff` không báo drift về nó.
+  Hai cột này khác collation mặc định `utf8mb4_unicode_ci` của các bảng khác: so sánh `publicId` với cột có collation khác trong cùng câu SQL sẽ lỗi "Illegal mix of collations", nên chỉ so khớp `publicId` với `imagePublicId`/tham số.
+- **Backlog ảnh:**
+  - Bỏ ghi kép `product_images.url`, `users.avatarUrl` và bỏ cột deprecated `products.imageUrl` sau khi mọi client đọc theo asset (xem `docs/cloudinary-setup.md`, "Kế hoạch bỏ cột cũ").
+  - Nới giới hạn độ dài `APP_PUBLIC_URL` (hiện 441 ký tự theo cột 500) khi bỏ driver local.
+  - Thu hồi ảnh theo người dùng khi tài khoản bị khóa.
 - Cách lưu yêu cầu hủy/hoàn tiền của đơn đã thanh toán (Staff tạo, Admin duyệt): schema chưa có model hoặc trường cho việc này (chưa phát sinh khi chỉ có COD; làm cùng thanh toán online).
 - Migration `add_payment_review` (thanh toán VietQR): `payment_transactions.orderId` thành nullable (FK `RESTRICT`/`RESTRICT`), thêm `content`, `reviewReason`, `resolvedAt`, `resolvedById` (FK tới `users`), `resolutionNote`, giá trị enum `NEEDS_REVIEW`, index `(reviewReason, resolvedAt)` và CHECK ở trên. `PaymentTransaction.orderId` giờ là quan hệ tùy chọn (giao dịch không khớp đơn).

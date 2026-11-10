@@ -1,6 +1,6 @@
 # Data Models
 
-Schema chốt cho MVP gồm 14 model (10 model gốc cộng `ProductImage`, `OrderStatusHistory`, `PaymentTransaction`, `WishlistItem` thêm sau) và 7 enum, viết bằng Prisma. Bốn quyết định lớn: tách `ProductVariant` khỏi `Product`; giữ hàng bằng `reserved`; `OrderItem` lưu snapshot; voucher giảm trên `subtotal` và số tiền giảm được lưu vào `Order.discountAmount`. Staff nhập kho bằng cách cộng trực tiếp vào `ProductVariant.stock`; mỗi lần đổi `stock` ghi một dòng `StockMovement`.
+Schema chốt cho MVP gồm 15 model (10 model gốc cộng `ProductImage`, `OrderStatusHistory`, `PaymentTransaction`, `WishlistItem`, `MediaAsset` thêm sau) và 9 enum, viết bằng Prisma. Bốn quyết định lớn: tách `ProductVariant` khỏi `Product`; giữ hàng bằng `reserved`; `OrderItem` lưu snapshot; voucher giảm trên `subtotal` và số tiền giảm được lưu vào `Order.discountAmount`. Staff nhập kho bằng cách cộng trực tiếp vào `ProductVariant.stock`; mỗi lần đổi `stock` ghi một dòng `StockMovement`.
 
 > Các khối schema dưới đây khớp với `prisma/schema.prisma`. Nếu hai bên lệch nhau, `prisma/schema.prisma` là bản chuẩn.
 
@@ -114,7 +114,7 @@ model Product {
   slug        String           @unique
   description String?          @db.Text
   price       Int              // giá niêm yết, VND
-  imageUrl    String?          // DEPRECATED: chỉ để tương thích. Nguồn thật là images; khi ghi, imageUrl = ảnh đầu (null nếu > 191 ký tự hoặc không có ảnh)
+  imageUrl    String?          // DEPRECATED: chỉ để tương thích. Nguồn thật là images; khi ghi, imageUrl = ảnh đầu (null nếu > 500 ký tự hoặc không có ảnh)
   isActive    Boolean          @default(true)
   categoryId  Int
   category    Category         @relation(fields: [categoryId], references: [id])
@@ -133,11 +133,14 @@ model ProductImage {
   id        Int      @id @default(autoincrement())
   productId Int
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  url       String   @db.VarChar(500)
+  url       String   @db.VarChar(500) // ghi kép: bằng media_assets.secureUrl khi có assetId; ảnh URL ngoài thì assetId = null
+  assetId   Int?     // ảnh đã đăng ký (media_assets); onDelete: Restrict, không xóa asset khi còn ảnh dùng
+  asset     MediaAsset? @relation(fields: [assetId], references: [id], onDelete: Restrict)
   sortOrder Int
   createdAt DateTime @default(now())
 
   @@index([productId, sortOrder])
+  @@index([assetId])
   @@map("product_images")
 }
 
@@ -188,6 +191,54 @@ model StockMovement {
   @@map("stock_movements")
 }
 ```
+
+### Ảnh lưu trữ (MediaAsset)
+
+Mỗi ảnh tải lên Cloudinary (hoặc driver `local` khi test) có một dòng `media_assets`. Dòng **không bị xóa cứng**: xóa ảnh = `status = DELETED`. Cấu hình và cách dọn: `docs/cloudinary-setup.md`, `docs/api/uploads.md`.
+
+```prisma
+enum MediaAssetKind {
+  PRODUCT // ảnh sản phẩm
+  AVATAR  // ảnh đại diện
+}
+
+enum MediaAssetStatus {
+  ACTIVE         // đang dùng hoặc vừa tải lên, chưa gắn
+  PENDING_DELETE // không còn ai tham chiếu, chờ xóa phía kho lưu trữ (thử lại nếu lỗi)
+  DELETED        // đã xóa phía kho lưu trữ (giữ dòng để truy vết)
+}
+
+// uploadedById: SetNull có chủ ý. User không bị xóa cứng; nếu có thì ảnh vẫn tồn tại và vẫn được dọn đúng, chỉ mất người tải.
+// publicId: collation utf8mb4_bin (sửa tay ở migration; Prisma không biểu diễn được) vì Cloudinary phân biệt hoa/thường.
+model MediaAsset {
+  id             Int              @id @default(autoincrement())
+  publicId       String           @unique @db.VarChar(255)
+  secureUrl      String           @db.VarChar(500) // URL gốc, không kèm biến đổi
+  width          Int?
+  height         Int?
+  format         String?          @db.VarChar(10)
+  bytes          Int?
+  kind           MediaAssetKind
+  status         MediaAssetStatus @default(ACTIVE)
+  uploadedById   Int?
+  uploadedBy     User?            @relation("MediaAssetUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  sourceUrl      String?          @db.VarChar(500) // URL cũ khi nhập bằng script chuyển ảnh; dùng để hoàn tác, và loại khỏi quét mồ côi
+  deleteAttempts Int              @default(0)
+  lastError      String?          @db.VarChar(500)
+  createdAt      DateTime         @default(now())
+  deletedAt      DateTime?
+  productImages  ProductImage[]
+  avatarUsers    User[]           @relation("UserAvatarAsset")
+
+  @@index([status, createdAt])
+  @@index([uploadedById, createdAt])
+  @@map("media_assets")
+}
+```
+
+Liên quan: `User.avatarAssetId` (FK `Restrict`) và `User.avatarUrl` (VARCHAR(500), ghi kép), `ProductImage.assetId` (FK `Restrict`), `OrderItem.imagePublicId`
+(VARCHAR(255), `utf8mb4_bin`, có index; snapshot publicId của ảnh đầu lúc mua, **không** là FK vì đơn hàng không bao giờ bị sửa theo sản phẩm).
+Quy tắc: không xóa asset còn được `product_images.assetId`, `users.avatarAssetId` hoặc `order_items.imagePublicId` tham chiếu. Cột `Product.imageUrl` cũng nới lên VARCHAR(500).
 
 ### Sản phẩm yêu thích
 
@@ -327,6 +378,7 @@ model OrderItem {
   color       String         // snapshot
   colorHex    String?        @db.VarChar(7)   // snapshot
   imageUrl    String?        @db.VarChar(500) // snapshot ảnh đầu (product_images.url) lúc mua
+  imagePublicId String?      @db.VarChar(255) // snapshot publicId của ảnh đầu; chặn xóa asset còn được đơn cũ tham chiếu
   quantity    Int
   price       Int            // snapshot đơn giá lúc mua
 
