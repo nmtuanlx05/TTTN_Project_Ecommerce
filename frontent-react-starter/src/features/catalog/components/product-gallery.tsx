@@ -14,6 +14,7 @@ function MainImage({ src, alt }: { src: string | null; alt: string }) {
       alt={alt}
       eager
       radius="panel"
+      preset="detail"
       className="aspect-[4/5]"
       onLoaded={() => setZoomable(true)}
       onFailed={() => setZoomable(false)}

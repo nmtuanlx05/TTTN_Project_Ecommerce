@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { imgAttrs } from "@/lib/img-url"
 import { cn } from "@/lib/utils"
 
 /** Ảnh nhỏ vuông bo góc của dòng hàng trong đơn (ảnh chụp lúc đặt). Thiếu hoặc lỗi ảnh thì giữ khung trung tính. `className` đặt kích thước. */
@@ -9,7 +10,7 @@ function OrderThumb({ src, className }: { src: string | null; className?: string
     <span className={cn("relative block shrink-0 overflow-hidden rounded-card bg-surface-sunken", className)}>
       {usable ? (
         <img
-          src={src}
+          {...imgAttrs(src, "tiny")}
           alt=""
           loading="lazy"
           decoding="async"

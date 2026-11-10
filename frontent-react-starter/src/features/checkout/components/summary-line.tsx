@@ -7,7 +7,7 @@ function SummaryLine({ item }: { item: PreviewItem }) {
   return (
     <li className="flex items-start gap-3">
       <div className="relative w-12 shrink-0">
-        <ProductImage src={item.imageUrl} alt="" className="w-12" />
+        <ProductImage src={item.imageUrl} alt="" preset="tiny" className="w-12" />
         <span className="absolute -top-1.5 -right-1.5 grid min-w-5 place-items-center rounded-4xl bg-primary px-1 text-caption font-semibold text-primary-fg">
           {item.quantity}
         </span>

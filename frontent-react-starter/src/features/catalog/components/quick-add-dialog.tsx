@@ -29,7 +29,7 @@ function QuickAddForm({
   return (
     <div className="flex flex-col gap-5 p-gutter">
       <div className="flex items-center gap-4">
-        <ProductImage src={product.imageUrl} alt="" className="w-16 shrink-0" />
+        <ProductImage src={product.imageUrl} alt="" preset="tiny" className="w-16 shrink-0" />
         <p className="text-body-sm font-semibold text-ink">{formatVnd(product.price)}</p>
       </div>
       <VariantPicker inStockOnly variants={product.variants} choice={choice} onChange={setChoice} />

@@ -4,6 +4,7 @@ import { ImageOff, LoaderCircle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePanZoom } from "@/hooks/use-pan-zoom"
 import { usePanZoomGestures } from "@/hooks/use-pan-zoom-gestures"
+import { imgUrl } from "@/lib/img-url"
 import { cn } from "@/lib/utils"
 import { ImageLightboxToolbar } from "./image-lightbox-toolbar"
 
@@ -75,7 +76,7 @@ function ImageLightboxViewer({
         ) : (
           <img
             data-pan-zoom-content
-            src={src}
+            src={imgUrl(src, 1280)}
             alt={alt}
             draggable={false}
             onLoad={(event) => {

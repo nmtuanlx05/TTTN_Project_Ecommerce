@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { useImageLoad } from "@/hooks/use-image-load"
+import { imgAttrs, type ImgPresetName } from "@/lib/img-url"
 import { STORE } from "@/lib/store-info"
 import { cn } from "@/lib/utils"
 
@@ -14,6 +15,8 @@ export const PRODUCT_IMAGE_ASPECT = "aspect-[3/4]"
  * Trong lúc tải là skeleton có vệt sáng lướt; tải xong thì ảnh mờ dần vào. Thiếu ảnh hoặc ảnh lỗi: chữ cái đầu của thương hiệu
  * trên nền trung tính. `alt` luôn là tên sản phẩm. `eager`: ảnh nằm ngay màn hình đầu thì tải ngay (không lazy).
  * `zoomOnHover`: phóng nhẹ khi rê chuột vào phần tử cha có class `group/card` (chỉ khi người dùng không giảm chuyển động).
+ * `preset`: ngữ cảnh hiển thị để chọn kích thước ảnh Cloudinary (`lib/img-url.ts`; mặc định `card`, thẻ trong lưới). Khung đã có tỉ lệ cố định nên bản thu nhỏ không làm giật bố cục;
+ * ảnh không phải Cloudinary (picsum, `/uploads/...`) được dùng nguyên URL.
  * `overlay`: lớp phủ trong khung (vd. ảnh thứ hai của thẻ sản phẩm, `ProductHoverImage`), nằm trên ảnh chính và bị cắt theo khung.
  */
 function ProductImage({
@@ -21,6 +24,7 @@ function ProductImage({
   alt,
   eager = false,
   zoomOnHover = false,
+  preset = "card",
   overlay,
   radius = "card",
   onLoaded,
@@ -31,6 +35,7 @@ function ProductImage({
   alt: string
   eager?: boolean
   zoomOnHover?: boolean
+  preset?: ImgPresetName
   overlay?: ReactNode
   /** Bo góc: `card` (18px, mặc định) hoặc `panel` (28px, ảnh chính trang chi tiết). `cn()` không biết hai token này xung đột nên chọn bằng prop, không ghi đè bằng `className`. */
   radius?: "card" | "panel"
@@ -58,7 +63,7 @@ function ProductImage({
     >
       {showImage && src ? (
         <img
-          src={src}
+          {...imgAttrs(src, preset)}
           alt={alt}
           loading={eager ? "eager" : "lazy"}
           decoding="async"
