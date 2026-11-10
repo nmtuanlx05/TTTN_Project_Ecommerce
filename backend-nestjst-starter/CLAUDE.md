@@ -184,6 +184,10 @@ Order, OrderItem, OrderStatusHistory, PaymentTransaction, Voucher, StockMovement
   và hai khóa ngoại của `WishlistItem` (`userId`, `productId`) dùng `onDelete: Cascade` (bảng con thuần túy, không bảng nào tham chiếu tới; dòng wishlist không có nghĩa nếu thiếu user/sản phẩm; `User` và `Product` vẫn không bị xóa cứng).
 - Migration đã áp thì không sửa; CHECK mới thêm bằng migration mới. Không chạy `migrate reset`/`db push --force-reset`; sao lưu DB dev
   (`mysqldump`) trước khi `migrate deploy`.
+- **`prisma migrate dev` ÁP mọi migration đang chờ vào DB dev, kể cả khi có `--create-only`** (chỉ migration MỚI tạo ra là không áp). Vì vậy
+  KHÔNG chạy lại `migrate dev` khi trong `prisma/migrations` còn migration chưa áp (ví dụ vừa tạo và vừa sửa tay, đang chờ người dùng duyệt).
+  Kiểm drift chỉ bằng lệnh đọc (`migrate status`, `prisma validate`) hoặc hỏi người dùng; `migrate diff --from-migrations` cần
+  `shadowDatabaseUrl` (chưa cấu hình). Mọi hành động ghi vào DB, kể cả "để kiểm tra", đều cần người dùng duyệt trước.
 - Comment và tài liệu viết bằng tiếng Việt. Tên biến, hàm, file, commit message viết bằng tiếng Anh.
 
 # BACKEND CONVENTIONS (NESTJS + PRISMA)
