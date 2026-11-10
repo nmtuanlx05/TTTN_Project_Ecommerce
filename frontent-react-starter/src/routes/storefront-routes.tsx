@@ -27,7 +27,6 @@ export const storefrontRoutes = (
       <Route path="/thanh-toan" element={<StorefrontCheckoutPage />} />
       <Route path="/dat-hang-thanh-cong/:code" element={<StorefrontOrderSuccessPage />} />
       <Route path="/thanh-toan-online/:code" element={<StorefrontPaymentPage />} />
-      <Route path="/thanh-toan-online/:code" element={<StorefrontPaymentPage />} />
       <Route path="/tai-khoan" element={<AccountLayoutContainer />}>
         <Route index element={<Navigate to="don-hang" replace />} />
         <Route path="don-hang" element={<StorefrontMyOrdersPage />} />
