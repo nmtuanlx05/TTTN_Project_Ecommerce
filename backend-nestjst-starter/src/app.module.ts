@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -17,6 +18,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PaymentsSchedulerModule } from './payments/payments-scheduler.module';
+import { MediaSchedulerModule } from './media/media-scheduler.module';
 import { ENV_FILE } from './config/env-file';
 import { validateEnv } from './config/env.validation';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
@@ -29,6 +31,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
       envFilePath: ENV_FILE,
       validate: validateEnv,
     }),
+    // Một nơi duy nhất nạp bộ lập lịch cho mọi tác vụ định kỳ (thanh toán hết hạn, dọn ảnh)
+    ScheduleModule.forRoot(),
     PrismaModule,
     UsersModule,
     AuthModule,
@@ -44,6 +48,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     WishlistModule,
     PaymentsModule,
     PaymentsSchedulerModule,
+    MediaSchedulerModule,
   ],
   controllers: [AppController],
   providers: [
