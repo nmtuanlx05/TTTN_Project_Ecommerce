@@ -47,9 +47,10 @@ Ngoại lệ duy nhất: trang `/styleguide` được phép dùng `style={{ back
 npm run dev      # vite dev server
 npm run build    # tsc -b && vite build
 npm run lint     # eslint .
+npm test         # vitest run (môi trường Node, chỉ logic thuần túy: *.test.ts cạnh file nguồn)
 ```
 
-Cả `npx tsc -b` lẫn `npm run lint` hiện đang sạch — giữ nguyên như vậy.
+`npx tsc -b`, `npm run lint` và `npm test` hiện đang sạch — giữ nguyên như vậy.
 
 ## Font
 
@@ -520,7 +521,7 @@ một module, và cập nhật `/styleguide` nếu có thêm token hoặc compon
 Người dùng tự mở giao diện và xem bằng mắt. Vì vậy:
 
 1. KHÔNG tự dựng harness trình duyệt (puppeteer/playwright), KHÔNG chụp ảnh hàng loạt, KHÔNG so ảnh trước/sau, KHÔNG so computed style, KHÔNG dùng git archive để dựng bản "trước", trừ khi người dùng yêu cầu rõ trong prompt.
-2. Kiểm tra tự động chỉ gồm: `npx tsc -b`, `npm run lint`, `npm run build` — chạy MỘT lần ở cuối. Có thể thêm 1 lệnh grep/tìm kiếm cho các việc kiểu "còn chỗ nào dùng X không".
+2. Kiểm tra tự động chỉ gồm: `npx tsc -b`, `npm run lint`, `npm test`, `npm run build` — chạy MỘT lần ở cuối. Có thể thêm 1 lệnh grep/tìm kiếm cho các việc kiểu "còn chỗ nào dùng X không".
 3. Ngoại lệ được phép làm thêm (nêu một dòng lý do trước khi làm): khi sửa file dùng chung ảnh hưởng admin/auth (ví dụ ui/button.tsx, ui/input.tsx, global.css phần token chung) — khi đó chỉ cần chụp 2–3 trang admin tiêu biểu ở 1 cỡ màn, không quét toàn bộ.
 4. Không mở tiến trình nền kéo dài. Nếu lỡ mở thì tắt trước khi báo cáo.
 5. Không lặp vòng "chạy – sửa harness – chạy lại". Nếu một công cụ kiểm thử lỗi, bỏ nó, ghi vào báo cáo mục "chưa kiểm chứng", rồi dừng.
