@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
+import type { UploadedImage } from "@/types/upload"
 import { MAX_PRODUCT_IMAGES } from "../constants"
 import type { ProductFormValues } from "../schemas"
 import { useMultiImageUpload } from "../use-multi-image-upload"
@@ -35,9 +36,12 @@ function ProductImagesField({
       shouldTouch: true,
       shouldValidate: true,
     })
-  const append = (url: string) => {
+  /** Thêm ảnh vào cuối danh sách. Ảnh vừa tải lên (có `image`) mang `assetId` để gửi `{ assetId }`; ảnh dán URL thì chỉ có `url`. */
+  const append = (url: string, image?: UploadedImage) => {
     const current = getValues("images")
-    if (current.length < MAX_PRODUCT_IMAGES && !current.some((image) => image.url === url)) write([...current, { url }])
+    if (current.length < MAX_PRODUCT_IMAGES && !current.some((item) => item.url === url)) {
+      write([...current, image ? { url, assetId: image.assetId } : { url }])
+    }
   }
 
   const upload = useMultiImageUpload({ onUploaded: append })
@@ -112,7 +116,7 @@ function ProductImagesField({
         id={`${id}-url`}
         existing={images.map((image) => image.url)}
         disabled={free <= 0}
-        onAdd={append}
+        onAdd={(url) => append(url)}
       />
     </div>
   )

@@ -2,7 +2,7 @@ import { formatNumber } from "@/lib/format"
 import { parsePriceInput } from "./price-input"
 import { foldKey } from "./schema-checks"
 import type { ProductFormValues, VariantFormValues } from "./schemas"
-import type { CreateProductInput, ProductDetail, UpdateProductInput, UpdateVariantInput } from "./types"
+import type { CreateProductInput, ImageInput, ProductDetail, UpdateProductInput, UpdateVariantInput } from "./types"
 
 export const EMPTY_VARIANT: VariantFormValues = {
   sku: "",
@@ -30,6 +30,11 @@ export function savedImageUrls(product: Pick<ProductDetail, "images" | "imageUrl
     return [...product.images].sort((a, b) => a.sortOrder - b.sortOrder).map((image) => image.url)
   }
   return product.imageUrl ? [product.imageUrl] : []
+}
+
+/** Ảnh trong form → phần tử `images[]` gửi lên: có `assetId` (vừa tải) thì gửi `{ assetId }`, còn lại `{ url }`. */
+export function toImageInput(image: ProductFormValues["images"][number]): ImageInput {
+  return image.assetId !== undefined ? { assetId: image.assetId } : { url: image.url.trim() }
 }
 
 /** Mã màu so sánh/gửi lên dạng in hoa, rỗng = không có. */
@@ -78,7 +83,7 @@ export function buildCreateInput(values: ProductFormValues): CreateProductInput 
       }),
       isActive: row.isActive,
     })),
-    images: values.images.map((image) => ({ url: image.url.trim() })),
+    images: values.images.map(toImageInput),
   }
   if (values.slug.trim() !== "") input.slug = values.slug.trim()
   if (values.description.trim() !== "") input.description = values.description.trim()
@@ -97,7 +102,8 @@ export interface PreparedUpdate {
 /**
  * PATCH chỉ gửi phần thật sự đổi so với `baseline` (dữ liệu đã lưu):
  * - `description` xóa trống thì gửi `null` (xóa giá trị), trống → trống thì không gửi;
- * - `images` chỉ gửi khi danh sách đổi (so theo thứ tự và url), gửi thì thay cả mảng (`[]` = xóa hết);
+ * - `images` chỉ gửi khi danh sách đổi (so theo thứ tự và url), gửi thì thay cả mảng (`[]` = xóa hết). Ảnh vừa tải gửi `{ assetId }`; ảnh đã có gửi
+ *   `{ url }` vì API đọc sản phẩm không trả assetId (backend khớp URL Cloudinary đã đăng ký, ảnh cũ trên đĩa và URL ngoài);
  * - `colorHex` chỉ gửi khi đổi, nhưng đổi mã của một màu thì gửi CẢ các biến thể cùng màu (backend kiểm tra cùng màu cùng mã trên cả sản phẩm);
  * - biến thể có `id` chỉ gửi các trường đổi, không đổi thì bỏ qua (backend giữ nguyên);
  * - biến thể chưa có `id` là hàng mới, gửi đủ sku/size/color/isActive.
@@ -124,7 +130,7 @@ export function buildUpdateInput(baseline: ProductDetail, values: ProductFormVal
   const urls = values.images.map((image) => image.url.trim())
   const savedUrls = savedImageUrls(baseline)
   if (urls.length !== savedUrls.length || urls.some((url, index) => url !== savedUrls[index])) {
-    input.images = urls.map((url) => ({ url }))
+    input.images = values.images.map(toImageInput)
   }
 
   const variants: UpdateVariantInput[] = []

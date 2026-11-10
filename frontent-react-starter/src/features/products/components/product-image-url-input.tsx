@@ -3,10 +3,11 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { IMAGE_URL_MAX_LENGTH, IMAGE_URL_REGEX } from "../constants"
+import { IMAGE_URL_MAX_LENGTH, NEW_IMAGE_URL_REGEX } from "../constants"
 
 /**
- * Thêm ảnh bằng URL (ảnh đã nằm ở nơi khác), nằm trong mục thu gọn. Kiểm tra ngay: đúng dạng http(s), không quá dài, chưa có trong danh sách.
+ * Thêm ảnh bằng URL (ảnh đã nằm ở nơi khác), nằm trong mục thu gọn. Kiểm tra ngay: chỉ https (backend chỉ nhận URL ngoài https), không quá dài, chưa có trong danh sách.
+ * Chỉ siết cho URL MỚI thêm; ảnh đã lưu (kể cả http://localhost/uploads/...) vẫn giữ nguyên khi sửa sản phẩm.
  * Enter trong ô này chỉ thêm ảnh, KHÔNG gửi form sản phẩm.
  */
 function ProductImageUrlInput({
@@ -27,7 +28,7 @@ function ProductImageUrlInput({
     const url = value.trim()
     if (url === "") return setError("Nhập đường dẫn ảnh.")
     if (url.length > IMAGE_URL_MAX_LENGTH) return setError(`Đường dẫn ảnh tối đa ${IMAGE_URL_MAX_LENGTH} ký tự.`)
-    if (!IMAGE_URL_REGEX.test(url)) return setError("Đường dẫn ảnh phải bắt đầu bằng http:// hoặc https://.")
+    if (!NEW_IMAGE_URL_REGEX.test(url)) return setError("Đường dẫn ảnh phải bắt đầu bằng https://.")
     if (existing.includes(url)) return setError("Ảnh này đã có trong danh sách.")
     setError(undefined)
     setValue("")
@@ -45,7 +46,7 @@ function ProductImageUrlInput({
           label="Đường dẫn ảnh"
           htmlFor={id}
           error={error}
-          description="Dùng khi ảnh đã nằm ở nơi khác. Bắt đầu bằng http:// hoặc https://."
+          description="Dùng khi ảnh đã nằm ở nơi khác. Bắt đầu bằng https://."
         >
           <Input
             type="text"
