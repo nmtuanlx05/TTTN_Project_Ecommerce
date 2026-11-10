@@ -43,6 +43,17 @@ enum DiscountType {
   FIXED // giảm số tiền cố định (VND)
 }
 
+enum MediaAssetKind {
+  PRODUCT // ảnh sản phẩm
+  AVATAR // ảnh đại diện
+}
+
+enum MediaAssetStatus {
+  ACTIVE // đang dùng hoặc vừa tải lên, chưa gắn
+  PENDING_DELETE // không còn ai tham chiếu, chờ xóa phía kho lưu trữ (thử lại nếu lỗi)
+  DELETED // đã xóa phía kho lưu trữ (giữ dòng để truy vết)
+}
+
 // ============ User ============
 
 model User {
@@ -51,7 +62,9 @@ model User {
   password             String
   name                 String?
   phone                String?
-  avatarUrl            String?              @db.VarChar(191) // URL ảnh đại diện do /uploads/avatars cấp; null = chưa có
+  avatarUrl            String?              @db.VarChar(500) // URL ảnh đại diện (ghi kép cùng avatarAssetId: bằng media_assets.secureUrl); null = chưa có
+  avatarAssetId        Int? // ảnh đại diện đã đăng ký (media_assets); null nếu chưa có hoặc là ảnh cũ chưa chuyển
+  avatarAsset          MediaAsset?          @relation("UserAvatarAsset", fields: [avatarAssetId], references: [id], onDelete: Restrict)
   role                 Role                 @default(CUSTOMER)
   isActive             Boolean              @default(true)
   cart                 Cart?
@@ -61,6 +74,7 @@ model User {
   resolvedPayments     PaymentTransaction[] @relation("PaymentResolver") // giao dịch thanh toán user (admin) này đã xử lý
   stockMovements       StockMovement[] // các lần đổi tồn kho do user này thực hiện
   wishlistItems        WishlistItem[] // sản phẩm yêu thích của user
+  uploadedAssets       MediaAsset[]         @relation("MediaAssetUploader") // ảnh user này đã tải lên
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 
@@ -87,7 +101,7 @@ model Product {
   slug          String           @unique
   description   String?          @db.Text
   price         Int // giá niêm yết, VND
-  imageUrl      String? // DEPRECATED: chỉ để tương thích, nguồn thật là images (imageUrl = ảnh đầu, đồng bộ khi ghi)
+  imageUrl      String?          @db.VarChar(500) // DEPRECATED: chỉ để tương thích, nguồn thật là images (imageUrl = ảnh đầu, đồng bộ khi ghi)
   isActive      Boolean          @default(true)
   categoryId    Int
   category      Category         @relation(fields: [categoryId], references: [id])
@@ -104,14 +118,17 @@ model Product {
 // Ảnh sản phẩm, tối đa 6 ảnh/sản phẩm (kiểm ở service). sortOrder nhỏ nhất là ảnh đại diện.
 // Ngoại lệ với quy ước "không cấu hình onDelete": ảnh là bảng con thuần túy nên xóa theo sản phẩm (Cascade).
 model ProductImage {
-  id        Int      @id @default(autoincrement())
+  id        Int         @id @default(autoincrement())
   productId Int
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  url       String   @db.VarChar(500)
+  product   Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String      @db.VarChar(500) // ghi kép: bằng media_assets.secureUrl khi có assetId; ảnh URL ngoài thì assetId = null
+  assetId   Int? // ảnh đã đăng ký (media_assets); Restrict: không xóa dòng asset khi còn ảnh dùng
+  asset     MediaAsset? @relation(fields: [assetId], references: [id], onDelete: Restrict)
   sortOrder Int
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
 
   @@index([productId, sortOrder])
+  @@index([assetId])
   @@map("product_images")
 }
 
@@ -294,20 +311,23 @@ model Order {
 }
 
 model OrderItem {
-  id          Int            @id @default(autoincrement())
-  orderId     Int
-  order       Order          @relation(fields: [orderId], references: [id])
-  variantId   Int
-  variant     ProductVariant @relation(fields: [variantId], references: [id])
-  productName String // snapshot lúc mua
-  sku         String // snapshot
-  size        String // snapshot
-  color       String // snapshot
-  colorHex    String?        @db.VarChar(7) // snapshot
-  imageUrl    String?        @db.VarChar(500) // snapshot ảnh đầu (product_images.url) lúc mua
-  quantity    Int
-  price       Int // snapshot đơn giá lúc mua
+  id            Int            @id @default(autoincrement())
+  orderId       Int
+  order         Order          @relation(fields: [orderId], references: [id])
+  variantId     Int
+  variant       ProductVariant @relation(fields: [variantId], references: [id])
+  productName   String // snapshot lúc mua
+  sku           String // snapshot
+  size          String // snapshot
+  color         String // snapshot
+  colorHex      String?        @db.VarChar(7) // snapshot
+  imageUrl      String?        @db.VarChar(500) // snapshot ảnh đầu (product_images.url) lúc mua
+  imagePublicId String?        @db.VarChar(255) // snapshot publicId của ảnh đầu (collation utf8mb4_bin thêm tay ở migration); chặn xóa asset còn được đơn cũ tham chiếu
 
+  quantity Int
+  price    Int // snapshot đơn giá lúc mua
+
+  @@index([imagePublicId])
   @@map("order_items")
 }
 
@@ -351,4 +371,32 @@ model PaymentTransaction {
   @@index([orderId])
   @@index([reviewReason, resolvedAt])
   @@map("payment_transactions")
+}
+
+// Ảnh đã tải lên kho lưu trữ (Cloudinary hoặc driver local). Dòng này KHÔNG bị xóa cứng: xóa ảnh = status DELETED.
+// uploadedById: SetNull có chủ ý. User không bị xóa cứng; nếu có xóa thì ảnh vẫn tồn tại và vẫn được dọn đúng, chỉ mất thông tin người tải.
+// publicId phân biệt hoa/thường như Cloudinary nên cột dùng collation utf8mb4_bin (sửa tay ở migration; Prisma không biểu diễn được).
+model MediaAsset {
+  id             Int              @id @default(autoincrement())
+  publicId       String           @unique @db.VarChar(255)
+  secureUrl      String           @db.VarChar(500) // URL gốc, không kèm biến đổi
+  width          Int?
+  height         Int?
+  format         String?          @db.VarChar(10)
+  bytes          Int?
+  kind           MediaAssetKind
+  status         MediaAssetStatus @default(ACTIVE)
+  uploadedById   Int?
+  uploadedBy     User?            @relation("MediaAssetUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  sourceUrl      String?          @db.VarChar(500) // URL cũ khi nhập bằng script chuyển ảnh; dùng để hoàn tác
+  deleteAttempts Int              @default(0)
+  lastError      String?          @db.VarChar(500)
+  createdAt      DateTime         @default(now())
+  deletedAt      DateTime?
+  productImages  ProductImage[]
+  avatarUsers    User[]           @relation("UserAvatarAsset")
+
+  @@index([status, createdAt])
+  @@index([uploadedById, createdAt])
+  @@map("media_assets")
 }
