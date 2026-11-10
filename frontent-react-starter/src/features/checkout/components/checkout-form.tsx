@@ -1,4 +1,5 @@
 import { Alert } from "@/components/ui/alert"
+import type { PaymentMethodAvailability } from "../types"
 import type { useCheckoutForm } from "../use-checkout-form"
 import { PaymentCard } from "./payment-card"
 import { ShippingCard } from "./shipping-card"
@@ -10,10 +11,13 @@ export const CHECKOUT_FORM_ID = "checkout-form"
 function CheckoutForm({
   checkout,
   unavailable,
+  online,
 }: {
   checkout: ReturnType<typeof useCheckoutForm>
   /** Cảnh báo của xem trước (`warnings`) hoặc của lần đặt vừa bị từ chối. */
   unavailable: string[]
+  /** `availablePaymentMethods.online` của xem trước. */
+  online: PaymentMethodAvailability
 }) {
   return (
     <form id={CHECKOUT_FORM_ID} noValidate onSubmit={checkout.submit} className="flex flex-col gap-8">
@@ -29,7 +33,7 @@ function CheckoutForm({
         hasWards={checkout.hasWards}
         onDistrictChange={checkout.changeDistrict}
       />
-      <PaymentCard />
+      <PaymentCard method={checkout.paymentMethod} online={online} onChange={checkout.setPaymentMethod} />
     </form>
   )
 }

@@ -3,6 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { useToast } from "@/components/ui/toast"
 import type { ApiError } from "@/lib/api-error"
 import type { Paginated } from "@/types/api"
+import { NOT_CANCELLABLE_MESSAGE } from "./constants"
 import { cancelOrder, getOrder, getOrdersSummary, listMyOrders, reorder, type MyOrdersParams } from "./api"
 import type { Order, OrderListItem, OrdersSummary, ReorderResult } from "./types"
 
@@ -54,7 +55,7 @@ export function useInvalidateOrders() {
 
 /**
  * Khách tự hủy. Thành công hoặc 409 `ORDER_NOT_CANCELLABLE_BY_CUSTOMER` (đơn đã được xác nhận) đều làm mới dữ liệu;
- * lỗi 409 hiện câu riêng. `onSettled` để nơi gọi đóng hộp thoại.
+ * lỗi 409 hiện câu riêng (đã xác nhận hoặc đã thanh toán). `onSettled` để nơi gọi đóng hộp thoại.
  */
 export function useCancelOrder() {
   const invalidate = useInvalidateOrders()
@@ -65,9 +66,7 @@ export function useCancelOrder() {
     onError: (error) =>
       toast.add({
         title:
-          error.code === "ORDER_NOT_CANCELLABLE_BY_CUSTOMER"
-            ? "Đơn đã được xác nhận, không thể tự hủy"
-            : error.message,
+          error.code === "ORDER_NOT_CANCELLABLE_BY_CUSTOMER" ? NOT_CANCELLABLE_MESSAGE : error.message,
         data: { tone: "danger" },
       }),
     onSettled: invalidate,

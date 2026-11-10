@@ -13,7 +13,7 @@ Dự án xây dựng website thương mại điện tử bán hàng cho một br
 | Thêm vào giỏ                         | Không trừ, không giữ tồn kho; chỉ kiểm tra tồn khi thêm giỏ và khi đặt đơn. Giỏ lưu trong DB, chỉ Customer đã đăng nhập; giỏ Guest để V2 |
 | Nhập kho                             | Staff tự nhập kho, không cần Admin duyệt; cộng trực tiếp vào `ProductVariant.stock`, mỗi lần đổi tồn ghi một dòng lịch sử (`StockMovement`) |
 | Khách mua hàng                       | Cho phép guest checkout (không cần đăng ký)                                                                           |
-| Thanh toán                           | COD và một cổng thanh toán online. **Bản hiện tại chỉ triển khai COD**; schema đã chừa chỗ cho cổng online (VNPay sandbox dự kiến), chưa làm |
+| Thanh toán                           | COD và thanh toán online. **Đã triển khai: COD và chuyển khoản VietQR** (đối soát qua webhook SePay + admin xác nhận thủ công, xem `docs/api/payments.md`); cổng thẻ/ví (VNPay sandbox) để giai đoạn sau |
 | Hủy đơn chưa thanh toán              | Staff được hủy, bắt buộc ghi lý do                                                                                    |
 | Hủy hoặc hoàn tiền đơn đã thanh toán | Staff chỉ tạo yêu cầu, Admin duyệt                                                                                    |
 | Kho                                  | Một kho duy nhất                                                                                                      |

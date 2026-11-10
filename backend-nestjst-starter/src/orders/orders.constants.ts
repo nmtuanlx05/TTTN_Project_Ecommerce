@@ -16,6 +16,8 @@ export const VN_UTC_OFFSET_HOURS = 7;
 export const IDEMPOTENCY_KEY_REGEX = /^[A-Za-z0-9._:-]{8,64}$/;
 
 export const MAX_REASON_LENGTH = 500;
+export const PAYMENT_RECEIVED_REASON = 'Đã nhận chuyển khoản';
+export const PAYMENT_EXPIRED_REASON = 'Hết hạn thanh toán';
 export const DEFAULT_CUSTOMER_CANCEL_REASON = 'Khách tự hủy';
 
 // Mã lỗi máy đọc được (trường `code` của response lỗi), liệt kê ở docs/api/orders.md
@@ -33,6 +35,7 @@ export const ORDER_ERROR = {
   ORDER_NOT_FOUND: 'ORDER_NOT_FOUND',
   ORDER_INVALID_TRANSITION: 'ORDER_INVALID_TRANSITION',
   ORDER_NOT_CANCELLABLE_BY_CUSTOMER: 'ORDER_NOT_CANCELLABLE_BY_CUSTOMER',
+  ORDER_PAID_ADMIN_ONLY: 'ORDER_PAID_ADMIN_ONLY',
   ORDER_CANCEL_REASON_REQUIRED: 'ORDER_CANCEL_REASON_REQUIRED',
   SYSTEM_BUSY: 'SYSTEM_BUSY',
   REORDER_NOTHING_ADDED: 'REORDER_NOTHING_ADDED',

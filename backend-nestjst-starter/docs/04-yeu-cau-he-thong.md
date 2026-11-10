@@ -23,7 +23,7 @@ Hệ thống có 38 yêu cầu chức năng chia theo 11 module và 25 yêu cầ
 | | FR-15 | Tăng `reserved` khi đặt đơn; nhả `reserved` khi đơn bị hủy |
 | | FR-16 | Tính `totalAmount = subtotal + shippingFee - discountAmount`; `discountAmount` lấy từ voucher (xem FR-36 đến FR-38), bằng 0 nếu không dùng voucher |
 | | FR-17 | Gửi email xác nhận đơn (chưa triển khai) |
-| Thanh toán | FR-18 | Hỗ trợ COD (đã làm); tích hợp một cổng online (VNPay hoặc MoMo): **chưa làm**, schema đã chừa chỗ (`payment_transactions`, `PENDING_PAYMENT`) |
+| Thanh toán | FR-18 | Hỗ trợ COD (đã làm); thanh toán online bằng chuyển khoản VietQR + webhook SePay (đã làm, `docs/api/payments.md`); cổng VNPay/MoMo: **chưa làm** |
 | | FR-19 | Nhận callback từ cổng, xác minh chữ ký, cập nhật `paymentStatus`; xử lý idempotent, không cập nhật trùng |
 | | FR-20 | Đơn online quá 30 phút chưa thanh toán tự hủy và nhả kho |
 | Quản lý đơn | FR-21 | Chuỗi trạng thái hợp lệ PENDING, CONFIRMED, SHIPPING, COMPLETED (trừ kho thật ở CONFIRMED → SHIPPING); chặn chuyển sai |

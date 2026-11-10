@@ -58,6 +58,7 @@ model User {
   orders               Order[]              @relation("OrderCustomer") // đơn do user này đặt
   handledOrders        Order[]              @relation("OrderHandler") // đơn user này (Staff) phụ trách
   orderStatusHistories OrderStatusHistory[] // các lần user này đổi trạng thái đơn
+  resolvedPayments     PaymentTransaction[] @relation("PaymentResolver") // giao dịch thanh toán user (admin) này đã xử lý
   stockMovements       StockMovement[] // các lần đổi tồn kho do user này thực hiện
   wishlistItems        WishlistItem[] // sản phẩm yêu thích của user
   createdAt            DateTime             @default(now())
@@ -160,12 +161,22 @@ enum StockMovementType {
   SALE // xuất kho theo đơn khi chuyển SHIPPING (giảm cả stock và reserved)
 }
 
-// Trạng thái một giao dịch với cổng thanh toán online (bảng PaymentTransaction, chưa dùng ở bản COD)
+// Trạng thái một giao dịch thanh toán online (bảng PaymentTransaction)
 enum PaymentTransactionStatus {
   PENDING
   SUCCESS
   FAILED
   REFUNDED
+  NEEDS_REVIEW // đã nhận tiền nhưng chưa xác nhận đơn (thiếu tiền, không khớp, đơn đã đóng); admin xử lý (thêm cuối enum)
+}
+
+// Lý do một giao dịch cần admin xem lại (cột reviewReason của PaymentTransaction)
+enum PaymentReviewReason {
+  UNMATCHED // không tìm thấy đơn theo nội dung chuyển khoản
+  UNDERPAID // chuyển thiếu tiền, không xác nhận
+  OVERPAID // chuyển thừa tiền, đã xác nhận đơn, admin xem để hoàn phần thừa
+  ORDER_CLOSED // đơn đã hủy/hết hạn, không mở lại
+  DUPLICATE_PAID // đơn đã thanh toán rồi, nhận thêm một khoản nữa
 }
 
 model StockMovement {
@@ -316,20 +327,28 @@ model OrderStatusHistory {
   @@map("order_status_histories")
 }
 
-// Giao dịch với cổng thanh toán online. Tạo sẵn để cắm cổng sau (VNPay...), bản COD chưa ghi dòng nào.
+// Giao dịch thanh toán online: mỗi lần nhận tiền (webhook đối soát) hoặc admin xác nhận thủ công là một dòng.
+// provider = nguồn đối soát (SEPAY, MANUAL...). orderId null = giao dịch không khớp đơn nào.
 model PaymentTransaction {
-  id            Int                      @id @default(autoincrement())
-  orderId       Int
-  order         Order                    @relation(fields: [orderId], references: [id])
-  provider      String                   @db.VarChar(20) // VNPAY...
-  providerTxnId String?                  @db.VarChar(100) // mã giao dịch phía cổng
-  amount        Int // VND
-  status        PaymentTransactionStatus @default(PENDING)
-  rawData       Json? // dữ liệu thô callback, để đối soát
-  createdAt     DateTime                 @default(now())
-  updatedAt     DateTime                 @updatedAt
+  id             Int                      @id @default(autoincrement())
+  orderId        Int?
+  order          Order?                   @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  provider       String                   @db.VarChar(20) // SEPAY, MANUAL...
+  providerTxnId  String?                  @db.VarChar(100) // mã giao dịch phía nhà cung cấp (null với MANUAL)
+  amount         Int // VND
+  content        String?                  @db.VarChar(500) // nội dung chuyển khoản gốc
+  status         PaymentTransactionStatus @default(PENDING)
+  reviewReason   PaymentReviewReason? // khác null = cần admin xem (cho tới khi resolvedAt có giá trị)
+  resolvedAt     DateTime?
+  resolvedById   Int?
+  resolvedBy     User?                    @relation("PaymentResolver", fields: [resolvedById], references: [id])
+  resolutionNote String?                  @db.VarChar(500)
+  rawData        Json? // dữ liệu thô callback, để đối soát
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
 
   @@unique([provider, providerTxnId]) // callback idempotent
   @@index([orderId])
+  @@index([reviewReason, resolvedAt])
   @@map("payment_transactions")
 }

@@ -1,0 +1,22 @@
+// Nguồn đối soát ghi ở payment_transactions.provider
+export const PAYMENT_PROVIDER = {
+  SEPAY: 'SEPAY',
+  MANUAL: 'MANUAL',
+} as const;
+export type PaymentProvider =
+  (typeof PAYMENT_PROVIDER)[keyof typeof PAYMENT_PROVIDER];
+
+export const DEFAULT_PAYMENT_EXPIRE_MINUTES = 30;
+export const MAX_PAYMENT_EXPIRE_MINUTES = 1440;
+
+// Mã lỗi máy đọc được, liệt kê ở docs/api/payments.md (mã dùng chung với đơn hàng nằm ở orders.constants.ts)
+export const PAYMENT_ERROR = {
+  ORDER_NOT_ONLINE: 'ORDER_NOT_ONLINE',
+  PAYMENT_NOT_REQUIRED: 'PAYMENT_NOT_REQUIRED',
+  ORDER_NOT_AWAITING_PAYMENT: 'ORDER_NOT_AWAITING_PAYMENT',
+  PAYMENT_TXN_NOT_FOUND: 'PAYMENT_TXN_NOT_FOUND',
+  PAYMENT_TXN_NOT_REVIEWABLE: 'PAYMENT_TXN_NOT_REVIEWABLE',
+  PAYMENT_TXN_ALREADY_RESOLVED: 'PAYMENT_TXN_ALREADY_RESOLVED',
+  PAYMENT_TXN_ORDER_MISMATCH: 'PAYMENT_TXN_ORDER_MISMATCH',
+  WEBHOOK_PAYLOAD_INVALID: 'WEBHOOK_PAYLOAD_INVALID',
+} as const;

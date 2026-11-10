@@ -3,6 +3,12 @@ import { useToast } from "@/components/ui/toast"
 import { REORDER_REASON_LABEL } from "./constants"
 import { useReorder } from "./queries"
 
+/** Đơn đang xác nhận hủy. `awaitingPayment`: đơn online chờ chuyển khoản, hộp thoại phải cảnh báo "đã chuyển khoản thì đừng hủy". */
+export interface CancelTarget {
+  code: string
+  awaitingPayment: boolean
+}
+
 /** Nội dung hộp thoại kết quả mua lại. `openCartAfter`: đóng xong thì mở giỏ (đã thêm được ít nhất một dòng). */
 export interface ReorderNotice {
   title: string
@@ -17,7 +23,7 @@ export interface ReorderNotice {
  * và `onReordered` chạy SAU khi hộp thoại đóng xong để hai lớp nền không chồng nhau.
  */
 export function useOrderActions({ onReordered }: { onReordered: () => void }) {
-  const [cancelCode, setCancelCode] = useState<string | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null)
   const [notice, setNotice] = useState<ReorderNotice | null>(null)
   const [noticeOpen, setNoticeOpen] = useState(false)
   const [reorderingCode, setReorderingCode] = useState<string | null>(null)
@@ -63,8 +69,10 @@ export function useOrderActions({ onReordered }: { onReordered: () => void }) {
   }
 
   return {
-    cancelCode,
-    setCancelCode,
+    cancelTarget,
+    closeCancel: () => setCancelTarget(null),
+    requestCancel: (order: { code: string; status: string }) =>
+      setCancelTarget({ code: order.code, awaitingPayment: order.status === "PENDING_PAYMENT" }),
     reorderingCode,
     reorderOrder,
     notice,

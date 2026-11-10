@@ -10,6 +10,8 @@ describe('bảng chuyển trạng thái đơn', () => {
     [S.SHIPPING, S.COMPLETED],
     [S.PENDING, S.CANCELLED],
     [S.CONFIRMED, S.CANCELLED],
+    [S.PENDING_PAYMENT, S.PENDING],
+    [S.PENDING_PAYMENT, S.CANCELLED],
   ])('%s → %s hợp lệ', (from, to) => {
     expect(isValidTransition(from, to)).toBe(true);
   });
@@ -27,9 +29,32 @@ describe('bảng chuyển trạng thái đơn', () => {
     [S.CANCELLED, S.PENDING],
     [S.CANCELLED, S.CONFIRMED],
     [S.PENDING, S.PENDING_PAYMENT],
-    [S.PENDING_PAYMENT, S.CANCELLED],
+    [S.PENDING_PAYMENT, S.CONFIRMED],
+    [S.PENDING_PAYMENT, S.SHIPPING],
+    [S.PENDING_PAYMENT, S.COMPLETED],
+    [S.CANCELLED, S.PENDING_PAYMENT],
   ])('%s → %s không hợp lệ', (from, to) => {
     expect(isValidTransition(from, to)).toBe(false);
+  });
+
+  it('PENDING_PAYMENT → PENDING chỉ SYSTEM; hủy thì khách, nhân viên và hệ thống đều được', () => {
+    expect(getTransitionActors(S.PENDING_PAYMENT, S.PENDING)).toEqual([
+      'SYSTEM',
+    ]);
+    expect(getTransitionActors(S.PENDING_PAYMENT, S.CANCELLED)).toEqual([
+      'CUSTOMER',
+      'STAFF',
+      'ADMIN',
+      'SYSTEM',
+    ]);
+  });
+
+  it('SYSTEM không được xác nhận/giao/hoàn tất đơn', () => {
+    expect(getTransitionActors(S.PENDING, S.CONFIRMED)).not.toContain('SYSTEM');
+    expect(getTransitionActors(S.CONFIRMED, S.SHIPPING)).not.toContain(
+      'SYSTEM',
+    );
+    expect(getTransitionActors(S.PENDING, S.CANCELLED)).not.toContain('SYSTEM');
   });
 
   it('COMPLETED là trạng thái cuối (không có bước đi tiếp)', () => {

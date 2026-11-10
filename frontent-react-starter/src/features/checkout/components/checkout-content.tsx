@@ -24,6 +24,7 @@ function CheckoutContent({
   const apply = useApplyVoucher()
   const checkout = useCheckoutForm({
     user,
+    onlineEnabled: preview.data?.availablePaymentMethods.online.enabled ?? false,
     appliedCode,
     onVoucherFailure: (message) => {
       setVoucherError(message)
@@ -67,7 +68,7 @@ function CheckoutContent({
   return (
     <div className="grid items-start gap-8 lg:grid-cols-12 lg:gap-12">
       <div className="lg:col-span-7">
-        <CheckoutForm checkout={checkout} unavailable={unavailable} />
+        <CheckoutForm checkout={checkout} unavailable={unavailable} online={data.availablePaymentMethods.online} />
       </div>
       <div className="lg:col-span-5">
         <OrderSummary

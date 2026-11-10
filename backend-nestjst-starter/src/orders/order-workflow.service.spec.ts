@@ -74,13 +74,16 @@ function setup(order: Partial<FakeOrder> | null = {}) {
     to: OrderStatus,
     role: OrderActor = 'STAFF',
     reason: string | null = null,
+    actorId: number | null = 42,
+    paymentRef?: string,
   ) =>
     service.transition(tx as unknown as Prisma.TransactionClient, {
       orderId: 1,
       to,
-      actor: { id: 42, role },
+      actor: { id: actorId, role },
       reason,
       now: NOW,
+      paymentRef,
     });
   return { tx, inventory, run, state, calls };
 }
@@ -340,6 +343,128 @@ describe('OrderWorkflowService.transition', () => {
       const e = await errorOf(run(OrderStatus.CONFIRMED));
       expect(e.status).toBe(404);
       expect(e.code).toBe('ORDER_NOT_FOUND');
+    });
+  });
+
+  describe('đơn online (PENDING_PAYMENT)', () => {
+    it('nhận chuyển khoản: PENDING_PAYMENT → PENDING đặt PAID, paidAt, paymentRef; không đụng tồn kho/voucher; ghi lịch sử', async () => {
+      const { tx, run, calls } = setup({
+        status: OrderStatus.PENDING_PAYMENT,
+        paymentMethod: 'ONLINE',
+      });
+      await run(
+        OrderStatus.PENDING,
+        'SYSTEM',
+        'Đã nhận chuyển khoản',
+        null,
+        '99001',
+      );
+      expect(tx.order.update.mock.calls[0][0].data).toEqual({
+        status: OrderStatus.PENDING,
+        paymentStatus: 'PAID',
+        paidAt: NOW,
+        paymentRef: '99001',
+      });
+      expect(calls).toEqual(['lock:order', 'order:update']);
+      expect(tx.orderStatusHistory.create.mock.calls[0][0].data).toMatchObject({
+        fromStatus: OrderStatus.PENDING_PAYMENT,
+        toStatus: OrderStatus.PENDING,
+        actorId: null,
+        reason: 'Đã nhận chuyển khoản',
+      });
+    });
+
+    it('ADMIN/STAFF/CUSTOMER không tự chuyển PENDING_PAYMENT → PENDING (409 ORDER_INVALID_TRANSITION)', async () => {
+      for (const role of ['ADMIN', 'STAFF', 'CUSTOMER'] as const) {
+        const { run } = setup({
+          status: OrderStatus.PENDING_PAYMENT,
+          paymentMethod: 'ONLINE',
+        });
+        expect(await errorOf(run(OrderStatus.PENDING, role))).toMatchObject({
+          status: 409,
+          code: 'ORDER_INVALID_TRANSITION',
+        });
+      }
+    });
+
+    it('hết hạn: SYSTEM (không có người) hủy PENDING_PAYMENT, nhả giữ chỗ và hoàn lượt voucher, lịch sử actorId null', async () => {
+      const { tx, run, calls } = setup({
+        status: OrderStatus.PENDING_PAYMENT,
+        paymentMethod: 'ONLINE',
+      });
+      await run(OrderStatus.CANCELLED, 'SYSTEM', 'Hết hạn thanh toán', null);
+      expect(calls).toEqual([
+        'lock:order',
+        'lock:variants',
+        'variant:release',
+        'variant:release',
+        'voucher:release',
+        'order:update',
+      ]);
+      expect(tx.orderStatusHistory.create.mock.calls[0][0].data).toMatchObject({
+        toStatus: OrderStatus.CANCELLED,
+        actorId: null,
+        reason: 'Hết hạn thanh toán',
+      });
+    });
+
+    it('khách hủy được đơn PENDING_PAYMENT chưa trả', async () => {
+      const { run } = setup({
+        status: OrderStatus.PENDING_PAYMENT,
+        paymentMethod: 'ONLINE',
+      });
+      await expect(
+        run(OrderStatus.CANCELLED, 'CUSTOMER', 'Đổi ý'),
+      ).resolves.toBeUndefined();
+    });
+
+    it('khách KHÔNG hủy được đơn đã PAID (PENDING) → 409 ORDER_NOT_CANCELLABLE_BY_CUSTOMER, không ghi gì', async () => {
+      const { tx, run } = setup({
+        status: OrderStatus.PENDING,
+        paymentMethod: 'ONLINE',
+        paymentStatus: 'PAID',
+      });
+      expect(
+        await errorOf(run(OrderStatus.CANCELLED, 'CUSTOMER')),
+      ).toMatchObject({
+        status: 409,
+        code: 'ORDER_NOT_CANCELLABLE_BY_CUSTOMER',
+      });
+      expect(tx.order.update).not.toHaveBeenCalled();
+    });
+
+    it('STAFF không hủy được đơn đã PAID → 403 ORDER_PAID_ADMIN_ONLY, không ghi gì', async () => {
+      const { tx, run } = setup({
+        status: OrderStatus.PENDING,
+        paymentMethod: 'ONLINE',
+        paymentStatus: 'PAID',
+      });
+      expect(
+        await errorOf(run(OrderStatus.CANCELLED, 'STAFF', 'x')),
+      ).toMatchObject({
+        status: 403,
+        code: 'ORDER_PAID_ADMIN_ONLY',
+      });
+      expect(tx.order.update).not.toHaveBeenCalled();
+    });
+
+    it('ADMIN hủy được đơn đã PAID; paymentStatus giữ nguyên PAID (không đổi sang REFUNDED)', async () => {
+      const { tx, run } = setup({
+        status: OrderStatus.PENDING,
+        paymentMethod: 'ONLINE',
+        paymentStatus: 'PAID',
+      });
+      await run(OrderStatus.CANCELLED, 'ADMIN', 'Khách yêu cầu hoàn tiền');
+      const data = tx.order.update.mock.calls[0][0].data;
+      expect(data.status).toBe(OrderStatus.CANCELLED);
+      expect(data).not.toHaveProperty('paymentStatus');
+    });
+
+    it('SYSTEM không hủy được đơn PENDING (đã trả/COD) → 409', async () => {
+      const { run } = setup({ status: OrderStatus.PENDING });
+      expect(
+        await errorOf(run(OrderStatus.CANCELLED, 'SYSTEM', 'x', null)),
+      ).toMatchObject({ status: 409, code: 'ORDER_INVALID_TRANSITION' });
     });
   });
 });

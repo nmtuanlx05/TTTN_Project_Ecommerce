@@ -1,8 +1,12 @@
 import { CircleAlert } from "lucide-react"
 import { StateMessage } from "@/components/storefront/state-message"
-import { Button } from "@/components/ui/button"
+import { Link } from "react-router-dom"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatDate, formatTime } from "@/lib/format"
+import { orderPaymentPath } from "@/lib/order-paths"
+import { cn } from "@/lib/utils"
+import { canCustomerCancel, canPayNow } from "../constants"
 import { useOrderActions } from "../use-order-actions"
 import { useOrder } from "../queries"
 import { OrderActionDialogs } from "./order-action-dialogs"
@@ -52,11 +56,23 @@ function OrderDetailContent({ code, onReordered }: { code: string; onReordered: 
           </h1>
           <OrderStatusPill status={order.status} className="self-start" />
         </div>
-        {order.status === "PENDING" ? (
-          <Button type="button" onClick={() => actions.setCancelCode(order.code)} className="press rounded-4xl">
-            Hủy đơn
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {canCustomerCancel(order) ? (
+            <Button
+              type="button"
+              variant={canPayNow(order) ? "secondary" : "primary"}
+              onClick={() => actions.requestCancel(order)}
+              className="press rounded-4xl"
+            >
+              Hủy đơn
+            </Button>
+          ) : null}
+          {canPayNow(order) ? (
+            <Link to={orderPaymentPath(order.code)} className={cn(buttonVariants(), "press rounded-4xl")}>
+              Thanh toán ngay
+            </Link>
+          ) : null}
+        </div>
         {canReorder ? (
           <Button
             type="button"

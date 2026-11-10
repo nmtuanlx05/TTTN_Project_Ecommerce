@@ -13,11 +13,11 @@ chạy thử trên MySQL thật**: chỉ được bảo vệ bằng thiết kế
 
 ## Phạm vi bản này
 
-- Chỉ **COD**. `paymentMethod: "ONLINE"` → 400 `PAYMENT_METHOD_NOT_SUPPORTED` "Chưa hỗ trợ thanh toán online". Schema đã chừa chỗ cho
-  cổng online (xem "Thiết kế chừa chỗ thanh toán online").
+- **COD** và **ONLINE bằng chuyển khoản VietQR** (chi tiết, webhook SePay, xác nhận thủ công, hết hạn ở `docs/api/payments.md`). ONLINE chỉ dùng được khi
+  đã cấu hình (`VIETQR_*`), nếu không → 400 `PAYMENT_METHOD_NOT_SUPPORTED`; tổng 0đ → 400 `PAYMENT_NOT_REQUIRED`. Cổng VNPay để giai đoạn sau.
 - Đặt đơn **từ giỏ của CUSTOMER**; guest checkout để V2 (`Order.userId` vẫn nullable).
 - `COMPLETED` là trạng thái cuối. `RETURNED` (hàng hoàn) **chưa triển khai**, để lần sau.
-- Không email, không cổng thanh toán online, quản lý voucher của admin xem `docs/api/vouchers.md` (voucher mẫu vẫn tạo bằng seed).
+- Không email, không cổng thẻ/ví (VNPay...), quản lý voucher của admin xem `docs/api/vouchers.md` (voucher mẫu vẫn tạo bằng seed).
 
 ## Quyền
 
@@ -94,7 +94,8 @@ Chỉ đọc (không khóa, không ghi). Body `{ "voucherCode"?: string }`.
   "canCheckout": false,
   "subtotal": 400000, "discountAmount": 40000, "shippingFee": 30000, "totalAmount": 390000,
   "voucher": { "code": "SALE10", "description": "Giảm 10%, tối đa 50.000đ", "discountType": "PERCENT",
-               "discountValue": 10, "maxDiscount": 50000, "minOrderValue": 0 } } }
+               "discountValue": 10, "maxDiscount": 50000, "minOrderValue": 0 },
+  "availablePaymentMethods": { "cod": { "enabled": true }, "online": { "enabled": true } } } }
 ```
 
 - `items[]` là **mọi dòng trong giỏ** (kể cả dòng không đặt được), cùng dạng với `items[]` của `GET /cart` (xem `docs/api/cart.md`):
@@ -102,6 +103,7 @@ Chỉ đọc (không khóa, không ghi). Body `{ "voucherCode"?: string }`.
   `colorHex` (có thể `null`), `unitPrice`, `lineTotal`, `purchasable`, `inStock`, `maxQuantity`. Khác `items[]` của đơn đã đặt (dòng
   chụp lại: `productName`, `sku`, `price`... và **không** có `slug`).
 - `subtotal` chỉ tính các dòng đặt được; dòng không đặt được nằm trong `warnings` (`canCheckout = false`).
+- `availablePaymentMethods.online.enabled = false` (kèm `reason`) khi chưa cấu hình ONLINE hoặc `totalAmount = 0`: frontend ẩn lựa chọn ONLINE.
 - Giỏ rỗng → 409 `CART_EMPTY`. Voucher sai → 400 với mã `VOUCHER_*`. Không lộ `stock`/`reserved`.
 
 ### `POST /orders`: đặt đơn
@@ -117,6 +119,9 @@ Header tùy chọn `Idempotency-Key` (8-64 ký tự `A-Za-z0-9._:-`). Body:
 
 (`79/760/26734` chỉ là ví dụ minh họa; lấy mã thật từ `/locations`.) `note` và `voucherCode` tùy chọn. `wardCode` bắt buộc khi quận/huyện có
 phường/xã và **phải bỏ trống** khi không có. Số điện thoại: đúng 10 số, đầu 03/05/07/08/09.
+
+`paymentMethod: "ONLINE"`: đơn vào `PENDING_PAYMENT` (`paymentStatus = UNPAID`, `paymentExpiresAt = now + PAYMENT_EXPIRE_MINUTES`), vẫn giữ chỗ tồn kho và
+lượt voucher như COD; khách lấy thông tin chuyển khoản/QR bằng `GET /orders/:code/payment` (`docs/api/payments.md`).
 
 Trong **một transaction**: khóa giỏ → khóa các dòng biến thể theo `variantId` tăng dần → khóa voucher → tăng lượt voucher → giữ chỗ
 (`reserved + n` có điều kiện) → tạo `Order` (`PENDING`, COD, `UNPAID`) + `OrderItem` chụp lại + một dòng lịch sử → xóa dòng giỏ đã đặt.
@@ -191,9 +196,14 @@ Không dòng nào thêm được → **409 `REORDER_NOTHING_ADDED`** kèm `error
 
 ### `GET /orders/:code`: chi tiết
 
+### `GET /orders/:code/payment`: thông tin chuyển khoản (đơn online)
+
+Chi tiết và ví dụ ở `docs/api/payments.md`.
+
 ### `POST /orders/:code/cancel`: khách tự hủy
 
-Body `{ "reason"?: string }` (mặc định "Khách tự hủy"). Chỉ khi `PENDING`; trả lại giữ chỗ và lượt voucher.
+Body `{ "reason"?: string }` (mặc định "Khách tự hủy"). Chỉ khi `PENDING` hoặc `PENDING_PAYMENT` **và chưa thanh toán**; trả lại giữ chỗ và lượt voucher.
+Đơn đã thanh toán (`paymentStatus = PAID`) → 409 `ORDER_NOT_CANCELLABLE_BY_CUSTOMER`.
 
 Route cố định (`preview`, `summary`) khai báo trước route có `:code`.
 
@@ -234,10 +244,13 @@ Route cố định (`preview`, `summary`) khai báo trước route có `:code`.
 | Từ | Sang | Ai | `reserved` | `stock` | `usedCount` voucher |
 | --- | --- | --- | --- | --- | --- |
 | (đặt đơn COD) | `PENDING` | Customer | +n | 0 | +1 nếu có voucher |
+| (đặt đơn ONLINE) | `PENDING_PAYMENT` | Customer | +n | 0 | +1 nếu có voucher; `paymentExpiresAt = now + 30 phút` |
+| `PENDING_PAYMENT` | `PENDING` | **Hệ thống** (nhận chuyển khoản; admin xác nhận thủ công cũng đi qua đây) | 0 | 0 | 0; `paymentStatus = PAID`, `paidAt`, `paymentRef` |
+| `PENDING_PAYMENT` | `CANCELLED` | Customer, Staff, Admin; **Hệ thống** khi hết hạn (lý do "Hết hạn thanh toán") | −n | 0 | −1 |
 | `PENDING` | `CONFIRMED` | Staff, Admin | 0 | 0 | 0; gán `handledById` |
 | `CONFIRMED` | `SHIPPING` | Staff, Admin | −n | −n, ghi `StockMovement` loại `SALE` | 0 |
 | `SHIPPING` | `COMPLETED` | Staff, Admin | 0 | 0 | 0; COD: `paymentStatus = PAID`, `paidAt` |
-| `PENDING` | `CANCELLED` | **Customer**, Staff, Admin | −n | 0 | −1 |
+| `PENDING` | `CANCELLED` | **Customer** (chỉ khi chưa thanh toán), Staff, Admin (đơn đã `PAID`: chỉ Admin) | −n | 0 | −1 |
 | `CONFIRMED` | `CANCELLED` | Staff, Admin (bắt buộc lý do) | −n | 0 | −1 |
 
 Mọi bước khác → 409 `ORDER_INVALID_TRANSITION`. Đơn đang giao/đã giao không hủy được. Mọi thay đổi trạng thái, tồn kho và voucher nằm
@@ -245,7 +258,7 @@ trong cùng một transaction và ghi một dòng `order_status_histories` (ai, 
 (hàng chưa rời kho trước đó; đơn `CONFIRMED` chỉ giữ chỗ).
 Không còn trạng thái `PACKING` (đã bỏ khỏi enum): `status=PACKING` ở query → 400. Thứ tự khóa luôn: giỏ → đơn → biến thể (id tăng dần) → voucher.
 
-`PENDING_PAYMENT`, `RETURNED` có trong enum nhưng **chưa có bước chuyển nào dẫn tới/đi từ chúng** ở bản này.
+`PENDING_PAYMENT → PENDING` chỉ do hệ thống (không có đường nào cho người dùng, kể cả Admin qua `PATCH /admin/orders/:id/status` → 409). `RETURNED` có trong enum nhưng **chưa có bước chuyển nào dẫn tới/đi từ nó** ở bản này. Hủy đơn đã thanh toán **giữ nguyên `paymentStatus = PAID`**: hoàn tiền xử lý ngoài hệ thống (xem `docs/api/payments.md`).
 
 ## Bảng lỗi (`code`)
 
@@ -268,11 +281,16 @@ Không còn trạng thái `PACKING` (đã bỏ khỏi enum): `status=PACKING` �
 | 400 | `WARD_NOT_IN_DISTRICT` | Phường/xã không thuộc quận/huyện | Phường/xã không thuộc quận/huyện đã chọn |
 | 400 | `WARD_REQUIRED` | Quận/huyện có phường/xã mà thiếu `wardCode` | Vui lòng chọn phường/xã |
 | 400 | `WARD_NOT_ALLOWED` | Quận/huyện không có phường/xã mà gửi `wardCode` | Quận/huyện này không có phường/xã, vui lòng bỏ trống phường/xã |
-| 400 | `PAYMENT_METHOD_NOT_SUPPORTED` | `paymentMethod = ONLINE` | Chưa hỗ trợ thanh toán online |
+| 400 | `PAYMENT_METHOD_NOT_SUPPORTED` | `paymentMethod = ONLINE` khi chưa cấu hình VietQR | Thanh toán chuyển khoản hiện chưa khả dụng, vui lòng chọn thanh toán khi nhận hàng (COD) |
+| 400 | `PAYMENT_NOT_REQUIRED` | `paymentMethod = ONLINE` nhưng tổng đơn = 0đ | Đơn hàng 0đ không cần thanh toán online, vui lòng chọn thanh toán khi nhận hàng (COD) |
+| 409 | `ORDER_NOT_ONLINE` | `GET /orders/:code/payment` cho đơn COD | Đơn hàng này không thanh toán online |
+| 403 | `ORDER_PAID_ADMIN_ONLY` | Staff hủy đơn đã thanh toán | Đơn hàng đã thanh toán, chỉ quản trị viên được hủy (cần hoàn tiền cho khách) |
+Các mã còn lại của thanh toán (`ORDER_NOT_AWAITING_PAYMENT`, `PAYMENT_TXN_*`, `WEBHOOK_PAYLOAD_INVALID`) ở `docs/api/payments.md`.
+
 | 400 | `IDEMPOTENCY_KEY_INVALID` | Header sai định dạng | Idempotency-Key phải gồm 8-64 ký tự chữ, số hoặc . _ : - |
 | 404 | `ORDER_NOT_FOUND` | Đơn không tồn tại hoặc của người khác | Không tìm thấy đơn hàng |
 | 409 | `ORDER_INVALID_TRANSITION` | Chuyển trạng thái sai (kể cả hủy đơn đã hủy) | Không thể chuyển đơn từ "{từ}" sang "{sang}" |
-| 409 | `ORDER_NOT_CANCELLABLE_BY_CUSTOMER` | Khách hủy đơn không còn `PENDING` | Đơn hàng đã được xác nhận hoặc đang xử lý, không thể tự hủy. Vui lòng liên hệ cửa hàng |
+| 409 | `ORDER_NOT_CANCELLABLE_BY_CUSTOMER` | Khách hủy đơn không còn `PENDING`/`PENDING_PAYMENT`, hoặc đơn đã thanh toán | Đơn hàng đã được xác nhận hoặc đang xử lý, không thể tự hủy. Vui lòng liên hệ cửa hàng |
 | 400 | `ORDER_CANCEL_REASON_REQUIRED` | Admin/Staff hủy mà không có lý do | Vui lòng nhập lý do hủy đơn |
 | 400 | `INVALID_DATE` / `INVALID_DATE_RANGE` | `from`/`to` sai (vd 2026-02-31) hoặc `from` sau `to` | `from` không phải ngày hợp lệ / `from` không được sau `to` |
 | 409 | `REORDER_NOTHING_ADDED` | Mua lại mà không dòng nào thêm được vào giỏ | Không có sản phẩm nào trong đơn này có thể thêm vào giỏ hàng (chi tiết từng dòng trong `errors[]`) |
@@ -281,11 +299,7 @@ Không còn trạng thái `PACKING` (đã bỏ khỏi enum): `status=PACKING` �
 Lỗi validate chung (trường thừa, sai kiểu) vẫn là 400 `Dữ liệu không hợp lệ` kèm `errors[]` và **không có** `code` ở cấp trên cùng;
 chỉ các ràng buộc `PHONE_INVALID`, `LOCATION_REQUIRED` mang `code` ở từng trường.
 
-## Thiết kế chừa chỗ thanh toán online (chưa làm)
+## Thanh toán online
 
-- Schema đã có: `Order.paymentMethod` (`COD`/`ONLINE`), `paymentStatus` (`UNPAID`/`PAID`/`REFUNDED`/`FAILED`), `paymentRef`, `paidAt`,
-  `paymentExpiresAt`; `OrderStatus.PENDING_PAYMENT`; bảng `payment_transactions` (`provider`, `providerTxnId`, `amount`, `status`,
-  `rawData`, unique `(provider, providerTxnId)` cho callback idempotent). Cổng cụ thể nằm ở cột `provider`, không đổi enum.
-- Đơn online sẽ vào `PENDING_PAYMENT` với `paymentExpiresAt = now + 30 phút` (đơn COD không đi qua trạng thái này). Quá hạn: một job định kỳ
-  chọn đơn `PENDING_PAYMENT` có `paymentExpiresAt < now` và đi qua **đúng luồng hủy ở trên** (khóa đơn → biến thể → voucher), nên nhả giữ chỗ và trả
-  lượt voucher đúng một lần; callback "thành công" đến muộn bị từ chối vì trạng thái đã `CANCELLED`.
+Đã triển khai bằng chuyển khoản VietQR + webhook đối soát (SePay) + admin xác nhận thủ công: xem `docs/api/payments.md` (luồng, quy tắc số tiền, hết hạn,
+mã lỗi, cấu hình). Cổng thẻ/ví (VNPay) để giai đoạn sau; cổng cụ thể nằm ở cột `payment_transactions.provider`, không đổi enum.

@@ -44,7 +44,7 @@ Quan hệ nhiều-nhiều giữa Order và ProductVariant được tách thành 
 | Order | `code`; (`userId`, `idempotencyKey`) | (`status`, `createdAt`); `customerPhone`; (`userId`, `createdAt`) |
 | OrderItem | — | — |
 | OrderStatusHistory | — | (`orderId`, `createdAt`) |
-| PaymentTransaction | (`provider`, `providerTxnId`) | `orderId` |
+| PaymentTransaction | (`provider`, `providerTxnId`) | `orderId`, (`reviewReason`, `resolvedAt`) |
 | StockMovement | — | (`variantId`, `createdAt`) |
 
 InnoDB tự tạo index cho mọi cột khóa ngoại, nên các cột như `userId`, `handledById`, `voucherId`, `orderId` hay `variantId` không cần khai báo thêm và không được liệt kê ở bảng trên. Các index còn lại, ví dụ (`status`, `createdAt`) hay `customerPhone`, cần khai báo bằng `@@index`.
@@ -74,6 +74,7 @@ Prisma chưa hỗ trợ CHECK trực tiếp, nên các CHECK dưới đây đư�
 | vouchers | `chk_vouchers_max_discount_positive` | `maxDiscount IS NULL OR maxDiscount > 0` |
 | vouchers | `chk_vouchers_dates` | `expiresAt > startsAt` |
 | payment_transactions | `chk_payment_transactions_amount` | `amount >= 0` (migration `add_order_checkout`) |
+| payment_transactions | `chk_payment_transactions_success_order` | `status <> 'SUCCESS' OR orderId IS NOT NULL` (migration `add_payment_review`; cột `orderId` nằm trong CHECK nên FK của nó là `RESTRICT`/`RESTRICT`, MySQL không cho CHECK trên cột có referential action SET NULL/CASCADE) |
 
 `order_items` có hai constraint riêng (`quantity` và `price`) để thông báo lỗi chỉ rõ cột nào sai. Tên cột là camelCase nên trong SQL phải bọc dấu backtick. Không đặt CHECK lên cột khóa ngoại, vì MySQL báo lỗi 3823 khi cột có FK với `ON UPDATE CASCADE` hoặc `ON DELETE SET NULL`.
 
@@ -160,7 +161,7 @@ Schema không khai báo `onDelete` và `onUpdate`, nên Prisma dùng mặc đị
 
 | Loại FK | Cột | Hành vi |
 | --- | --- | --- |
-| Bắt buộc | `Product.categoryId`, `ProductVariant.productId`, `Cart.userId`, `CartItem.cartId`, `CartItem.variantId`, `OrderItem.orderId`, `OrderItem.variantId`, `OrderStatusHistory.orderId`, `PaymentTransaction.orderId`, `StockMovement.variantId`, `StockMovement.createdById` | `ON DELETE RESTRICT`: không xóa được bản ghi đang được tham chiếu |
+| Bắt buộc | `Product.categoryId`, `ProductVariant.productId`, `Cart.userId`, `CartItem.cartId`, `CartItem.variantId`, `OrderItem.orderId`, `OrderItem.variantId`, `OrderStatusHistory.orderId`, `StockMovement.variantId`, `StockMovement.createdById` | `ON DELETE RESTRICT`: không xóa được bản ghi đang được tham chiếu |
 | Tùy chọn | `Category.parentId`, `Order.userId`, `Order.handledById`, `Order.voucherId`, `OrderStatusHistory.actorId` | `ON DELETE SET NULL`: xóa bản ghi cha thì cột FK của bản ghi con thành NULL |
 | Ngoại lệ | `ProductImage.productId` | `ON DELETE CASCADE` |
 | Tất cả | mọi FK | `ON UPDATE CASCADE` |
@@ -181,3 +182,4 @@ Schema không khai báo `onDelete` và `onUpdate`, nên Prisma dùng mặc đị
   - Lưu đường dẫn tương đối (vd `/uploads/products/x.webp`) thay vì URL đầy đủ để đổi `APP_PUBLIC_URL` không làm hỏng dữ liệu.
   - `APP_PUBLIC_URL` đang bị giới hạn độ dài theo cột 191 của `imageUrl`; nới được sau khi bỏ cột này.
 - Cách lưu yêu cầu hủy/hoàn tiền của đơn đã thanh toán (Staff tạo, Admin duyệt): schema chưa có model hoặc trường cho việc này (chưa phát sinh khi chỉ có COD; làm cùng thanh toán online).
+- Migration `add_payment_review` (thanh toán VietQR): `payment_transactions.orderId` thành nullable (FK `RESTRICT`/`RESTRICT`), thêm `content`, `reviewReason`, `resolvedAt`, `resolvedById` (FK tới `users`), `resolutionNote`, giá trị enum `NEEDS_REVIEW`, index `(reviewReason, resolvedAt)` và CHECK ở trên. `PaymentTransaction.orderId` giờ là quan hệ tùy chọn (giao dịch không khớp đơn).

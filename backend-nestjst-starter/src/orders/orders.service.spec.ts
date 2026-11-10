@@ -10,6 +10,7 @@ import { OrderWorkflowService } from './order-workflow.service';
 import { OrdersService } from './orders.service';
 import type { CreateOrderDto } from './dto/create-order.dto';
 
+jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
 jest.mock('../prisma/prisma.service', () => ({ PrismaService: class {} }));
 jest.mock('../inventory/inventory.service', () => ({
   InventoryService: class {},
@@ -108,6 +109,8 @@ interface Setup {
   variants?: Record<number, VariantFake>;
   voucher?: ReturnType<typeof voucherRow> | null;
   hasCart?: boolean;
+  // Cấu hình thanh toán online giả; mặc định TẮT
+  paymentOnline?: Record<string, unknown>;
 }
 
 function setup(opts: Setup = {}) {
@@ -277,12 +280,17 @@ function setup(opts: Setup = {}) {
     },
   };
 
+  const paymentConfig = {
+    online: opts.paymentOnline ?? { enabled: false, reason: 'test' },
+  };
   const locations = new LocationsService();
   const workflow = { transition: jest.fn() } as unknown as OrderWorkflowService;
   const service = new OrdersService(
     prisma as never,
     locations,
     workflow,
+    {} as never,
+    paymentConfig as never,
     {} as never,
   );
   return {
@@ -491,7 +499,17 @@ describe('OrdersService.create', () => {
   });
 
   describe('thanh toán', () => {
-    it('ONLINE → 400 "Chưa hỗ trợ thanh toán online", không mở transaction', async () => {
+    const ONLINE_ON = {
+      enabled: true,
+      bankBin: '970422',
+      bankCode: 'MB',
+      bankName: 'MB Bank',
+      accountNo: '0123456789',
+      accountName: 'CUA HANG',
+      expireMinutes: 30,
+    };
+
+    it('ONLINE khi chưa cấu hình → 400 PAYMENT_METHOD_NOT_SUPPORTED, không mở transaction và không lộ tên biến', async () => {
       const { service, prisma } = setup();
       const e = await errorOf(
         service.create(USER, dto({ paymentMethod: 'ONLINE' })),
@@ -499,9 +517,84 @@ describe('OrdersService.create', () => {
       expect(e).toMatchObject({
         status: 400,
         code: 'PAYMENT_METHOD_NOT_SUPPORTED',
-        message: 'Chưa hỗ trợ thanh toán online',
       });
+      expect(e.message).not.toMatch(/VIETQR|SEPAY|test/);
       expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('ONLINE đã cấu hình → PENDING_PAYMENT, UNPAID, hạn = tạo + 30 phút, giữ chỗ tồn như COD', async () => {
+      const { service, db } = setup({ paymentOnline: ONLINE_ON });
+      const before = Date.now();
+      await service.create(USER, dto({ paymentMethod: 'ONLINE' }));
+      const order = db.orders[0];
+      expect(order.status).toBe(OrderStatus.PENDING_PAYMENT);
+      expect(order.paymentMethod).toBe('ONLINE');
+      expect(order.paymentStatus).toBe('UNPAID');
+      const ttl = order.paymentExpiresAt.getTime() - before;
+      expect(ttl).toBeGreaterThanOrEqual(30 * 60_000);
+      expect(ttl).toBeLessThan(30 * 60_000 + 5_000);
+      expect(order.statusHistories[0].toStatus).toBe(
+        OrderStatus.PENDING_PAYMENT,
+      );
+      // Giữ chỗ giống COD: variant 3 đặt 2, variant 5 đặt 1
+      expect(db.variants[3].reserved).toBe(2);
+      expect(db.variants[5].reserved).toBe(1);
+    });
+
+    it('COD không có hạn thanh toán và vào PENDING', async () => {
+      const { service, db } = setup({ paymentOnline: ONLINE_ON });
+      await service.create(USER, dto({ paymentMethod: 'COD' }));
+      expect(db.orders[0].status).toBe(OrderStatus.PENDING);
+      expect(db.orders[0].paymentExpiresAt).toBeNull();
+    });
+
+    it('ONLINE tổng 0đ → 400 PAYMENT_NOT_REQUIRED, không tăng lượt voucher, không giữ chỗ, không tạo đơn', async () => {
+      const { service, db } = setup({
+        paymentOnline: ONLINE_ON,
+        voucher: voucherRow({
+          discountType: DiscountType.FIXED,
+          discountValue: 5_000_000,
+        }),
+      });
+      const e = await errorOf(
+        service.create(
+          USER,
+          dto({ paymentMethod: 'ONLINE', voucherCode: 'SALE10' }),
+        ),
+      );
+      expect(e).toMatchObject({ status: 400, code: 'PAYMENT_NOT_REQUIRED' });
+      expect(db.orders).toHaveLength(0);
+      expect(db.voucher!.usedCount).toBe(0);
+      expect(db.variants[3].reserved).toBe(0);
+    });
+
+    it('COD tổng 0đ vẫn đặt được', async () => {
+      const { service, db } = setup({
+        voucher: voucherRow({
+          discountType: DiscountType.FIXED,
+          discountValue: 5_000_000,
+        }),
+      });
+      await service.create(
+        USER,
+        dto({ paymentMethod: 'COD', voucherCode: 'SALE10' }),
+      );
+      expect(db.orders[0].totalAmount).toBe(0);
+    });
+
+    it('preview: availablePaymentMethods phản ánh cấu hình và tổng 0đ', () => {
+      const off = setup();
+      const on = setup({ paymentOnline: ONLINE_ON });
+      expect(on.service['availablePaymentMethods'](100_000)).toEqual({
+        cod: { enabled: true },
+        online: { enabled: true },
+      });
+      expect(on.service['availablePaymentMethods'](0).online.enabled).toBe(
+        false,
+      );
+      expect(
+        off.service['availablePaymentMethods'](100_000).online.enabled,
+      ).toBe(false);
     });
   });
 

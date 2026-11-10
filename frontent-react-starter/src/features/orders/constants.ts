@@ -1,5 +1,6 @@
 import { ACCOUNT_ORDERS_PATH } from "@/lib/account-paths"
-import type { OrderStatus } from "./types"
+import { accountOrderPath } from "@/lib/order-paths"
+import type { OrderPaymentStatus, OrderStatus } from "./types"
 
 /** Nhãn trạng thái ở storefront. Admin dùng `ORDER_STATUS` ở `components/ui/badge.tsx` (COMPLETED là "Đã giao" ở đó; bảng đối chiếu ở docs/storefront-design.md mục 21). */
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
@@ -79,4 +80,19 @@ export const REORDER_REASON_LABEL = {
 
 /** Đường dẫn trang đơn hàng của tôi. */
 export const MY_ORDERS_PATH = ACCOUNT_ORDERS_PATH
-export const orderDetailPath = (code: string) => `${MY_ORDERS_PATH}/${encodeURIComponent(code)}`
+export const orderDetailPath = accountOrderPath
+
+/**
+ * "Thanh toán ngay" hiện cho mọi đơn chờ thanh toán chưa `PAID`. Danh sách đơn KHÔNG có `paymentExpiresAt` nên không biết đơn đã hết hạn chưa:
+ * trang thanh toán (`GET /orders/:code/payment`) quyết định, đơn quá hạn ở đó hiện "hết hạn".
+ */
+export const canPayNow = (order: { status: OrderStatus; paymentStatus: OrderPaymentStatus }) =>
+  order.status === "PENDING_PAYMENT" && order.paymentStatus !== "PAID"
+
+/** Khách chỉ tự hủy khi `PENDING`/`PENDING_PAYMENT` và chưa thanh toán (backend vẫn kiểm: 409 `ORDER_NOT_CANCELLABLE_BY_CUSTOMER`). */
+export const canCustomerCancel = (order: { status: OrderStatus; paymentStatus: OrderPaymentStatus }) =>
+  (order.status === "PENDING" || order.status === "PENDING_PAYMENT") && order.paymentStatus !== "PAID"
+
+/** Một mã lỗi cho hai nguyên nhân (đã xác nhận, đã thanh toán) nên câu nói chung cả hai. */
+export const NOT_CANCELLABLE_MESSAGE =
+  "Đơn đã được thanh toán hoặc xác nhận nên không thể tự hủy. Vui lòng liên hệ cửa hàng."

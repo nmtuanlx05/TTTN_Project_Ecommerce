@@ -19,17 +19,19 @@ src/
 ├─ pages/         MỎNG: chỉ ghép
 │   ├─ auth/        login ✓, register ✓
 │   ├─ admin/       dashboard ✓, users ✓, categories ✓, products ✓ (index, new, edit; form có danh sách nhiều ảnh `product-images-field` + vùng kéo-thả file `product-image-dropzone` (dùng `use-file-drop` chung) + hàng đợi tải `use-multi-image-upload`, mã màu hex của biến thể `variant-color-hex-field`), orders ✓ (index, detail/:id),
-│   │               inventory ✓, vouchers ✓ (một trang: danh sách + hộp thoại tạo/sửa)
+│   │               inventory ✓, vouchers ✓ (một trang: danh sách + hộp thoại tạo/sửa), payments ✓ (giao dịch cần xem lại, chỉ ADMIN)
 │   ├─ styleguide/  ✓ trang nội bộ cho dev (route /styleguide: index + color-data — dữ liệu bảng màu), không thuộc admin
 │   ├─ forbidden.tsx ✓ (403), not-found.tsx ✓ (404)
 │   ├─ storefront/  home ✓ (hero carousel, danh mục nổi bật, best sellers, câu chuyện, sản phẩm mới về, dải cam kết), catalog ✓ (/products), product-detail ✓ (/products/:slug), stores ✓ (/dia-chi), not-found ✓ (404 trong khung khách),
-│   │               cart ✓, checkout ✓, order-success ✓, my-orders ✓ (/tai-khoan/don-hang), my-order-detail ✓ (/tai-khoan/don-hang/:code)
+│   │               cart ✓, checkout ✓, order-success ✓, my-orders ✓ (/tai-khoan/don-hang), my-order-detail ✓ (/tai-khoan/don-hang/:code), payment ✓ (/thanh-toan-online/:code)
 ├─ features/      mỗi thực thể một thư mục theo khuôn mục 3
 │   ├─ auth/ ✓ dashboard/ users/ ✓ categories/ ✓ products/ ✓ inventory/ ✓ catalog/ ✓ (dữ liệu công khai của storefront: danh sách và chi tiết sản phẩm)
 │   │  newsletter/ ✓ (form đăng ký nhận tin ở chân trang — mới có giao diện, chưa có backend)
 │   ├─ cart/ ✓ (giỏ hàng của CUSTOMER: types, api, queries (useCart, useAddToCart, useUpdateCartItem, useRemoveCartItem, useClearCart); components/: cart-drawer (+ header, footer, states), cart-line (+ cart-line-list), free-shipping-bar, checkout-button (STUB), cart-page-content (+ cart-summary, clear-cart-confirm))
 │   ├─ wishlist/ ✓ (yêu thích của CUSTOMER: types, api, constants, status (`wishlistStatusOf`), queries (useWishlistIds, useWishlist infinite), use-toggle-wishlist (lạc quan, khóa theo sản phẩm), cache-updates; components/: wishlist-drawer (+ header, grid, card, states); nhận slot `renderAddToCart` nên không import features/catalog)
 │   ├─ admin-orders/ ✓ (đơn hàng phía admin: danh sách + lọc trên URL, chi tiết, đổi trạng thái qua hộp xác nhận, huy hiệu đơn chờ xác nhận ở sidebar; không import `features/orders`)
+│   ├─ payments/ ✓ (thanh toán chuyển khoản của khách: QR từ `qrPayload` bằng `qrcode.react`, polling 4 giây chỉ khi chờ thanh toán, đếm ngược, kết quả PAID/EXPIRED/CANCELLED)
+│   ├─ admin-payments/ ✓ (chỉ ADMIN: giao dịch cần xem lại, xác nhận đã nhận tiền, đánh dấu đã xử lý; nút xác nhận được trang chi tiết đơn đưa vào `admin-orders`)
 │   ├─ orders/ ✓ (đơn của khách: danh sách + lọc trên URL, tóm tắt, chi tiết + mốc thời gian, hủy, mua lại; constants.ts có Record<OrderStatus, ...>; `OrderStatusPill` riêng cho storefront)
 │   ├─ admin-vouchers/ ✓ (voucher phía admin, API `/admin/vouchers`: danh sách + lọc trên URL, công tắc bật/tắt (tắt voucher đang chạy qua hộp xác nhận), hộp thoại tạo/sửa (khóa các ô giá trị khi voucher đã được dùng), khối thống kê, dòng "Ví dụ minh họa"; không import `features/checkout`)
 │   └─ checkout/ ✓ payments/ account/
@@ -158,6 +160,7 @@ Nguồn duy nhất là trường `roles` trong `components/admin/nav-items.ts`; 
 | Danh mục | Có | Xem, sửa |
 | Kho | Có | Có |
 | Voucher | Có | Không |
+| Giao dịch cần xem lại (`/admin/payments`), "Xác nhận đã nhận tiền", hủy đơn đã thanh toán | Có | Không (không thấy menu; STAFF vẫn xem và lọc đơn chờ thanh toán, hủy đơn chưa trả) |
 | Người dùng | Có | Không |
 
 "Xem, sửa" của Danh mục: cả hai role vào được trang; nút nào STAFF không được dùng (Thêm, Xóa) thì ẩn bằng
@@ -176,6 +179,7 @@ Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 4
 | Giỏ hàng ✓ | features/cart/, pages/storefront/cart, components/storefront/cart-ui-context.ts, lib/cart-rules.ts |
 | Yêu thích ✓ (ngăn kéo, không có trang) | features/wishlist/, components/storefront/wishlist-ui-context.ts, favorite-button.tsx, routes/use-wishlist-wiring.ts |
 | Đơn hàng, voucher | features/orders/, vouchers/ |
+| Thanh toán chuyển khoản | features/payments/ (khách), admin-payments/ (admin) |
 | Storefront khung + catalog ✓ | components/storefront/, pages/storefront/catalog + product-detail, features/catalog/ |
 | Storefront: thanh thông báo, thẻ sản phẩm mới, chân trang, trang thông tin ✓ | features/newsletter/, pages/storefront/info/ |
 | Storefront: làm lại trang chủ ✓ | components/storefront/home/, features/catalog/components/home/, public/home/ |

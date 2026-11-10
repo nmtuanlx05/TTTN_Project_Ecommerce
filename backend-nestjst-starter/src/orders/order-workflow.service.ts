@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { conflict, notFound } from '../common/errors/coded-errors';
 import { Prisma } from '../generated/prisma/client';
 import {
@@ -33,9 +37,12 @@ interface LockedOrder {
 export interface TransitionInput {
   orderId: number;
   to: OrderStatus;
-  actor: { id: number; role: OrderActor };
+  // id null = hệ thống (vd tác vụ hết hạn); SYSTEM có id là hệ thống thay mặt một người (xác nhận thanh toán thủ công)
+  actor: { id: number | null; role: OrderActor };
   reason: string | null;
   now: Date;
+  // Chỉ dùng cho PENDING_PAYMENT → PENDING: mã giao dịch ghi vào orders.paymentRef
+  paymentRef?: string | null;
 }
 
 // Đổi trạng thái đơn kèm toàn bộ hiệu ứng lên tồn kho và lượt voucher, trong transaction của caller.
@@ -46,7 +53,7 @@ export class OrderWorkflowService {
   constructor(private readonly inventory: InventoryService) {}
 
   async transition(tx: Prisma.TransactionClient, input: TransitionInput) {
-    const { orderId, to, actor, reason, now } = input;
+    const { orderId, to, actor, reason, now, paymentRef } = input;
 
     const [order] = await tx.$queryRaw<LockedOrder[]>(
       Prisma.sql`SELECT id, code, status, voucherId, paymentMethod, paymentStatus FROM orders WHERE id = ${orderId} FOR UPDATE`,
@@ -55,7 +62,7 @@ export class OrderWorkflowService {
       throw notFound(ORDER_ERROR.ORDER_NOT_FOUND, 'Không tìm thấy đơn hàng');
     }
     const from = order.status;
-    this.assertAllowed(from, to, actor.role);
+    this.assertAllowed(from, to, actor.role, order.paymentStatus);
 
     const items = await tx.orderItem.findMany({
       where: { orderId },
@@ -76,11 +83,24 @@ export class OrderWorkflowService {
         }
         data.cancelReason = reason;
         break;
+      case OrderStatus.PENDING:
+        // Đơn online đã nhận chuyển khoản (PENDING_PAYMENT → PENDING): chờ xác nhận như đơn COD
+        data.paymentStatus = PaymentStatus.PAID;
+        data.paidAt = now;
+        data.paymentRef = paymentRef ?? null;
+        break;
       case OrderStatus.CONFIRMED:
         // Chỉ gán một lần, khi xác nhận đơn
         data.handledById = actor.id;
         break;
       case OrderStatus.SHIPPING:
+        // Bước này chỉ STAFF/ADMIN (có id) mới đi được; SYSTEM không bao giờ tới đây
+        if (actor.id === null) {
+          throw conflict(
+            ORDER_ERROR.ORDER_INVALID_TRANSITION,
+            'Bước giao hàng cần người thực hiện',
+          );
+        }
         for (const item of items) {
           await this.inventory.shipOut(
             tx,
@@ -117,8 +137,13 @@ export class OrderWorkflowService {
     });
   }
 
-  private assertAllowed(from: OrderStatus, to: OrderStatus, role: OrderActor) {
-    // Khách chỉ hủy được khi chờ xác nhận; trạng thái khác trả 409 với mã riêng
+  private assertAllowed(
+    from: OrderStatus,
+    to: OrderStatus,
+    role: OrderActor,
+    paymentStatus: PaymentStatus,
+  ) {
+    // Khách chỉ hủy được khi chờ thanh toán hoặc chờ xác nhận và CHƯA trả tiền; còn lại trả 409 với mã riêng
     if (role === 'CUSTOMER' && to === OrderStatus.CANCELLED) {
       if (from === OrderStatus.CANCELLED) {
         throw conflict(
@@ -126,12 +151,33 @@ export class OrderWorkflowService {
           'Đơn hàng đã được hủy trước đó',
         );
       }
-      if (from !== OrderStatus.PENDING) {
+      if (
+        from !== OrderStatus.PENDING &&
+        from !== OrderStatus.PENDING_PAYMENT
+      ) {
         throw conflict(
           ORDER_ERROR.ORDER_NOT_CANCELLABLE_BY_CUSTOMER,
           'Đơn hàng đã được xác nhận hoặc đang xử lý, không thể tự hủy. Vui lòng liên hệ cửa hàng',
         );
       }
+      if (paymentStatus === PaymentStatus.PAID) {
+        throw conflict(
+          ORDER_ERROR.ORDER_NOT_CANCELLABLE_BY_CUSTOMER,
+          'Đơn hàng đã thanh toán, không thể tự hủy. Vui lòng liên hệ cửa hàng để được hỗ trợ hoàn tiền',
+        );
+      }
+    }
+    // Đơn ĐÃ thanh toán: chỉ Admin được hủy (hoàn tiền xử lý ngoài hệ thống). Luồng "Staff tạo yêu cầu, Admin duyệt" chưa làm.
+    if (
+      role === 'STAFF' &&
+      to === OrderStatus.CANCELLED &&
+      paymentStatus === PaymentStatus.PAID
+    ) {
+      throw new ForbiddenException({
+        message:
+          'Đơn hàng đã thanh toán, chỉ quản trị viên được hủy (cần hoàn tiền cho khách)',
+        code: ORDER_ERROR.ORDER_PAID_ADMIN_ONLY,
+      });
     }
     const actors = getTransitionActors(from, to);
     if (!actors || !actors.includes(role)) {

@@ -8,6 +8,7 @@ import {
   InventoryPage,
   OrderDetailPage,
   OrdersPage,
+  PaymentsPage,
   ProductCreatePage,
   ProductEditPage,
   ProductsPage,
@@ -39,6 +40,7 @@ export const adminRoutes = (
           <Route path=":id" element={<OrderDetailPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
+        <Route path="payments" element={guarded("/admin/payments", <PaymentsPage />)} />
         <Route path="products" element={guarded("/admin/products", <Outlet />)}>
           <Route index element={<ProductsPage />} />
           <Route path="new" element={<ProductCreatePage />} />

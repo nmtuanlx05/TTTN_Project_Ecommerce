@@ -1,16 +1,20 @@
 import { useMemo, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQueryClient } from "@tanstack/react-query"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
 import { applyServerErrors } from "@/lib/form-errors"
+import { orderPaymentPath } from "@/lib/order-paths"
 import { classifyPlaceOrderError } from "./checkout-errors"
 import { newIdempotencyKey } from "./idempotency"
 import { buildCheckoutSchema, CHECKOUT_FIELDS, normalizePhone, type CheckoutFormValues } from "./schemas"
 import { usePlaceOrder, useWards } from "./queries"
+import type { PaymentMethod } from "./types"
 
 interface Options {
   user: { name: string | null; phone: string | null }
+  /** ONLINE có đang dùng được không (`availablePaymentMethods.online.enabled` của xem trước). Tắt thì phương thức chọn tự về COD. */
+  onlineEnabled: boolean
   /** Mã voucher đang áp dụng (đã được xem trước thành công). */
   appliedCode: string | null
   /** Đặt đơn báo mã voucher không còn dùng được: nơi gọi hiện lỗi dưới ô mã và gỡ mã. */
@@ -23,7 +27,7 @@ interface Options {
  * Form thanh toán: RHF + zod (schema dựng lại theo `hasWards`), địa chỉ phụ thuộc nhau, đặt đơn với `Idempotency-Key` (một khóa cho mỗi lần vào trang,
  * dùng lại khi thử lại), và ánh xạ lỗi của backend về đúng ô/banner. Không xóa dữ liệu đã điền khi lỗi.
  */
-export function useCheckoutForm({ user, appliedCode, onVoucherFailure, onPlaced }: Options) {
+export function useCheckoutForm({ user, onlineEnabled, appliedCode, onVoucherFailure, onPlaced }: Options) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [idempotencyKey] = useState(newIdempotencyKey)
@@ -46,8 +50,12 @@ export function useCheckoutForm({ user, appliedCode, onVoucherFailure, onPlaced 
       wardCode: "",
       addressLine: "",
       note: "",
+      paymentMethod: "COD",
     },
   })
+  // Phương thức thực sự gửi đi: ONLINE chỉ khi còn dùng được (đổi voucher làm tổng về 0đ, hoặc cấu hình tắt thì tự về COD, thẻ ONLINE hiện lý do).
+  const chosenMethod = useWatch({ control: form.control, name: "paymentMethod" })
+  const paymentMethod: PaymentMethod = chosenMethod === "ONLINE" && onlineEnabled ? "ONLINE" : "COD"
 
   // Quận/huyện đã chọn nhưng chưa biết có phường/xã hay không (đang tải hoặc lỗi): chưa cho đặt, để khỏi bỏ sót `wardCode`.
   const wardsReady = districtCode === "" || wards.isSuccess
@@ -64,14 +72,18 @@ export function useCheckoutForm({ user, appliedCode, onVoucherFailure, onPlaced 
       wardCode: hasWards ? values.wardCode : undefined,
       addressLine: values.addressLine,
       note: values.note || undefined,
-      paymentMethod: "COD" as const,
+      paymentMethod,
       voucherCode: appliedCode ?? undefined,
     }
     place.mutate(
       { input, idempotencyKey },
       {
         onSuccess: (order) => {
-          navigate(`/dat-hang-thanh-cong/${encodeURIComponent(order.code)}`, { replace: true })
+          const target =
+            order.paymentMethod === "ONLINE"
+              ? orderPaymentPath(order.code)
+              : `/dat-hang-thanh-cong/${encodeURIComponent(order.code)}`
+          navigate(target, { replace: true })
           onPlaced()
         },
         onError: (error) => {
@@ -89,6 +101,12 @@ export function useCheckoutForm({ user, appliedCode, onVoucherFailure, onPlaced 
               return
             case "field":
               form.setError(failure.field, { message: failure.message }, { shouldFocus: true })
+              return
+            case "payment":
+              // ONLINE bị từ chối (tắt hoặc tổng 0đ): về COD, tải lại xem trước để thẻ ONLINE hiện đúng lý do mới.
+              form.setValue("paymentMethod", "COD")
+              setFormError(failure.message)
+              void queryClient.invalidateQueries({ queryKey: ["checkout", "preview"] })
               return
             case "busy":
               setFormError(failure.message)
@@ -116,6 +134,8 @@ export function useCheckoutForm({ user, appliedCode, onVoucherFailure, onPlaced 
     wards,
     wardsReady,
     hasWards,
+    paymentMethod,
+    setPaymentMethod: (method: PaymentMethod) => form.setValue("paymentMethod", method),
     changeDistrict: (code: string) => {
       setDistrictCode(code)
       form.setValue("districtCode", code, { shouldValidate: form.formState.isSubmitted })
