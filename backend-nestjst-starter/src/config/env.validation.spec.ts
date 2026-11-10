@@ -19,13 +19,24 @@ describe('validateEnv', () => {
     ).not.toThrow();
   });
 
-  it('báo lỗi khi APP_PUBLIC_URL có giá trị nhưng dài quá 132 ký tự', () => {
+  it('báo lỗi khi APP_PUBLIC_URL có giá trị nhưng dài quá 441 ký tự', () => {
     expect(() =>
       validateEnv({
         ...BASE,
-        APP_PUBLIC_URL: `https://${'a'.repeat(125)}`,
+        APP_PUBLIC_URL: `https://${'a'.repeat(440)}`,
       }),
     ).toThrow(/APP_PUBLIC_URL/);
+  });
+
+  it('báo lỗi khi STORAGE_DRIVER sai, nhận cloudinary/local/để trống; thiếu khóa Cloudinary KHÔNG làm dừng app', () => {
+    expect(() => validateEnv({ ...BASE, STORAGE_DRIVER: 's3' })).toThrow(
+      /STORAGE_DRIVER/,
+    );
+    for (const value of ['cloudinary', 'local', '', undefined]) {
+      expect(() =>
+        validateEnv({ ...BASE, STORAGE_DRIVER: value }),
+      ).not.toThrow();
+    }
   });
 
   it('báo lỗi khi APP_PUBLIC_URL không phải URL', () => {

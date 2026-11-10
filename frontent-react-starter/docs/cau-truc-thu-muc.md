@@ -63,7 +63,8 @@ src/
 │                 và khôi phục vị trí khi Back/F5 của storefront)
 ├─ lib/           hạ tầng: api-client ✓, api-error ✓, query-client ✓, format ✓, ymd ✓ (ngày YYYY-MM-DD thuần chuỗi: `formatYmd`, `addDaysYmd`, không dùng Date), utils ✓, date-range ✓, category-tree-options ✓ (danh mục phẳng → danh sách theo cây, thuần túy),
 │                 form-errors ✓, password-rules ✓ (nguồn duy nhất độ dài mật khẩu), vn-phone ✓, display-name ✓ (tên hiển thị của tài khoản),
-│                 image-rules ✓ (giới hạn và kiểm tra file ảnh theo kind), upload-image ✓ (POST /uploads/<kind>),
+│                 image-rules ✓ (giới hạn và kiểm tra file ảnh theo kind), upload-image ✓ (POST /uploads/<kind>, trả `UploadedImage` có `assetId`), upload-errors ✓ (mã lỗi upload → câu tiếng Việt, thuần túy),
+│                 img-url ✓ (dựng URL ảnh Cloudinary theo mức rộng cố định 160/320/640/960/1280, preset `srcset`/`sizes`; thuần túy, có test),
 │                 pan-zoom ✓ (toán thu phóng và kéo ảnh, thuần túy), store-info ✓ (nội dung cửa hàng: tên, khẩu hiệu, liên hệ — MỘT file duy nhất),
 │                 category-tree ✓ (danh mục phẳng → cây, tra slug, chuỗi cha; thuần túy),
 │                 nav-items ✓ (cấu hình `STORE.navItems` + cây danh mục → mục điều hướng, dòng của bảng, mục đang xem; thuần túy),
@@ -196,7 +197,8 @@ Thứ tự guard trong `/admin`: `RequireAuth` → `RequireRole` (ADMIN/STAFF, 4
 - Trang admin và `/styleguide` nạp bằng `React.lazy` (`routes/admin-routes.tsx`, `App.tsx`) để khách storefront không tải mã quản trị; `/login` và `/register` KHÔNG lazy vì nằm trên đường mua hàng.
 - Ẩn hoặc chặn `/styleguide` ở bản production.
 - `components/shared/` hiện chứa `password-input`, `user-menu`, `brand-logo`, `form-dialog` (dùng từ hai khu trở lên) và bộ `image-*` (ô upload ảnh). `form-dialog` trước đây nằm ở `components/admin/`; đã chuyển sang `shared/` vì hộp thoại trong `user-menu` (storefront cũng dùng) cần nó, và `shared/` không được phụ thuộc ngược vào `admin/`. `confirm-dialog` vẫn ở `components/admin/` (chỉ admin dùng).
-- Upload ảnh là hạ tầng chung, không thuộc feature nào: `components/` không được import `features/`, nên hàm gọi API nằm ở `lib/upload-image.ts` (đi qua `apiUpload` của `api-client`, không import axios) và hook ở `hooks/`. Avatar dùng lại bằng `kind="avatars"`, `shape="circle"` (hộp thoại `avatar-dialog`); hàm lưu `lib/update-avatar.ts` và hook `hooks/use-update-avatar.ts` cũng ở tầng chung vì `shared/` không import `features/`. Phần cập nhật phiên và cache sau khi lưu nằm ở `routes/use-avatar-saved.ts`.
+- Upload ảnh là hạ tầng chung, không thuộc feature nào: `components/` không được import `features/`, nên hàm gọi API nằm ở `lib/upload-image.ts` (đi qua `apiUpload` của `api-client`, không import axios) và hook ở `hooks/`. Avatar dùng lại bằng `kind="avatars"`, `shape="circle"` (hộp thoại `avatar-dialog`); hàm lưu `lib/update-avatar.ts` và hook `hooks/use-update-avatar.ts` cũng ở tầng chung vì `shared/` không import `features/`. Ảnh được GẮN bằng `assetId` (không gửi URL): ảnh sản phẩm gửi `{ assetId }` cho ảnh vừa tải và `{ url }` cho ảnh đã có (API đọc sản phẩm không trả `assetId`, backend khớp URL Cloudinary đã đăng ký); avatar gửi `{ assetId }` hoặc `{ avatarUrl: null }` để xóa. Hiển thị ảnh luôn qua `lib/img-url.ts` (preset), không tự ghép URL Cloudinary: xem `storefront-design.md` mục 7.
+- Test: `vitest` (môi trường Node, chỉ test logic thuần túy), file `*.test.ts` cạnh file nguồn trong `src/`; chạy `npm test`. Hiện có `lib/img-url.test.ts`, `lib/upload-errors.test.ts`, `features/products/form-mapping.test.ts`, `features/products/server-error-mapping.test.ts`. Phần cập nhật phiên và cache sau khi lưu nằm ở `routes/use-avatar-saved.ts`.
 
 ## 10. Bản chỉ đường storefront
 

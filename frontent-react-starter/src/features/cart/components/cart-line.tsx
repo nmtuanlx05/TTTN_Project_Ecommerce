@@ -34,6 +34,7 @@ function CartLine({
       <ProductImage
         src={item.imageUrl}
         alt=""
+        preset="thumb"
         className={cn("w-20 shrink-0 self-start", large && "w-28 sm:w-32", !sellable && "opacity-60")}
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1">

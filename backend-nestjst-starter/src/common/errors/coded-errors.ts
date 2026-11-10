@@ -1,7 +1,11 @@
 import {
   BadRequestException,
+  BadGatewayException,
   ConflictException,
+  HttpException,
+  HttpStatus,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 
 // Lỗi kèm `code` máy đọc được (VD VOUCHER_EXPIRED) để giao diện hiển thị đúng thông báo.
@@ -24,3 +28,12 @@ export const conflict = (
 
 export const notFound = (code: string, message: string) =>
   new NotFoundException({ message, code });
+
+export const serviceUnavailable = (code: string, message: string) =>
+  new ServiceUnavailableException({ message, code });
+
+export const badGateway = (code: string, message: string) =>
+  new BadGatewayException({ message, code });
+
+export const tooManyRequests = (code: string, message: string) =>
+  new HttpException({ message, code }, HttpStatus.TOO_MANY_REQUESTS);

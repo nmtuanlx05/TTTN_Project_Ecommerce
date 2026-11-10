@@ -1,6 +1,7 @@
 // Mock của Jest có kiểu any nên test đọc calls cần tắt các rule unsafe-* cho file này.
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return */
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import type { MediaService } from '../media/media.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { QueryPublicProductsDto } from './dto/query-public-products.dto';
@@ -9,10 +10,19 @@ import { ProductsService } from './products.service';
 
 // PrismaService thật kéo theo client Prisma/adapter (không cần cho unit test này)
 jest.mock('../prisma/prisma.service', () => ({ PrismaService: class {} }));
+// @nestjs/config chỉ có bản ESM nên Jest không nạp được (MediaService nhập ConfigService)
+jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
 
 // Prisma giả: chỉ kiểm câu truy vấn được dựng (where, orderBy, phân trang), KHÔNG chạy SQL thật.
 // Kết quả trên MySQL thật phải kiểm tay (xem danh sách test tay trong báo cáo).
 describe('ProductsService (public)', () => {
+  const media = {
+    resolveProductImages: jest.fn(),
+    lockAssets: jest.fn(),
+    assertAttachable: jest.fn(),
+    markUnreferenced: jest.fn(),
+    purge: jest.fn(),
+  };
   const prisma = {
     $transaction: jest.fn(),
     product: { findMany: jest.fn(), count: jest.fn(), findFirst: jest.fn() },
@@ -26,13 +36,28 @@ describe('ProductsService (public)', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    media.resolveProductImages.mockImplementation(
+      (inputs: { url?: string; assetId?: number }[]) =>
+        Promise.resolve(
+          inputs.map((i) => ({
+            url: i.url ?? `asset-${i.assetId}`,
+            assetId: i.assetId ?? null,
+          })),
+        ),
+    );
+    media.markUnreferenced.mockResolvedValue([]);
+    media.purge.mockResolvedValue({ deleted: 0, failed: 0 });
+    media.lockAssets.mockResolvedValue(new Map());
     prisma.$transaction.mockImplementation((ops: Promise<unknown>[]) =>
       Promise.all(ops),
     );
     prisma.product.findMany.mockResolvedValue([]);
     prisma.product.count.mockResolvedValue(0);
     prisma.category.findMany.mockResolvedValue([]);
-    service = new ProductsService(prisma as unknown as PrismaService);
+    service = new ProductsService(
+      prisma as unknown as PrismaService,
+      media as unknown as MediaService,
+    );
   });
 
   describe('findAllPublic: sắp xếp ổn định khi phân trang', () => {
@@ -169,6 +194,13 @@ describe('ProductsService (public)', () => {
 
 // Ghi sản phẩm: kiểm ảnh (thay cả mảng, thứ tự, đồng bộ imageUrl cũ) và mã màu nhất quán.
 describe('ProductsService (ghi: ảnh và màu)', () => {
+  const media = {
+    resolveProductImages: jest.fn(),
+    lockAssets: jest.fn(),
+    assertAttachable: jest.fn(),
+    markUnreferenced: jest.fn(),
+    purge: jest.fn(),
+  };
   const prisma = {
     $transaction: jest.fn(),
     product: {
@@ -237,6 +269,18 @@ describe('ProductsService (ghi: ảnh và màu)', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    media.resolveProductImages.mockImplementation(
+      (inputs: { url?: string; assetId?: number }[]) =>
+        Promise.resolve(
+          inputs.map((i) => ({
+            url: i.url ?? `asset-${i.assetId}`,
+            assetId: i.assetId ?? null,
+          })),
+        ),
+    );
+    media.markUnreferenced.mockResolvedValue([]);
+    media.purge.mockResolvedValue({ deleted: 0, failed: 0 });
+    media.lockAssets.mockResolvedValue(new Map());
     prisma.$transaction.mockImplementation((ops: Promise<unknown>[]) =>
       Promise.all(ops),
     );
@@ -251,12 +295,15 @@ describe('ProductsService (ghi: ảnh và màu)', () => {
         Promise.resolve(
           'description' in args.select
             ? baseDetail
-            : { id: 1, slug: 'ao', variants: existingVariants },
+            : { id: 1, slug: 'ao', variants: existingVariants, images: [] },
         ),
     );
     prisma.productImage.deleteMany.mockResolvedValue({ count: 0 });
     prisma.productImage.createMany.mockResolvedValue({ count: 0 });
-    service = new ProductsService(prisma as unknown as PrismaService);
+    service = new ProductsService(
+      prisma as unknown as PrismaService,
+      media as unknown as MediaService,
+    );
   });
 
   const createData = () => prisma.product.create.mock.lastCall[0].data;
@@ -266,9 +313,9 @@ describe('ProductsService (ghi: ảnh và màu)', () => {
     it('images → ProductImage theo thứ tự trong mảng (sortOrder 0,1,2); imageUrl cũ = ảnh đầu', async () => {
       await service.create(createDto({ images: imgs('a', 'b', 'c') }));
       expect(createData().images.create).toEqual([
-        { url: 'a', sortOrder: 0 },
-        { url: 'b', sortOrder: 1 },
-        { url: 'c', sortOrder: 2 },
+        { url: 'a', assetId: null, sortOrder: 0 },
+        { url: 'b', assetId: null, sortOrder: 1 },
+        { url: 'c', assetId: null, sortOrder: 2 },
       ]);
       expect(createData().imageUrl).toBe('a');
     });
@@ -282,7 +329,7 @@ describe('ProductsService (ghi: ảnh và màu)', () => {
     it('tương thích tạm: chỉ gửi imageUrl cũ → coi như images = [imageUrl]', async () => {
       await service.create(createDto({ imageUrl: 'https://x/a.jpg' }));
       expect(createData().images.create).toEqual([
-        { url: 'https://x/a.jpg', sortOrder: 0 },
+        { url: 'https://x/a.jpg', assetId: null, sortOrder: 0 },
       ]);
       expect(createData().imageUrl).toBe('https://x/a.jpg');
     });
@@ -291,13 +338,17 @@ describe('ProductsService (ghi: ảnh và màu)', () => {
       await service.create(
         createDto({ images: imgs('a'), imageUrl: 'https://x/old.jpg' }),
       );
-      expect(createData().images.create).toEqual([{ url: 'a', sortOrder: 0 }]);
+      expect(createData().images.create).toEqual([
+        { url: 'a', assetId: null, sortOrder: 0 },
+      ]);
     });
 
-    it('URL ảnh đầu dài hơn 191 ký tự: vẫn lưu ProductImage nhưng cột imageUrl cũ = null', async () => {
-      const long = `https://x/${'a'.repeat(300)}`;
+    it('URL ảnh đầu dài hơn 500 ký tự: vẫn lưu ProductImage nhưng cột imageUrl cũ = null', async () => {
+      const long = `https://x/${'a'.repeat(600)}`;
       await service.create(createDto({ images: imgs(long) }));
-      expect(createData().images.create).toEqual([{ url: long, sortOrder: 0 }]);
+      expect(createData().images.create).toEqual([
+        { url: long, assetId: null, sortOrder: 0 },
+      ]);
       expect(createData().imageUrl).toBeNull();
     });
 
@@ -306,6 +357,109 @@ describe('ProductsService (ghi: ảnh và màu)', () => {
       await expect(call).rejects.toBeInstanceOf(BadRequestException);
       await expect(call).rejects.toThrow('bị trùng trong danh sách ảnh');
       expect(prisma.product.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('ảnh thuộc kho lưu trữ (media assets)', () => {
+    const tx = {
+      product: { create: jest.fn(), update: jest.fn() },
+      productImage: { deleteMany: jest.fn(), createMany: jest.fn() },
+    };
+    const asset = (assetId: number) => ({ assetId });
+
+    beforeEach(() => {
+      prisma.$transaction.mockImplementation((arg: unknown) =>
+        typeof arg === 'function'
+          ? (arg as (t: typeof tx) => unknown)(tx)
+          : Promise.all(arg as Promise<unknown>[]),
+      );
+      tx.product.create.mockResolvedValue({ id: 1 });
+      tx.product.update.mockResolvedValue({ id: 1 });
+      tx.productImage.deleteMany.mockResolvedValue({ count: 0 });
+      tx.productImage.createMany.mockResolvedValue({ count: 0 });
+    });
+
+    it('create có assetId: khóa asset và kiểm còn ACTIVE trong transaction, ghi assetId vào dòng ảnh', async () => {
+      await service.create(createDto({ images: [asset(5), asset(6)] }));
+      expect(media.lockAssets).toHaveBeenCalledWith(tx, [5, 6]);
+      expect(media.assertAttachable).toHaveBeenCalled();
+      expect(prisma.product.create).not.toHaveBeenCalled();
+      const data = tx.product.create.mock.lastCall[0].data;
+      expect(data.images.create).toEqual([
+        { url: 'asset-5', assetId: 5, sortOrder: 0 },
+        { url: 'asset-6', assetId: 6, sortOrder: 1 },
+      ]);
+      expect(data.imageUrl).toBe('asset-5');
+    });
+
+    it('create không có assetId: không mở transaction tương tác, không khóa asset', async () => {
+      await service.create(createDto({ images: imgs('https://x/a.jpg') }));
+      expect(media.lockAssets).not.toHaveBeenCalled();
+      expect(prisma.product.create).toHaveBeenCalled();
+    });
+
+    it('create: asset bị xóa chen ngang (assertAttachable ném) → lỗi, không tạo sản phẩm', async () => {
+      media.assertAttachable.mockImplementation(() => {
+        throw new BadRequestException('Ảnh không còn tồn tại');
+      });
+      await expect(
+        service.create(createDto({ images: [asset(5)] })),
+      ).rejects.toThrow('Ảnh không còn tồn tại');
+      expect(tx.product.create).not.toHaveBeenCalled();
+    });
+
+    it('update thay ảnh: khóa cả asset mới và cũ, ghi quan hệ mới, đánh dấu asset cũ, rồi purge SAU transaction', async () => {
+      prisma.product.findUnique.mockImplementation(
+        (args: { select: Record<string, unknown> }) =>
+          Promise.resolve(
+            'description' in args.select
+              ? baseDetail
+              : {
+                  id: 1,
+                  slug: 'ao',
+                  variants: existingVariants,
+                  images: [{ assetId: 3 }, { assetId: null }],
+                },
+          ),
+      );
+      media.markUnreferenced.mockResolvedValue([3]);
+
+      await service.update(1, updateDto({ images: [asset(5)] }));
+
+      expect(media.lockAssets).toHaveBeenCalledWith(tx, [5, 3]);
+      expect(tx.product.update).toHaveBeenCalled();
+      expect(tx.productImage.deleteMany).toHaveBeenCalledWith({
+        where: { productId: 1 },
+      });
+      expect(tx.productImage.createMany).toHaveBeenCalledWith({
+        data: [{ productId: 1, url: 'asset-5', assetId: 5, sortOrder: 0 }],
+      });
+      expect(media.markUnreferenced).toHaveBeenCalledWith(tx, [3]);
+      expect(media.purge).toHaveBeenCalledWith([3]);
+      expect(media.purge.mock.invocationCallOrder[0]).toBeGreaterThan(
+        prisma.$transaction.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('update: ghi lỗi trong transaction → không purge (không xóa nhầm ảnh)', async () => {
+      prisma.product.findUnique.mockImplementation(
+        (args: { select: Record<string, unknown> }) =>
+          Promise.resolve(
+            'description' in args.select
+              ? baseDetail
+              : {
+                  id: 1,
+                  slug: 'ao',
+                  variants: existingVariants,
+                  images: [{ assetId: 3 }],
+                },
+          ),
+      );
+      tx.productImage.createMany.mockRejectedValue(new Error('db down'));
+      await expect(
+        service.update(1, updateDto({ images: imgs('https://x/a.jpg') })),
+      ).rejects.toThrow('db down');
+      expect(media.purge).not.toHaveBeenCalled();
     });
   });
 
@@ -319,8 +473,8 @@ describe('ProductsService (ghi: ảnh và màu)', () => {
       });
       expect(prisma.productImage.createMany).toHaveBeenCalledWith({
         data: [
-          { productId: 1, url: 'b', sortOrder: 0 },
-          { productId: 1, url: 'a', sortOrder: 1 },
+          { productId: 1, url: 'b', assetId: null, sortOrder: 0 },
+          { productId: 1, url: 'a', assetId: null, sortOrder: 1 },
         ],
       });
       expect(updateData().imageUrl).toBe('b');
@@ -352,7 +506,9 @@ describe('ProductsService (ghi: ảnh và màu)', () => {
     it('chỉ gửi imageUrl cũ → coi như images = [imageUrl]', async () => {
       await service.update(1, updateDto({ imageUrl: 'https://x/a.jpg' }));
       expect(prisma.productImage.createMany).toHaveBeenCalledWith({
-        data: [{ productId: 1, url: 'https://x/a.jpg', sortOrder: 0 }],
+        data: [
+          { productId: 1, url: 'https://x/a.jpg', assetId: null, sortOrder: 0 },
+        ],
       });
     });
 

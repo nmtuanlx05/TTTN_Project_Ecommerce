@@ -13,8 +13,6 @@ import { Paginated } from '../src/common/paginated';
 import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../src/auth/guards/roles.guard';
 import { JwtStrategy } from '../src/auth/strategies/jwt.strategy';
-import { UPLOAD_CONFIG } from '../src/uploads/upload.config';
-import { AvatarUrlPipe } from '../src/users/avatar-url.pipe';
 import { UsersController } from '../src/users/users.controller';
 import { UsersService } from '../src/users/users.service';
 
@@ -23,7 +21,6 @@ jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
 jest.mock('../src/prisma/prisma.service', () => ({ PrismaService: class {} }));
 
 const ACCESS_SECRET = 'test-access-secret';
-const PUBLIC_URL = 'http://localhost:3000';
 type RoleName = 'ADMIN' | 'STAFF' | 'CUSTOMER';
 type Method = 'get' | 'post' | 'patch';
 
@@ -63,7 +60,6 @@ describe('Users API: phân quyền (e2e, service giả)', () => {
       providers: [
         JwtStrategy,
         RolesGuard,
-        AvatarUrlPipe,
         // Giống AppModule: JwtAuthGuard bật toàn cục
         { provide: APP_GUARD, useClass: JwtAuthGuard },
         { provide: UsersService, useValue: usersService },
@@ -71,7 +67,6 @@ describe('Users API: phân quyền (e2e, service giả)', () => {
           provide: ConfigService,
           useValue: { getOrThrow: () => ACCESS_SECRET },
         },
-        { provide: UPLOAD_CONFIG, useValue: { publicUrl: PUBLIC_URL } },
       ],
     }).compile();
 

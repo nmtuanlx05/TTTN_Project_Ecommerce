@@ -284,10 +284,10 @@ Body:
 - **SKU:** bỏ khoảng trắng hai đầu và **tự đổi thành chữ in hoa** (`atb-s` → `ATB-S`). SKU là duy nhất toàn hệ thống,
   không phân biệt hoa/thường và dấu (do collation DB).
 - **Biến thể trùng:** trong cùng body không được trùng SKU hoặc trùng cặp (`size`, `color`) → 400.
-- **Ảnh (`images`):** mảng `{ "url" }`, **thứ tự trong mảng là thứ tự hiển thị** (`sortOrder` = vị trí), ảnh đầu là ảnh đại diện. Tối đa **6** ảnh,
-  mỗi `url` là `http(s)` (cho phép URL ngoài như picsum và `localhost`), tối đa 500 ký tự. **URL trùng nhau trong mảng → 400**
-  `Ảnh "<url>" bị trùng trong danh sách ảnh`. Muốn dùng ảnh upload thì gọi `POST /uploads/products` trước rồi đưa `url` vào đây.
-  Cột cũ `Product.imageUrl` được đồng bộ = ảnh đầu (null nếu ảnh đầu dài hơn 191 ký tự hoặc không có ảnh).
+- **Ảnh (`images`):** mảng `{ "assetId" }` hoặc `{ "url" }`, **thứ tự trong mảng là thứ tự hiển thị** (`sortOrder` = vị trí), ảnh đầu là ảnh đại diện. Tối đa **6** ảnh,
+  tối đa 500 ký tự mỗi URL. **Trùng nhau trong mảng → 400** `Ảnh "<url>" bị trùng trong danh sách ảnh`. Muốn dùng ảnh upload thì gọi
+  `POST /uploads/products` trước rồi đưa `assetId` (ưu tiên) hoặc `url` nhận được vào đây. Server kiểm ảnh còn hiệu lực (xem "Ảnh (`images[]`)").
+  Cột cũ `Product.imageUrl` được đồng bộ = ảnh đầu (null nếu ảnh đầu dài hơn 500 ký tự hoặc không có ảnh).
 - **Tương thích tạm (`imageUrl` cũ):** nếu **không** gửi `images` mà chỉ gửi `imageUrl` thì coi như `images = [imageUrl]`
   (`null` hoặc `""` = không có ảnh). Gửi cả hai thì `images` thắng. Cơ chế này **tạm thời**, sẽ bỏ khi `imageUrl` bị gỡ.
 - **Mã màu (`colorHex`):** tùy chọn, dạng `#RRGGBB`, chữ thường được tự đổi thành **in hoa**; `""` hoặc `null` = chưa có mã.
@@ -377,19 +377,31 @@ Mọi message bằng tiếng Việt. Lỗi trả theo từng trường trong `er
 | `description` | Không | Chuỗi tối đa 10000 ký tự; `""` hoặc `null` = không có mô tả | `Mô tả phải là chuỗi`, `Mô tả không được vượt quá 10000 ký tự` |
 | `price` | Có | Số nguyên 0 – 2147483647 (VND, JSON number, không nhận chuỗi `"199000"`) | `Giá phải là số nguyên (VND)`, `Giá không được âm`, `Giá không được vượt quá 2147483647` |
 | `images` | Không | Mảng tối đa 6 phần tử `{ "url" }` (xem bảng ảnh dưới). Khi sửa: có gửi thì thay cả mảng | `images phải là một mảng`, `Mỗi sản phẩm tối đa 6 ảnh` |
-| `imageUrl` | Không | **DEPRECATED**, chỉ để tương thích tạm (xem mục "Tương thích tạm"). URL ảnh. `http://` hoặc `https://`, **kể cả `localhost` hoặc IP có cổng** (vd `http://localhost:3000/uploads/products/x.webp`, URL do `POST /uploads/products` trả về ở dev, xem `docs/api/uploads.md`), **tối đa 191 ký tự** (giới hạn cột VARCHAR(191) hiện tại); `""` hoặc `null` = không có ảnh | `Đường dẫn ảnh phải là chuỗi`, `Đường dẫn ảnh không được vượt quá 191 ký tự`, `Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://` |
+| `imageUrl` | Không | **DEPRECATED**, chỉ để tương thích tạm (xem mục "Tương thích tạm"). URL ảnh. `http://` hoặc `https://`, **kể cả `localhost` hoặc IP có cổng** (vd `http://localhost:3000/uploads/products/x.webp`, URL do `POST /uploads/products` trả về ở dev, xem `docs/api/uploads.md`), **tối đa 500 ký tự** (cột VARCHAR(500)); `""` hoặc `null` = không có ảnh | `Đường dẫn ảnh phải là chuỗi`, `Đường dẫn ảnh không được vượt quá 500 ký tự`, `Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://` |
 | `categoryId` | Có | Số nguyên ≥ 1 và danh mục phải tồn tại | `categoryId phải là số nguyên`, `categoryId phải lớn hơn hoặc bằng 1` (tồn tại: kiểm ở service, xem mục lỗi) |
 | `variants` | Có | Mảng 1–100 phần tử | `variants phải là một mảng`, `Sản phẩm phải có ít nhất 1 biến thể`, `Sản phẩm không được vượt quá 100 biến thể` |
 
-> **Giới hạn `imageUrl` cũ:** dài hơn 191 ký tự bị từ chối 400. Ảnh mới qua `images` cho phép tới 500 ký tự.
+> **Giới hạn `imageUrl` cũ:** dài hơn 500 ký tự bị từ chối 400 (cột đã nới từ 191 lên 500).
 
 ### Ảnh (`images[]`)
 
 | Trường | Bắt buộc | Quy tắc | Message khi sai |
 |---|---|---|---|
-| `url` | Có | Bỏ khoảng trắng hai đầu, không rỗng, `http://` hoặc `https://` (kể cả `localhost`/IP có cổng), tối đa 500 ký tự. Không nhận trường nào khác (vd `sortOrder`) | `Đường dẫn ảnh phải là chuỗi`, `Đường dẫn ảnh không được để trống`, `Đường dẫn ảnh không được vượt quá 500 ký tự`, `Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://` |
+| `assetId` | Một trong hai (`assetId` hoặc `url`) | Số nguyên ≥ 1: id ảnh do `POST /uploads/products` trả về. Có `assetId` thì `url` bị bỏ qua (lấy từ asset) | `assetId phải là số nguyên`, `assetId phải lớn hơn hoặc bằng 1` |
+| `url` | Một trong hai | Bỏ khoảng trắng hai đầu, không rỗng, `http(s)`, tối đa 500 ký tự (xem quy tắc nguồn ảnh dưới). Không nhận trường nào khác (vd `sortOrder`) | `Đường dẫn ảnh phải là chuỗi`, `Đường dẫn ảnh không được để trống`, `Đường dẫn ảnh không được vượt quá 500 ký tự`, `Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://` |
 
-Lỗi nằm ở `images.<chỉ số>.url`. URL trùng trong mảng báo ở service (400, không có `field`).
+**Nguồn ảnh hợp lệ** (kiểm ở `MediaService.resolveProductImages`):
+
+1. `assetId`: ảnh `PRODUCT` còn `ACTIVE`. Sai/đã xóa/khác loại → 400 `MEDIA_ASSET_INVALID` (`errors[].field` = `images.<chỉ số>`).
+2. `url` trùng URL gốc của ảnh đã tải lên (`secureUrl`): dùng ảnh đó (client cũ gửi lại `url` nhận được vẫn chạy).
+3. `url` thuộc kho Cloudinary của hệ thống nhưng không có ảnh `ACTIVE` tương ứng → 400 `MEDIA_ASSET_INVALID` (không cho giả danh).
+4. Ảnh **cũ trên đĩa** của chính backend (`<APP_PUBLIC_URL>/uploads/products/<uuid>.<ext>`): giữ nguyên, không gắn asset (cho tới khi chạy script chuyển ảnh).
+5. **URL ngoài** (vd picsum): chỉ `https://`, `assetId = null`, không do hệ thống quản lý. `ALLOW_EXTERNAL_IMAGE_URLS=false` thì bị từ chối 400 `EXTERNAL_IMAGE_NOT_ALLOWED`.
+
+Khi PATCH thay/gỡ ảnh, ảnh cũ không còn ai dùng được đánh dấu xóa trong cùng transaction và xóa phía Cloudinary sau commit (xem `uploads.md`, "Xóa và dọn ảnh").
+Ảnh còn được **đơn hàng cũ** tham chiếu (snapshot `imagePublicId`) **không** bị xóa.
+
+Lỗi validate nằm ở `images.<chỉ số>.url` hoặc `images.<chỉ số>.assetId`. URL trùng trong mảng báo ở service (400, không có `field`).
 
 ### Biến thể (`variants[]` khi tạo)
 

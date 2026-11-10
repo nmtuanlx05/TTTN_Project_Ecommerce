@@ -63,7 +63,7 @@ interface VariantFake {
     price: number;
     isActive: boolean;
     imageUrl: string | null;
-    images: { url: string }[];
+    images: { url: string; asset?: { publicId: string } | null }[];
   };
 }
 
@@ -83,7 +83,12 @@ const variant = (
     price,
     isActive: true,
     imageUrl: 'https://old/deprecated.jpg',
-    images: [{ url: 'https://cdn/real-first.jpg' }],
+    images: [
+      {
+        url: 'https://cdn/real-first.jpg',
+        asset: { publicId: 'mono/products/first' },
+      },
+    ],
   },
   ...over,
 });
@@ -362,6 +367,8 @@ describe('OrdersService.create', () => {
       color: 'Đen',
       colorHex: '#000000',
       imageUrl: 'https://cdn/real-first.jpg',
+      // Chụp cả publicId của ảnh đầu để chặn xóa asset còn được đơn cũ tham chiếu
+      imagePublicId: 'mono/products/first',
       quantity: 2,
       price: 200_000,
       lineTotal: 400_000,

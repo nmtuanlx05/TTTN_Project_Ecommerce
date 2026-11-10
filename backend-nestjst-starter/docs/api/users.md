@@ -43,7 +43,7 @@ Lỗi:
   "email": "manhtuan@gmail.com",
   "name": "Nguyen Manh Tuan",
   "phone": "0912345678",
-  "avatarUrl": "http://localhost:3000/uploads/avatars/3f2b8c1e-5d7a-4c0e-9b1a-2e6f4a7d8c90.webp",
+  "avatarUrl": "https://res.cloudinary.com/<cloud>/image/upload/v1762740000/mono-studio/production/avatars/3f2b8c1e-5d7a-4c0e-9b1a-2e6f4a7d8c90.webp",
   "role": "CUSTOMER",
   "isActive": true,
   "createdAt": "2026-10-06T17:08:50.335Z",
@@ -137,43 +137,41 @@ Người dùng tự đổi hoặc xóa ảnh đại diện **của chính mình*
 Mọi role (ADMIN, STAFF, CUSTOMER) đều dùng được. `id` lấy từ token: **không có id trong đường dẫn hay body**, ADMIN cũng không
 sửa được avatar của người khác bằng endpoint này.
 
-Luồng: (1) `POST /uploads/avatars` (xem `uploads.md`) → nhận `data.url`; (2) gửi đúng `url` đó vào endpoint này.
+Luồng: (1) `POST /uploads/avatars` (xem `uploads.md`) → nhận `data.assetId` và `data.url`; (2) gửi `assetId` (hoặc `url`) vào endpoint này.
 
-Body (bắt buộc đúng một trường):
+Body (**đúng một** trong hai trường):
 
 ```json
-{ "avatarUrl": "http://localhost:3000/uploads/avatars/3f2b8c1e-5d7a-4c0e-9b1a-2e6f4a7d8c90.webp" }
+{ "assetId": 41 }
 ```
 
-hoặc `{ "avatarUrl": null }` để xóa ảnh đại diện.
+hoặc `{ "avatarUrl": "<url nhận từ POST /uploads/avatars>" }`, hoặc `{ "avatarUrl": null }` để xóa ảnh đại diện.
 
 - Thành công: **200**, `data` là object User sau cập nhật, **cùng hình dạng với `GET /auth/me`** (có `avatarUrl` mới).
-- `avatarUrl` phải là `null` hoặc URL **do chính hệ thống cấp**, khớp toàn chuỗi
-  `<APP_PUBLIC_URL>/uploads/avatars/<uuid>.<jpg|png|webp>` (uuid chữ thường, `APP_PUBLIC_URL` xem `uploads.md`). Bị từ chối (400):
-  URL ngoài hệ thống, URL thuộc `/uploads/products/`, có `../` hoặc `%2e%2e`, có `?query`/`#hash`/khoảng trắng, chuỗi rỗng `""`,
-  dài hơn 191 ký tự, không phải chuỗi, hoặc **thiếu** trường `avatarUrl` (thiếu không được hiểu là xóa; muốn xóa phải gửi `null`).
-- **Server chỉ kiểm định dạng URL, không kiểm file có tồn tại**: URL đúng định dạng nhưng chưa từng được upload vẫn được lưu và
-  ảnh sẽ hiển thị lỗi (404). Frontend chỉ nên gửi URL vừa nhận từ `POST /uploads/avatars`.
-- **Dọn file cũ**: sau khi cập nhật thành công, nếu avatar cũ khác avatar mới (hoặc bị xóa bằng `null`) thì server xóa file cũ trong
-  `<UPLOAD_DIR>/avatars/`. Việc này làm hết sức: lỗi khi xóa file chỉ ghi log, **không** làm request thất bại. Không xóa nếu URL
-  mới trùng URL cũ, hoặc nếu một user khác đang dùng đúng URL đó.
+- Ảnh phải là **ảnh đại diện còn hiệu lực do chính người dùng này tải lên** (`kind = AVATAR`, `ACTIVE`, `uploadedById` = người gọi). Gắn ảnh người khác tải,
+  ảnh sản phẩm, ảnh đã xóa, hoặc URL/`assetId` không đăng ký → **400** `MEDIA_ASSET_INVALID`. URL tự đặt (kể cả URL ngoài) **không** được nhận.
+  Gửi cả hai trường, hoặc không gửi trường nào (thiếu không được hiểu là xóa), hoặc `assetId: null` → 400 (`Dữ liệu không hợp lệ`).
+- Server lưu `User.avatarAssetId` và `User.avatarUrl` (= URL gốc của ảnh) trong cùng một transaction. `avatarUrl` trả về là URL gốc; hiển thị nên dùng
+  biến đổi (xem `uploads.md`, mục "Hiển thị ảnh").
+- **Dọn ảnh cũ**: ảnh avatar cũ không còn ai dùng được đánh dấu trong cùng transaction và xóa phía Cloudinary **sau commit**; lỗi khi xóa chỉ ghi log và tăng
+  số lần thử, **không** làm request thất bại (xem `uploads.md`, mục "Xóa và dọn ảnh"). Avatar cũ chưa chuyển sang Cloudinary (file trên đĩa) **không** bị xóa tự động.
 - Lỗi:
 
 | Status | Khi nào | `message` |
 |---|---|---|
-| 400 | `avatarUrl` sai (xem trên), trường lạ (vd `id`) | `Dữ liệu không hợp lệ`, kèm `errors: [{ "field": "avatarUrl", "message": "…" }]` |
+| 400 | Trường sai kiểu/độ dài, trường lạ (vd `id`), gửi sai số trường | `Dữ liệu không hợp lệ`, kèm `errors: [{ "field": "avatarUrl" \| "assetId", "message": "…" }]` |
+| 400 | Ảnh không hợp lệ hoặc không phải ảnh do bạn tải lên | `Ảnh đại diện không hợp lệ hoặc không phải ảnh do bạn tải lên`, `code: MEDIA_ASSET_INVALID` |
 | 401 | Không token, token sai/hết hạn, user bị khóa | Thông điệp của `JwtAuthGuard` (xem `auth.md`) |
 
-Ví dụ 400 (URL ngoài hệ thống):
+Ví dụ 400:
 
 ```json
 {
   "success": false,
   "statusCode": 400,
-  "message": "Dữ liệu không hợp lệ",
-  "errors": [
-    { "field": "avatarUrl", "message": "Đường dẫn ảnh đại diện không hợp lệ, vui lòng tải ảnh lên qua /uploads/avatars rồi dùng URL nhận được" }
-  ]
+  "message": "Ảnh đại diện không hợp lệ hoặc không phải ảnh do bạn tải lên",
+  "code": "MEDIA_ASSET_INVALID",
+  "errors": [{ "field": "assetId", "message": "Ảnh đại diện không hợp lệ hoặc không phải ảnh do bạn tải lên" }]
 }
 ```
 
@@ -218,7 +216,8 @@ Chỉ gồm `name`, `phone`, `role`, tất cả tùy chọn, giữ quy tắc nh�
 
 | Trường | Bắt buộc | Quy tắc | Message khi sai |
 |---|---|---|---|
-| `avatarUrl` | Có (có thể là `null`) | `null`, hoặc chuỗi không rỗng ≤ 191 ký tự, đúng định dạng URL avatar của hệ thống | `avatarUrl là bắt buộc, gửi chuỗi URL ảnh hoặc null để xóa ảnh`, `avatarUrl không được để trống, gửi null để xóa ảnh`, `Đường dẫn ảnh đại diện không được vượt quá 191 ký tự`, `Đường dẫn ảnh đại diện không hợp lệ, vui lòng tải ảnh lên qua /uploads/avatars rồi dùng URL nhận được` |
+| `assetId` | Một trong hai | Số nguyên ≥ 1 (trường `assetId` của `POST /uploads/avatars`) | `assetId phải là số nguyên`, `assetId phải lớn hơn hoặc bằng 1` |
+| `avatarUrl` | Một trong hai | `null` (xóa ảnh), hoặc chuỗi không rỗng ≤ 500 ký tự là URL đã tải lên | `avatarUrl phải là chuỗi URL ảnh hoặc null`, `avatarUrl không được để trống, gửi null để xóa ảnh`, `Đường dẫn ảnh đại diện không được vượt quá 500 ký tự` |
 
 ### Query GET /users
 

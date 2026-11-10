@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { imgAttrs } from "@/lib/img-url"
 import { cn } from "@/lib/utils"
 
 const LOADABLE_SRC = /^https?:\/\//i
@@ -15,7 +16,7 @@ function ProductHoverImage({ src }: { src: string }) {
 
   return (
     <img
-      src={src}
+      {...imgAttrs(src, "card")}
       alt=""
       aria-hidden="true"
       decoding="async"

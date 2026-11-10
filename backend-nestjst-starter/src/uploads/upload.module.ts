@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { MediaModule } from '../media/media.module';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import {
   loadUploadConfig,
@@ -8,10 +9,10 @@ import {
   UPLOAD_URL_PREFIX,
 } from './upload.config';
 import { UploadController } from './upload.controller';
-import { UploadService } from './upload.service';
 
 @Module({
   imports: [
+    MediaModule,
     // Chỉ phục vụ thư mục upload tại /uploads, không phục vụ gì khác. File tĩnh chạy ở middleware Express nên không qua guard.
     ServeStaticModule.forRootAsync({
       inject: [ConfigService],
@@ -42,7 +43,6 @@ import { UploadService } from './upload.service';
   ],
   controllers: [UploadController],
   providers: [
-    UploadService,
     RolesGuard,
     {
       provide: UPLOAD_CONFIG,
@@ -50,6 +50,5 @@ import { UploadService } from './upload.service';
       useFactory: loadUploadConfig,
     },
   ],
-  exports: [UploadService],
 })
 export class UploadModule {}

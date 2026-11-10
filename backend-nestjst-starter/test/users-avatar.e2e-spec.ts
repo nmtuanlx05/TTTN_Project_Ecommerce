@@ -12,8 +12,6 @@ import { configureApp } from '../src/app.setup';
 import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../src/auth/guards/roles.guard';
 import { JwtStrategy } from '../src/auth/strategies/jwt.strategy';
-import { UPLOAD_CONFIG } from '../src/uploads/upload.config';
-import { AvatarUrlPipe } from '../src/users/avatar-url.pipe';
 import { UsersController } from '../src/users/users.controller';
 import { UsersService } from '../src/users/users.service';
 
@@ -25,12 +23,12 @@ jest.mock('../src/users/dto/update-user.dto', () => ({
 }));
 
 const ACCESS_SECRET = 'test-access-secret';
-const PUBLIC_URL = 'http://localhost:3000';
-const UUID = '3f2b8c1e-5d7a-4c0e-9b1a-2e6f4a7d8c90';
-const OWN_URL = `${PUBLIC_URL}/uploads/avatars/${UUID}.webp`;
+const OWN_URL =
+  'https://res.cloudinary.com/demo/image/upload/v1/mono/avatars/3f2b8c1e.webp';
 type RoleName = 'ADMIN' | 'STAFF' | 'CUSTOMER';
 
-// JwtStrategy, JwtAuthGuard, ValidationPipe, AvatarUrlPipe là bản thật; UsersService giả (không DB).
+// JwtStrategy, JwtAuthGuard, ValidationPipe là bản thật; UsersService giả (không DB). Việc ảnh có phải của người dùng hay không
+// (assetId/URL đã đăng ký, đúng chủ) được kiểm ở UsersService/MediaService, có unit test riêng.
 describe('PATCH /users/me/avatar (e2e, service giả)', () => {
   let app: INestApplication<App>;
   const tokens = {} as Record<RoleName, string>;
@@ -56,14 +54,12 @@ describe('PATCH /users/me/avatar (e2e, service giả)', () => {
       providers: [
         JwtStrategy,
         RolesGuard,
-        AvatarUrlPipe,
         { provide: APP_GUARD, useClass: JwtAuthGuard },
         { provide: UsersService, useValue: usersService },
         {
           provide: ConfigService,
           useValue: { getOrThrow: () => ACCESS_SECRET },
         },
-        { provide: UPLOAD_CONFIG, useValue: { publicUrl: PUBLIC_URL } },
       ],
     }).compile();
 
@@ -132,36 +128,33 @@ describe('PATCH /users/me/avatar (e2e, service giả)', () => {
     });
   });
 
-  it.each<[string, unknown]>([
-    ['URL bên ngoài', `https://evil.com/uploads/avatars/${UUID}.png`],
-    ['URL thuộc products', `${PUBLIC_URL}/uploads/products/${UUID}.png`],
-    ['sai định dạng', `${PUBLIC_URL}/uploads/avatars/abc.png`],
-    ['path traversal', `${PUBLIC_URL}/uploads/avatars/../products/${UUID}.png`],
-    ['chuỗi rỗng', ''],
-    ['quá 191 ký tự', `${PUBLIC_URL}/uploads/avatars/${'a'.repeat(200)}.png`],
-    ['không phải chuỗi', 123],
-  ])('%s → 400, errors theo trường avatarUrl', async (_name, avatarUrl) => {
-    const res = await patchAvatar('CUSTOMER', { avatarUrl });
+  it('assetId: gửi số nguyên → chuyển nguyên xuống service', async () => {
+    const res = await patchAvatar('CUSTOMER', { assetId: 12 });
+
+    expect(res.status).toBe(200);
+    expect(usersService.updateAvatar).toHaveBeenCalledWith(3, { assetId: 12 });
+  });
+
+  it.each<[string, string, unknown]>([
+    ['avatarUrl chuỗi rỗng', 'avatarUrl', { avatarUrl: '' }],
+    ['avatarUrl không phải chuỗi', 'avatarUrl', { avatarUrl: 123 }],
+    [
+      'avatarUrl quá 500 ký tự',
+      'avatarUrl',
+      { avatarUrl: `https://x/${'a'.repeat(500)}.png` },
+    ],
+    ['assetId không phải số nguyên', 'assetId', { assetId: 'abc' }],
+    ['assetId âm hoặc 0', 'assetId', { assetId: 0 }],
+  ])('%s → 400, errors theo đúng trường', async (_name, field, body) => {
+    const res = await patchAvatar('CUSTOMER', body);
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
     expect(res.body.message).toBe('Dữ liệu không hợp lệ');
-    // Có thể có nhiều thông báo cho cùng một trường, nhưng chỉ ở trường avatarUrl
     expect(res.body.errors.length).toBeGreaterThan(0);
     for (const error of res.body.errors) {
-      expect(error).toEqual({
-        field: 'avatarUrl',
-        message: expect.any(String),
-      });
+      expect(error).toEqual({ field, message: expect.any(String) });
     }
-    expect(usersService.updateAvatar).not.toHaveBeenCalled();
-  });
-
-  it('thiếu avatarUrl → 400 (không coi là xóa ảnh)', async () => {
-    const res = await patchAvatar('CUSTOMER', {});
-
-    expect(res.status).toBe(400);
-    expect(res.body.errors[0].field).toBe('avatarUrl');
     expect(usersService.updateAvatar).not.toHaveBeenCalled();
   });
 

@@ -14,7 +14,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
-import { AvatarUrlPipe } from './avatar-url.pipe';
 import { parseIdPipe } from '../common/pipes/parse-id.pipe';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -44,7 +43,7 @@ export class UsersController {
   @Roles('ADMIN', 'STAFF', 'CUSTOMER')
   updateMyAvatar(
     @CurrentUser() user: AuthUser,
-    @Body(AvatarUrlPipe) updateAvatarDto: UpdateAvatarDto,
+    @Body() updateAvatarDto: UpdateAvatarDto,
   ) {
     return this.usersService.updateAvatar(user.id, updateAvatarDto);
   }

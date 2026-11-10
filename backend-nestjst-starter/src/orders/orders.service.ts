@@ -341,7 +341,14 @@ export class OrdersService {
             price: true,
             isActive: true,
             imageUrl: true,
-            images: { select: { url: true }, orderBy: imageOrder, take: 1 },
+            images: {
+              select: {
+                url: true,
+                asset: { select: { publicId: true } },
+              },
+              orderBy: imageOrder,
+              take: 1,
+            },
           },
         },
       },
@@ -494,6 +501,8 @@ export class OrdersService {
           // Chụp đúng product_images.url của ảnh đầu; dự phòng cột imageUrl cũ khi chưa có ảnh
           imageUrl:
             detail.product.images[0]?.url ?? detail.product.imageUrl ?? null,
+          // Chụp cả publicId của ảnh đầu (null với ảnh URL ngoài/ảnh cũ): chặn xóa asset còn được đơn cũ tham chiếu
+          imagePublicId: detail.product.images[0]?.asset?.publicId ?? null,
           quantity,
           price: detail.product.price,
         })),

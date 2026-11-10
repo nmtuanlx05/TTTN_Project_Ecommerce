@@ -73,7 +73,12 @@ const description = z
   .trim()
   .max(DESCRIPTION_MAX_LENGTH, `Mô tả tối đa ${DESCRIPTION_MAX_LENGTH} ký tự. Rút gọn mô tả lại.`)
 
+/**
+ * Một ảnh trong form. `assetId` chỉ có ở ảnh vừa tải lên trong phiên này (API đọc sản phẩm không trả assetId): khi gửi thì ưu tiên `assetId`.
+ * `url` không ép https vì ảnh cũ đã lưu có thể là `http://localhost/uploads/...`; chỉ ô "Thêm ảnh bằng URL" mới siết https cho URL mới.
+ */
 const imageItem = z.object({
+  assetId: z.number().int().positive().optional(),
   url: z
     .string()
     .trim()

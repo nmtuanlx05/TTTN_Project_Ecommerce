@@ -77,10 +77,11 @@ export interface CreateVariantInput {
   isActive?: boolean
 }
 
-/** Ảnh gửi lên theo đúng thứ tự hiển thị. */
-export interface ImageInput {
-  url: string
-}
+/**
+ * Ảnh gửi lên theo đúng thứ tự hiển thị: `{ assetId }` cho ảnh vừa tải lên (`POST /uploads/products`), `{ url }` cho ảnh đã có sẵn
+ * (backend tự khớp URL Cloudinary đã đăng ký, ảnh cũ trên đĩa hoặc URL ngoài https). Đúng một trong hai, không kèm trường khác.
+ */
+export type ImageInput = { assetId: number } | { url: string }
 
 /** Bỏ `slug`, `description` = không có (slug thì backend tự sinh). Không gửi `isActive` và không gửi `imageUrl` (deprecated, dùng `images`). */
 export interface CreateProductInput {

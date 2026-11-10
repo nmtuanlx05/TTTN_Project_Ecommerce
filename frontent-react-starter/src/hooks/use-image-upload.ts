@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import type { ApiError } from "@/lib/api-error"
 import { MSG_ONE_IMAGE_ONLY, validateImageFile } from "@/lib/image-rules"
+import { describeUploadError } from "@/lib/upload-errors"
 import { uploadImage } from "@/lib/upload-image"
-import type { ImageUploadKind } from "@/types/upload"
+import type { ImageUploadKind, UploadedImage } from "@/types/upload"
 
 /**
  * Luồng chọn và upload một ảnh: kiểm tra phía client (nhiều file, loại, dung lượng), gửi lên server kèm
@@ -20,8 +21,8 @@ export function useImageUpload({
   onUploaded,
 }: {
   kind: ImageUploadKind
-  /** Gọi với URL ảnh sau khi server lưu xong. */
-  onUploaded: (url: string) => void
+  /** Gọi với thông tin ảnh (`assetId`, `url`, ...) sau khi server lưu xong. */
+  onUploaded: (image: UploadedImage) => void
 }) {
   const [error, setError] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -29,7 +30,7 @@ export function useImageUpload({
   const [succeeded, setSucceeded] = useState(false)
   const controller = useRef<AbortController | null>(null)
 
-  const mutation = useMutation<string, ApiError, { file: File; signal: AbortSignal }>({
+  const mutation = useMutation<UploadedImage, ApiError, { file: File; signal: AbortSignal }>({
     mutationFn: ({ file, signal }) => uploadImage(kind, file, { signal, onProgress: setProgress }),
   })
 
@@ -68,13 +69,13 @@ export function useImageUpload({
     mutation.mutate(
       { file, signal: abort.signal },
       {
-        onSuccess: (url) => {
+        onSuccess: (image) => {
           setSucceeded(true)
-          onUploaded(url)
+          onUploaded(image)
         },
         // Người dùng bấm Hủy: không phải lỗi, không báo gì.
         onError: (apiError) => {
-          if (!abort.signal.aborted) setError(apiError.message)
+          if (!abort.signal.aborted) setError(describeUploadError(apiError))
         },
         onSettled: () => {
           controller.current = null

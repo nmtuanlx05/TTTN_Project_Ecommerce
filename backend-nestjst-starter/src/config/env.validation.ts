@@ -1,3 +1,4 @@
+import { validateStorageDriver } from '../storage/storage.config';
 import { validatePublicUrl } from '../uploads/upload.config';
 import { ENV_FILE } from './env-file';
 
@@ -35,6 +36,13 @@ export function validateEnv(
     if (error) {
       throw new Error(error);
     }
+  }
+
+  // STORAGE_DRIVER là tùy chọn (mặc định cloudinary); có giá trị mà sai thì dừng ngay. Thiếu khóa Cloudinary KHÔNG làm dừng:
+  // chỉ tắt tải ảnh (503 STORAGE_NOT_CONFIGURED).
+  const driverError = validateStorageDriver(config.STORAGE_DRIVER);
+  if (driverError) {
+    throw new Error(driverError);
   }
 
   return config;

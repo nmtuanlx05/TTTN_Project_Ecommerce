@@ -29,7 +29,11 @@ export const SKU_REGEX = /^[A-Za-z0-9._-]+$/
 /** Mã màu `#RRGGBB`, không phân biệt hoa thường (backend chuẩn hóa in hoa). */
 export const COLOR_HEX_REGEX = /^#[0-9a-f]{6}$/i
 
+/** Ảnh đã lưu: http hoặc https (ảnh cũ có thể là http://localhost/uploads/...). */
 export const IMAGE_URL_REGEX = /^https?:\/\/\S+$/i
+
+/** Ảnh MỚI dán bằng URL: chỉ https (backend từ chối URL ngoài không https). */
+export const NEW_IMAGE_URL_REGEX = /^https:\/\/\S+$/i
 
 export const VISIBILITY_LABEL = {
   visible: "Đang hiện",

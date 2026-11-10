@@ -1,10 +1,7 @@
-import { randomUUID } from 'crypto';
-import { mkdir } from 'fs/promises';
 import {
   BadRequestException,
   CallHandler,
   ExecutionContext,
-  Inject,
   Injectable,
   NestInterceptor,
   PayloadTooLargeException,
@@ -12,33 +9,21 @@ import {
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import type { Observable } from 'rxjs';
 import { ALLOWED_MIME_TYPES } from './image-signature';
 import {
   MSG_UNSUPPORTED_IMAGE,
-  UPLOAD_CONFIG,
   UPLOAD_FIELD,
   UPLOAD_KINDS,
-  type UploadConfig,
   type UploadKind,
 } from './upload.config';
 
 // Cấu hình Multer dùng chung cho mọi loại upload; chỉ khác nhau ở giới hạn dung lượng.
-export function createMulterOptions(kind: UploadKind, config: UploadConfig) {
+export function createMulterOptions(kind: UploadKind) {
   return {
-    // File ghi tạm vào thư mục .tmp (không công khai) với tên ngẫu nhiên, chờ UploadService kiểm chữ ký rồi mới chuyển đi.
-    // destination là hàm để tạo lại .tmp cho mỗi request: Multer chỉ tự tạo thư mục một lần khi cấu hình,
-    // nếu thư mục bị xóa lúc server đang chạy thì mọi upload sẽ lỗi ENOENT.
-    storage: diskStorage({
-      destination: (_req, _file, cb) => {
-        mkdir(config.tmpDir, { recursive: true }).then(
-          () => cb(null, config.tmpDir),
-          (error: Error) => cb(error, config.tmpDir),
-        );
-      },
-      filename: (_req, _file, cb) => cb(null, randomUUID()),
-    }),
+    // Giữ file trong bộ nhớ (tối đa maxBytes mỗi request) rồi đẩy thẳng lên kho lưu trữ bằng stream: không ghi đĩa tạm.
+    storage: memoryStorage(),
     // Đúng một file, không kèm trường text nào.
     // Busboy coi file đúng bằng fileSize là đã chạm giới hạn, nên cộng 1 để file đúng bằng "tối đa" vẫn được nhận.
     limits: {
@@ -82,10 +67,10 @@ export function UploadFileInterceptor(kind: UploadKind): Type<NestInterceptor> {
   class MixinUploadFileInterceptor implements NestInterceptor {
     private readonly delegate: NestInterceptor;
 
-    constructor(@Inject(UPLOAD_CONFIG) config: UploadConfig) {
+    constructor() {
       const FileInterceptorClass = FileInterceptor(
         UPLOAD_FIELD,
-        createMulterOptions(kind, config),
+        createMulterOptions(kind),
       );
       this.delegate = new FileInterceptorClass();
     }

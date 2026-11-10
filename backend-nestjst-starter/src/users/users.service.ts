@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -11,7 +12,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
-import { UploadService } from '../uploads/upload.service';
+import { MediaService } from '../media/media.service';
 import { Paginated } from '../common/paginated';
 import { Prisma } from '../generated/prisma/client';
 import { normalizeEmail } from '../common/transforms/normalize-email';
@@ -35,7 +36,7 @@ export class UsersService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly uploadService: UploadService,
+    private readonly media: MediaService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -170,46 +171,70 @@ export class UsersService {
     });
   }
 
-  // Người dùng tự đổi ảnh đại diện của chính mình (id lấy từ token). URL đã được AvatarUrlPipe kiểm tra.
-  async updateAvatar(userId: number, { avatarUrl }: UpdateAvatarDto) {
+  // Người dùng tự đổi/xóa ảnh đại diện của chính mình (id lấy từ token). Gửi ĐÚNG MỘT trong hai:
+  //  - assetId: id ảnh vừa tải lên qua POST /uploads/avatars;
+  //  - avatarUrl: URL ảnh đã tải lên (secureUrl đã đăng ký), hoặc null để xóa ảnh.
+  // Ảnh phải do chính người dùng tải lên. Ảnh cũ không còn ai dùng thì được đánh dấu cùng transaction và xóa phía kho SAU commit.
+  async updateAvatar(userId: number, dto: UpdateAvatarDto) {
+    const hasAssetId = dto.assetId !== undefined;
+    const hasAvatarUrl = dto.avatarUrl !== undefined;
+    if (hasAssetId === hasAvatarUrl || dto.assetId === null) {
+      throw new BadRequestException({
+        message: 'Dữ liệu không hợp lệ',
+        errors: [
+          {
+            field: hasAssetId ? 'assetId' : 'avatarUrl',
+            message:
+              'Gửi đúng một trong hai: assetId (ảnh vừa tải lên) hoặc avatarUrl (URL ảnh đã tải lên, hoặc null để xóa ảnh)',
+          },
+        ],
+      });
+    }
+
     const current = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { avatarUrl: true },
+      select: { avatarAssetId: true },
     });
     if (!current) {
       throw new NotFoundException(
         `Không tìm thấy người dùng với ID #${userId}`,
       );
     }
-    const oldUrl = current.avatarUrl;
 
-    const updated = await this.prisma.user.update({
-      where: { id: userId },
-      data: { avatarUrl },
-      select: userSelectFields,
-    });
+    const next =
+      dto.avatarUrl === null
+        ? null
+        : await this.media.resolveAvatar(userId, {
+            assetId: dto.assetId,
+            url: dto.avatarUrl,
+          });
+    const oldAssetId = current.avatarAssetId;
 
-    // Chỉ dọn file cũ sau khi cập nhật DB thành công và ảnh thật sự đổi
-    if (oldUrl && oldUrl !== avatarUrl) {
-      await this.removeOldAvatar(userId, oldUrl);
-    }
-    return updated;
-  }
+    const pending = await this.prisma.$transaction(
+      async (tx) => {
+        // Khóa asset trước mọi lần đọc khác (xem MediaService.lockAssets)
+        const locked = await this.media.lockAssets(
+          tx,
+          [next?.id, oldAssetId].filter((id): id is number => id != null),
+        );
+        if (next) this.media.assertAttachable(locked, [next.id]);
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            avatarUrl: next?.secureUrl ?? null,
+            avatarAssetId: next?.id ?? null,
+          },
+          select: { id: true },
+        });
+        return oldAssetId !== null && oldAssetId !== next?.id
+          ? this.media.markUnreferenced(tx, [oldAssetId])
+          : [];
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+    );
+    // Xóa phía kho lưu trữ sau commit; không bao giờ làm hỏng request
+    await this.media.purge(pending);
 
-  // Xóa file avatar cũ, cố gắng hết sức: lỗi chỉ ghi log, không làm hỏng request đổi avatar.
-  // Không xóa nếu user khác đang dùng cùng URL (hệ thống chưa ghi nhận ai sở hữu file upload).
-  private async removeOldAvatar(userId: number, oldUrl: string) {
-    try {
-      const usedByOthers = await this.prisma.user.count({
-        where: { avatarUrl: oldUrl, id: { not: userId } },
-      });
-      if (usedByOthers === 0) {
-        await this.uploadService.deleteByUrl(oldUrl);
-      }
-    } catch (error) {
-      this.logger.warn(
-        `Không dọn được avatar cũ ${oldUrl}: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
+    return this.findOne(userId);
   }
 }

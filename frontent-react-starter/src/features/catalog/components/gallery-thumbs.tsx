@@ -30,7 +30,7 @@ function GalleryThumbs({
               index === current && "ring-2 ring-ink ring-offset-2 ring-offset-canvas",
             )}
           >
-            <ProductImage src={src} alt={`${alt} (ảnh ${index + 1})`} className="aspect-square" />
+            <ProductImage src={src} alt={`${alt} (ảnh ${index + 1})`} preset="gallery-thumb" className="aspect-square" />
           </button>
         </li>
       ))}

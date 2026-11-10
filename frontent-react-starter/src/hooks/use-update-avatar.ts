@@ -5,11 +5,14 @@ import type { User } from "@/types/user"
 
 /**
  * Đặt hoặc xóa ảnh đại diện của CHÍNH người đang đăng nhập: `PATCH /users/me/avatar` (docs/api/users.md).
- * `avatarUrl` phải là URL vừa nhận từ `POST /uploads/avatars`, hoặc `null` để xóa. Gửi `undefined` sẽ bị 400
- * (thiếu trường không được hiểu là xóa) nên kiểu ở đây không cho phép.
+ * Body gửi ĐÚNG MỘT trường: `{ assetId }` (id ảnh vừa nhận từ `POST /uploads/avatars`, chỉ gắn được ảnh chính mình đã tải) hoặc
+ * `{ avatarUrl: null }` để xóa. Gửi cả hai hoặc không gửi trường nào sẽ bị 400 (thiếu trường không được hiểu là xóa) nên kiểu
+ * ở đây không cho phép.
  */
-function updateAvatar(avatarUrl: string | null): Promise<User> {
-  return apiSend<User>("patch", "/users/me/avatar", { avatarUrl })
+export type AvatarChange = { assetId: number } | { avatarUrl: null }
+
+function updateAvatar(change: AvatarChange): Promise<User> {
+  return apiSend<User>("patch", "/users/me/avatar", change)
 }
 
 /**
@@ -17,7 +20,7 @@ function updateAvatar(avatarUrl: string | null): Promise<User> {
  * làm mới cache nằm ở nơi gọi vì hooks/ không được import features/.
  */
 export function useUpdateAvatar({ onUpdated }: { onUpdated: (user: User) => void }) {
-  return useMutation<User, ApiError, string | null>({
+  return useMutation<User, ApiError, AvatarChange>({
     mutationFn: updateAvatar,
     onSuccess: onUpdated,
   })

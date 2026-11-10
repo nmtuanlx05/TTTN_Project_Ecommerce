@@ -10,7 +10,6 @@ describe('resolveUploadConfig', () => {
   it('thiếu biến thì dùng mặc định, thư mục là đường dẫn tuyệt đối', () => {
     const config = resolveUploadConfig({});
     expect(config.rootDir).toBe(resolve(process.cwd(), 'uploads'));
-    expect(config.tmpDir).toBe(resolve(process.cwd(), 'uploads', '.tmp'));
     expect(config.publicUrl).toBe(DEFAULT_PUBLIC_URL);
   });
 
@@ -35,15 +34,15 @@ describe('resolveUploadConfig', () => {
 });
 
 describe('validatePublicUrl', () => {
-  it('độ dài tối đa là 132 để URL ảnh dài nhất vẫn ≤ 191', () => {
-    expect(MAX_PUBLIC_URL_LENGTH).toBe(132);
+  it('độ dài tối đa là 441 để URL ảnh dài nhất vẫn ≤ 500', () => {
+    expect(MAX_PUBLIC_URL_LENGTH).toBe(441);
     const base = 'https://' + 'a'.repeat(MAX_PUBLIC_URL_LENGTH - 8);
     expect(base).toHaveLength(MAX_PUBLIC_URL_LENGTH);
     expect(validatePublicUrl(base)).toBeNull();
     expect(
       `${base}/uploads/products/${'0'.repeat(36)}.webp`.length,
-    ).toBeLessThanOrEqual(191);
-    expect(validatePublicUrl(`${base}a`)).toMatch(/không được dài quá 132/);
+    ).toBeLessThanOrEqual(500);
+    expect(validatePublicUrl(`${base}a`)).toMatch(/không được dài quá 441/);
   });
 
   it('chấp nhận http(s) hợp lệ', () => {

@@ -20,7 +20,7 @@ import { JwtRefreshStrategy } from '../src/auth/strategies/jwt-refresh.strategy'
 import { JwtStrategy } from '../src/auth/strategies/jwt.strategy';
 import { LocalStrategy } from '../src/auth/strategies/local.strategy';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { UploadService } from '../src/uploads/upload.service';
+import { MediaService } from '../src/media/media.service';
 import { UsersService } from '../src/users/users.service';
 
 // @nestjs/config và @nestjs/mapped-types chỉ có bản ESM nên Jest không nạp được; spec mock chúng lại.
@@ -117,8 +117,8 @@ describe('Auth API (e2e, Prisma giả)', () => {
       providers: [
         AuthService,
         UsersService,
-        // UsersService cần UploadService (dọn avatar cũ); auth không dùng tới nên dùng bản giả
-        { provide: UploadService, useValue: { deleteByUrl: jest.fn() } },
+        // UsersService cần MediaService (ảnh đại diện); auth không dùng tới nên dùng bản giả
+        { provide: MediaService, useValue: {} },
         LocalStrategy,
         JwtStrategy,
         JwtRefreshStrategy,

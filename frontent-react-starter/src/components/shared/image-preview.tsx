@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react"
 import { ImageOff } from "lucide-react"
+import { imgAttrs, type ImgPresetName } from "@/lib/img-url"
 import { cn } from "@/lib/utils"
 import { ImageLightbox } from "./image-lightbox"
 
@@ -39,6 +40,7 @@ function ImagePreview({
   fit = shape === "square" ? "contain" : "cover",
   showFallbackText = false,
   zoomable = false,
+  preset = "thumb",
   fallback,
   className,
   children,
@@ -51,6 +53,8 @@ function ImagePreview({
   showFallbackText?: boolean
   /** Bấm vào ảnh để xem ảnh lớn. Chỉ có tác dụng khi ảnh hiển thị được. */
   zoomable?: boolean
+  /** Kích thước ảnh Cloudinary tải về (`lib/img-url.ts`); khung ở đây luôn nhỏ nên mặc định `thumb`. Ảnh không phải Cloudinary (URL ngoài, blob xem trước) dùng nguyên. */
+  preset?: ImgPresetName
   /** Thay icon và chữ mặc định khi không có ảnh hoặc ảnh không tải được (vd. chữ cái đầu của avatar). */
   fallback?: ReactNode
   className?: string
@@ -62,7 +66,7 @@ function ImagePreview({
   const fallbackText = src ? "Không tải được ảnh" : "Chưa có ảnh"
   const image = showImage ? (
     <img
-      src={src}
+      {...imgAttrs(src, preset)}
       alt={alt}
       loading="lazy"
       referrerPolicy="no-referrer"

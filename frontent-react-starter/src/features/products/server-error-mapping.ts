@@ -15,7 +15,7 @@ export function remapVariantErrors(error: ApiError, rowIndexes: number[]): ApiEr
     const row = rowIndexes[Number(match[1])]
     return row === undefined ? { ...item, field: "variants" } : { ...item, field: `variants.${row}.${match[2]}` }
   })
-  return new ApiError(error.statusCode, error.message, errors)
+  return new ApiError(error.statusCode, error.message, errors, error.code)
 }
 
 /** Các ô nhìn thấy trong form, để `applyServerErrors` gắn lỗi 400 của server vào đúng ô. */
@@ -33,10 +33,27 @@ export function formFieldPaths(variantCount: number): Path<ProductFormValues>[] 
   return paths
 }
 
-const IMAGE_FIELD = /^images\.\d+(\.url)?$/
+const IMAGE_FIELD = /^images\.\d+(\.(url|assetId))?$/
 
-/** Lỗi 400 theo từng ảnh (`images.N.url`) gộp về ô chung `images`, vì danh sách ảnh chỉ có một chỗ báo lỗi. */
+/** Mã lỗi ảnh của backend (docs/api/products.md, "Nguồn ảnh hợp lệ") → câu tiếng Việt cho người dùng. */
+const IMAGE_CODE_MESSAGE: Record<string, string> = {
+  EXTERNAL_IMAGE_NOT_ALLOWED:
+    "Máy chủ không cho dùng ảnh từ đường dẫn bên ngoài. Hãy xóa ảnh đó và tải ảnh lên từ máy.",
+  MEDIA_ASSET_INVALID:
+    "Có ảnh không còn hiệu lực (đã bị xóa hoặc không phải ảnh sản phẩm do hệ thống lưu). Hãy xóa ảnh đó rồi tải lại.",
+}
+
+/**
+ * Lỗi 400 theo từng ảnh (`images.N.url`, `images.N.assetId`) gộp về ô chung `images`, vì danh sách ảnh chỉ có một chỗ báo lỗi.
+ * Lỗi có mã ảnh của backend (`EXTERNAL_IMAGE_NOT_ALLOWED`, `MEDIA_ASSET_INVALID`) được báo bằng câu của frontend ở ô `images`,
+ * kể cả khi server không kèm `errors` theo ô.
+ */
 export function collapseImageErrors(error: ApiError): ApiError {
+  const known = error.code ? IMAGE_CODE_MESSAGE[error.code] : undefined
+  if (known) {
+    const rest = error.errors.filter((item) => !IMAGE_FIELD.test(item.field))
+    return new ApiError(error.statusCode, error.message, [...rest, { field: "images", message: known }], error.code)
+  }
   const errors = error.errors.map((item) => (IMAGE_FIELD.test(item.field) ? { ...item, field: "images" } : item))
-  return new ApiError(error.statusCode, error.message, errors)
+  return new ApiError(error.statusCode, error.message, errors, error.code)
 }
