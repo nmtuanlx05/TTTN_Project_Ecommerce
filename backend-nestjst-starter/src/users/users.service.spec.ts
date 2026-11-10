@@ -1,138 +1,155 @@
-import { ForbiddenException, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import type { MediaService } from '../media/media.service';
 import type { PrismaService } from '../prisma/prisma.service';
-import type { UploadService } from '../uploads/upload.service';
 import { UsersService } from './users.service';
 
 // PrismaService thật kéo theo client Prisma/adapter (không cần cho unit test này)
 jest.mock('../prisma/prisma.service', () => ({ PrismaService: class {} }));
+// @nestjs/config chỉ có bản ESM nên Jest không nạp được (MediaService nhập ConfigService)
+jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
 
-const OLD = 'http://localhost:3000/uploads/avatars/old.png';
-const NEW = 'http://localhost:3000/uploads/avatars/new.png';
+const NEW_ASSET = { id: 5, secureUrl: 'https://res.cloudinary.com/x/new.jpg' };
 
 describe('UsersService.updateAvatar', () => {
+  const tx = { user: { update: jest.fn() } };
   const prisma = {
-    user: { findUnique: jest.fn(), update: jest.fn(), count: jest.fn() },
+    user: { findUnique: jest.fn() },
+    $transaction: jest.fn(),
   };
-  const uploadService = { deleteByUrl: jest.fn() };
+  const media = {
+    resolveAvatar: jest.fn(),
+    lockAssets: jest.fn(),
+    assertAttachable: jest.fn(),
+    markUnreferenced: jest.fn(),
+    purge: jest.fn(),
+  };
   let service: UsersService;
-  let warnSpy: jest.SpyInstance;
+
+  // findUnique được gọi 2 lần: avatarAssetId hiện tại (select có avatarAssetId) rồi findOne trả user
+  const currentAvatar = (avatarAssetId: number | null) =>
+    prisma.user.findUnique.mockImplementation(
+      (args: { select: Record<string, unknown> }) =>
+        Promise.resolve(
+          'email' in args.select
+            ? { id: 7, avatarUrl: null }
+            : { avatarAssetId },
+        ),
+    );
 
   beforeEach(() => {
     jest.resetAllMocks();
-    warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
-    prisma.user.update.mockImplementation(
-      ({ data }: { data: { avatarUrl: string | null } }) =>
-        Promise.resolve({ id: 7, avatarUrl: data.avatarUrl }),
+    prisma.$transaction.mockImplementation((fn: (t: typeof tx) => unknown) =>
+      fn(tx),
     );
-    prisma.user.count.mockResolvedValue(0);
-    uploadService.deleteByUrl.mockResolvedValue(undefined);
+    tx.user.update.mockResolvedValue({ id: 7 });
+    media.resolveAvatar.mockResolvedValue(NEW_ASSET);
+    media.lockAssets.mockResolvedValue(new Map());
+    media.markUnreferenced.mockResolvedValue([]);
+    media.purge.mockResolvedValue({ deleted: 0, failed: 0 });
     service = new UsersService(
       prisma as unknown as PrismaService,
-      uploadService as unknown as UploadService,
+      media as unknown as MediaService,
     );
   });
 
-  const currentAvatar = (avatarUrl: string | null) =>
-    prisma.user.findUnique.mockResolvedValue({ avatarUrl });
+  it('đổi bằng assetId: ghi avatarUrl + avatarAssetId trong transaction, đánh dấu ảnh cũ rồi xóa SAU commit', async () => {
+    currentAvatar(3);
+    media.markUnreferenced.mockResolvedValue([3]);
 
-  it('đổi sang URL mới: cập nhật đúng user và xóa file cũ', async () => {
-    currentAvatar(OLD);
+    await service.updateAvatar(7, { assetId: 5 });
 
-    const result = await service.updateAvatar(7, { avatarUrl: NEW });
-
-    expect(result).toEqual({ id: 7, avatarUrl: NEW });
-    expect(prisma.user.update).toHaveBeenCalledWith(
+    expect(media.resolveAvatar).toHaveBeenCalledWith(7, {
+      assetId: 5,
+      url: undefined,
+    });
+    expect(media.lockAssets).toHaveBeenCalledWith(tx, [5, 3]);
+    expect(tx.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 7 },
-        data: { avatarUrl: NEW },
+        data: { avatarUrl: NEW_ASSET.secureUrl, avatarAssetId: 5 },
       }),
     );
-    expect(uploadService.deleteByUrl).toHaveBeenCalledWith(OLD);
+    expect(media.markUnreferenced).toHaveBeenCalledWith(tx, [3]);
+    // purge chạy sau transaction
+    expect(media.purge).toHaveBeenCalledWith([3]);
+    expect(media.purge.mock.invocationCallOrder[0]).toBeGreaterThan(
+      prisma.$transaction.mock.invocationCallOrder[0],
+    );
   });
 
-  it('gửi null (xóa ảnh): lưu null và xóa file cũ', async () => {
-    currentAvatar(OLD);
-
-    const result = await service.updateAvatar(7, { avatarUrl: null });
-
-    expect(result).toEqual({ id: 7, avatarUrl: null });
-    expect(uploadService.deleteByUrl).toHaveBeenCalledWith(OLD);
-  });
-
-  it('không xóa khi URL mới trùng URL cũ', async () => {
-    currentAvatar(OLD);
-
-    await service.updateAvatar(7, { avatarUrl: OLD });
-
-    expect(uploadService.deleteByUrl).not.toHaveBeenCalled();
-  });
-
-  it.each<[string, string | null]>([
-    ['chưa có ảnh, đặt ảnh mới', NEW],
-    ['chưa có ảnh, gửi null', null],
-  ])('không có avatar cũ (%s): không xóa gì', async (_name, avatarUrl) => {
+  it('đổi bằng avatarUrl (URL đã đăng ký) cũng được', async () => {
     currentAvatar(null);
-
-    await service.updateAvatar(7, { avatarUrl });
-
-    expect(uploadService.deleteByUrl).not.toHaveBeenCalled();
-  });
-
-  it('không xóa file khi user khác đang dùng cùng URL', async () => {
-    currentAvatar(OLD);
-    prisma.user.count.mockResolvedValue(1);
-
-    await service.updateAvatar(7, { avatarUrl: NEW });
-
-    expect(prisma.user.count).toHaveBeenCalledWith({
-      where: { avatarUrl: OLD, id: { not: 7 } },
+    await service.updateAvatar(7, { avatarUrl: NEW_ASSET.secureUrl });
+    expect(media.resolveAvatar).toHaveBeenCalledWith(7, {
+      assetId: undefined,
+      url: NEW_ASSET.secureUrl,
     });
-    expect(uploadService.deleteByUrl).not.toHaveBeenCalled();
+    expect(media.markUnreferenced).not.toHaveBeenCalled();
   });
 
-  it('cập nhật DB lỗi: không xóa file cũ và ném lỗi ra ngoài', async () => {
-    currentAvatar(OLD);
-    prisma.user.update.mockRejectedValue(new Error('db down'));
+  it('avatarUrl: null → xóa ảnh, không phân giải asset, ảnh cũ được đánh dấu', async () => {
+    currentAvatar(3);
+    media.markUnreferenced.mockResolvedValue([3]);
 
-    await expect(service.updateAvatar(7, { avatarUrl: NEW })).rejects.toThrow(
+    await service.updateAvatar(7, { avatarUrl: null });
+
+    expect(media.resolveAvatar).not.toHaveBeenCalled();
+    expect(tx.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { avatarUrl: null, avatarAssetId: null },
+      }),
+    );
+    expect(media.purge).toHaveBeenCalledWith([3]);
+  });
+
+  it('chọn lại đúng ảnh đang dùng: không đánh dấu xóa ảnh nào', async () => {
+    currentAvatar(5);
+    await service.updateAvatar(7, { assetId: 5 });
+    expect(media.markUnreferenced).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['không gửi trường nào', {}],
+    ['gửi cả hai', { assetId: 5, avatarUrl: 'https://x/y.jpg' }],
+    ['assetId null', { assetId: null }],
+  ])('%s → 400, không đụng DB', async (_name, dto) => {
+    await expect(service.updateAvatar(7, dto as never)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('asset không hợp lệ/không phải của user: lỗi từ resolveAvatar được ném ra, không ghi gì', async () => {
+    currentAvatar(3);
+    media.resolveAvatar.mockRejectedValue(new BadRequestException('sai'));
+    await expect(service.updateAvatar(7, { assetId: 99 })).rejects.toThrow(
+      'sai',
+    );
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(media.purge).not.toHaveBeenCalled();
+  });
+
+  it('không tìm thấy user → 404', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+    await expect(
+      service.updateAvatar(7, { assetId: 5 }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('ghi DB lỗi: lỗi được ném ra và KHÔNG xóa ảnh nào phía kho', async () => {
+    currentAvatar(3);
+    tx.user.update.mockRejectedValue(new Error('db down'));
+    await expect(service.updateAvatar(7, { assetId: 5 })).rejects.toThrow(
       'db down',
     );
-    expect(uploadService.deleteByUrl).not.toHaveBeenCalled();
-  });
-
-  it('xóa file lỗi: request vẫn thành công, chỉ ghi log', async () => {
-    currentAvatar(OLD);
-    uploadService.deleteByUrl.mockRejectedValue(new Error('EACCES'));
-
-    await expect(service.updateAvatar(7, { avatarUrl: NEW })).resolves.toEqual({
-      id: 7,
-      avatarUrl: NEW,
-    });
-    expect(warnSpy).toHaveBeenCalled();
-  });
-
-  it('đếm user dùng chung lỗi: request vẫn thành công và không xóa file', async () => {
-    currentAvatar(OLD);
-    prisma.user.count.mockRejectedValue(new Error('db down'));
-
-    await expect(service.updateAvatar(7, { avatarUrl: NEW })).resolves.toEqual({
-      id: 7,
-      avatarUrl: NEW,
-    });
-    expect(uploadService.deleteByUrl).not.toHaveBeenCalled();
-  });
-
-  it('user không tồn tại: 404, không cập nhật', async () => {
-    prisma.user.findUnique.mockResolvedValue(null);
-
-    await expect(
-      service.updateAvatar(7, { avatarUrl: NEW }),
-    ).rejects.toBeInstanceOf(NotFoundException);
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(media.purge).not.toHaveBeenCalled();
   });
 });
 
-// Chống tự khóa: ADMIN không tự hạ role hoặc tự khóa chính mình, nhưng vẫn thao tác được với ADMIN khác.
 describe('UsersService.update / updateStatus: chống tự khóa', () => {
   const ME = 1;
   const OTHER = 2;
@@ -154,7 +171,7 @@ describe('UsersService.update / updateStatus: chống tự khóa', () => {
     );
     service = new UsersService(
       prisma as unknown as PrismaService,
-      {} as unknown as UploadService,
+      {} as unknown as MediaService,
     );
   });
 

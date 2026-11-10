@@ -1,4 +1,4 @@
-import { join, resolve } from 'path';
+import { resolve } from 'path';
 import type { ConfigService } from '@nestjs/config';
 
 // Token DI của cấu hình upload đã phân giải (đường dẫn tuyệt đối, URL công khai).
@@ -16,9 +16,6 @@ export const UPLOAD_URL_PREFIX = '/uploads';
 export const DEFAULT_UPLOAD_DIR = 'uploads';
 export const DEFAULT_PUBLIC_URL = 'http://localhost:3000';
 
-// Thư mục tạm bắt đầu bằng dấu chấm: ServeStatic (dotfiles: 'deny') không bao giờ phục vụ nó.
-export const TMP_DIR_NAME = '.tmp';
-
 export type UploadKind = 'products' | 'avatars';
 
 interface UploadKindConfig {
@@ -35,8 +32,8 @@ export const UPLOAD_KINDS: Record<UploadKind, UploadKindConfig> = {
   avatars: { maxBytes: 2 * MB, maxLabel: '2 MB' },
 };
 
-// Cột Product.imageUrl là VARCHAR(191); URL trả về không được dài hơn.
-const IMAGE_URL_COLUMN_LENGTH = 191;
+// Các cột URL ảnh (product_images.url, products.imageUrl, users.avatarUrl) là VARCHAR(500); URL trả về không được dài hơn.
+const IMAGE_URL_COLUMN_LENGTH = 500;
 // <uuid>(36) + "." + ext dài nhất ("webp" = 4)
 const FILE_NAME_MAX_LENGTH = 36 + 1 + 4;
 const LONGEST_URL_PATH = Math.max(
@@ -45,14 +42,12 @@ const LONGEST_URL_PATH = Math.max(
   ),
 );
 
-// Độ dài tối đa của APP_PUBLIC_URL (đã bỏ dấu / cuối) để URL ảnh luôn vừa cột imageUrl: 191 - 59 = 132.
+// Độ dài tối đa của APP_PUBLIC_URL (đã bỏ dấu / cuối) để URL ảnh của driver local luôn vừa cột: 500 - 59 = 441.
 export const MAX_PUBLIC_URL_LENGTH = IMAGE_URL_COLUMN_LENGTH - LONGEST_URL_PATH;
 
 export interface UploadConfig {
   // Thư mục gốc (đường dẫn tuyệt đối)
   rootDir: string;
-  // Thư mục chứa file vừa nhận, chưa kiểm chứng
-  tmpDir: string;
   // APP_PUBLIC_URL đã bỏ dấu / cuối
   publicUrl: string;
 }
@@ -97,7 +92,7 @@ export function resolveUploadConfig(env: {
   const publicUrl = normalizePublicUrl(
     readString(env.APP_PUBLIC_URL) ?? DEFAULT_PUBLIC_URL,
   );
-  return { rootDir, tmpDir: join(rootDir, TMP_DIR_NAME), publicUrl };
+  return { rootDir, publicUrl };
 }
 
 export function loadUploadConfig(config: ConfigService): UploadConfig {
