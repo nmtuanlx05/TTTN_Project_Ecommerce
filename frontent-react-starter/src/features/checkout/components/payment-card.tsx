@@ -8,7 +8,7 @@ const ONLINE_DESCRIPTION = "Chuyển khoản ngân hàng bằng mã QR (VietQR).
 
 /**
  * Thẻ (2) "Phương thức thanh toán": COD hoặc thanh toán online (chuyển khoản VietQR). Online bị tắt (chưa cấu hình hoặc tổng đơn 0đ) thì thẻ mờ,
- * không chọn được và hiện đúng `reason` của backend ngay trên thẻ (không đợi tới lúc đặt mới báo lỗi). Chọn online thì mở ô "Chọn hình thức".
+ * không chọn được và hiện đúng `reason` của backend ngay trên thẻ (không đợi tới lúc đặt mới báo lỗi). Chọn online thì mở ô giải thích bước tiếp theo (`PaymentMethodPanel`).
  */
 function PaymentCard({
   method,

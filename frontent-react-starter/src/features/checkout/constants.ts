@@ -34,8 +34,9 @@ export const LOCATION_ERROR_FIELD: Record<string, "provinceCode" | "districtCode
 export const GENERIC_ERROR = "Không đặt được hàng, vui lòng thử lại."
 
 /**
- * Kênh thanh toán online hiện ở ô "Chọn hình thức". Backend mới có chuyển khoản VietQR (giai đoạn A); ví điện tử và thẻ là VNPay (giai đoạn B):
- * bật bằng cách đổi `enabled`, hoặc xóa hai dòng đó nếu cắt VNPay. Kênh `enabled` đầu tiên là kênh đang chọn.
+ * Kênh thanh toán online của ô "Chọn hình thức". Backend chỉ có chuyển khoản VietQR; ví điện tử và thẻ (VNPay) NGOÀI phạm vi hiện tại nên
+ * `enabled: false` và bị ẩn khỏi giao diện (không xóa để sau này bật lại bằng cách đổi cờ). Chỉ kênh `enabled` được hiển thị; kênh `enabled` đầu tiên
+ * là kênh đang chọn. Còn một kênh thì ô không vẽ chip (xem `PaymentMethodPanel`).
  */
 export const PAYMENT_CHANNELS = [
   { id: "bank-qr", label: "Quét mã QR ngân hàng", enabled: true },
