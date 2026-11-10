@@ -8,6 +8,8 @@ import { Paginated } from '../common/paginated';
 import { fold } from '../common/utils/fold';
 import { pickUniqueSlug, slugify } from '../common/utils/slugify';
 import { Prisma } from '../generated/prisma/client';
+import { MediaService } from '../media/media.service';
+import type { ResolvedImage } from '../media/media.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { QueryProductsDto } from './dto/query-products.dto';
@@ -32,8 +34,8 @@ interface VariantKey {
   colorHex?: string | null;
 }
 
-// Cột Product.imageUrl (deprecated) là VARCHAR(191)
-const LEGACY_IMAGE_URL_MAX = 191;
+// Cột Product.imageUrl (deprecated) là VARCHAR(500)
+const LEGACY_IMAGE_URL_MAX = 500;
 
 const pairKey = (v: { size: string; color: string }) =>
   `${fold(v.size)}|${fold(v.color)}`;
@@ -44,7 +46,10 @@ const searchCondition = (q: string): Prisma.ProductWhereInput => ({
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly media: MediaService,
+  ) {}
 
   // ===== Public =====
 
@@ -148,7 +153,7 @@ export class ProductsService {
 
   async create(dto: CreateProductDto) {
     const { name, slug, description, price, categoryId, variants } = dto;
-    const imageUrls = this.resolveImageUrls(dto) ?? [];
+    const images = (await this.resolveImages(dto)) ?? [];
 
     await this.assertCategoryExists(categoryId);
     this.assertNoDuplicateInBody(variants);
@@ -161,29 +166,45 @@ export class ProductsService {
 
     try {
       // Nested write của Prisma chạy trong một transaction: lỗi ở biến thể thì không tạo sản phẩm
-      const created = await this.prisma.product.create({
-        data: {
-          name,
-          slug: finalSlug,
-          description: description ?? null,
-          price,
-          imageUrl: this.legacyImageUrl(imageUrls),
-          categoryId,
-          images: {
-            create: imageUrls.map((url, sortOrder) => ({ url, sortOrder })),
-          },
-          variants: {
-            create: variants.map((v) => ({
-              sku: v.sku,
-              size: v.size,
-              color: v.color,
-              colorHex: v.colorHex ?? null,
-              isActive: v.isActive ?? true,
-            })),
-          },
+      const data: Prisma.ProductUncheckedCreateInput = {
+        name,
+        slug: finalSlug,
+        description: description ?? null,
+        price,
+        imageUrl: this.legacyImageUrl(images),
+        categoryId,
+        images: {
+          create: images.map(({ url, assetId }, sortOrder) => ({
+            url,
+            assetId,
+            sortOrder,
+          })),
         },
-        select: { id: true },
-      });
+        variants: {
+          create: variants.map((v) => ({
+            sku: v.sku,
+            size: v.size,
+            color: v.color,
+            colorHex: v.colorHex ?? null,
+            isActive: v.isActive ?? true,
+          })),
+        },
+      };
+      const assetIds = this.assetIdsOf(images);
+      const created =
+        assetIds.length === 0
+          ? await this.prisma.product.create({ data, select: { id: true } })
+          : await this.prisma.$transaction(
+              async (tx) => {
+                // Khóa asset trước, chắc chắn còn ACTIVE (không bị dọn chen ngang) rồi mới gắn vào sản phẩm
+                const locked = await this.media.lockAssets(tx, assetIds);
+                this.media.assertAttachable(locked, assetIds);
+                return tx.product.create({ data, select: { id: true } });
+              },
+              {
+                isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+              },
+            );
       return this.findOne(created.id);
     } catch (error) {
       this.rethrowUniqueViolation(error);
@@ -205,6 +226,7 @@ export class ProductsService {
             colorHex: true,
           },
         },
+        images: { select: { assetId: true } },
       },
     });
     if (!current) {
@@ -220,7 +242,7 @@ export class ProductsService {
       await this.assertSlugAvailable(dto.slug, id);
     }
 
-    const imageUrls = this.resolveImageUrls(dto);
+    const images = await this.resolveImages(dto);
 
     const variantWrites = dto.variants?.length
       ? await this.buildVariantWrites(current.variants, dto.variants)
@@ -228,44 +250,76 @@ export class ProductsService {
 
     try {
       // Một lệnh update với nested write: cập nhật sản phẩm và upsert biến thể trong cùng transaction
-      const updateProduct = this.prisma.product.update({
-        where: { id },
-        data: {
-          name: dto.name ?? undefined,
-          slug: dto.slug ?? undefined,
-          // undefined = giữ nguyên; null (hoặc "") = xóa giá trị
-          description: dto.description,
-          price: dto.price ?? undefined,
-          // Có đổi ảnh thì đồng bộ cột cũ với ảnh đầu; không đổi ảnh thì không đụng tới
-          imageUrl:
-            imageUrls === undefined
-              ? undefined
-              : this.legacyImageUrl(imageUrls),
-          categoryId: dto.categoryId ?? undefined,
-          ...(variantWrites && { variants: variantWrites }),
-        },
-        select: { id: true },
-      });
+      const updateData: Prisma.ProductUncheckedUpdateInput = {
+        name: dto.name ?? undefined,
+        slug: dto.slug ?? undefined,
+        // undefined = giữ nguyên; null (hoặc "") = xóa giá trị
+        description: dto.description,
+        price: dto.price ?? undefined,
+        // Có đổi ảnh thì đồng bộ cột cũ với ảnh đầu; không đổi ảnh thì không đụng tới
+        imageUrl:
+          images === undefined ? undefined : this.legacyImageUrl(images),
+        categoryId: dto.categoryId ?? undefined,
+        ...(variantWrites && { variants: variantWrites }),
+      };
+      const updateProduct = () =>
+        this.prisma.product.update({
+          where: { id },
+          data: updateData,
+          select: { id: true },
+        });
 
-      if (imageUrls === undefined) {
-        await updateProduct;
+      if (images === undefined) {
+        await updateProduct();
       } else {
-        // Thay cả mảng ảnh: xóa dòng cũ, thêm dòng mới theo thứ tự gửi lên, cùng một transaction với việc sửa sản phẩm
-        await this.prisma.$transaction([
-          updateProduct,
-          this.prisma.productImage.deleteMany({ where: { productId: id } }),
-          ...(imageUrls.length > 0
+        const newAssetIds = this.assetIdsOf(images);
+        const oldAssetIds = current.images.flatMap((image) =>
+          image.assetId === null ? [] : [image.assetId],
+        );
+        const writeImages = (db: Prisma.TransactionClient) => [
+          db.productImage.deleteMany({ where: { productId: id } }),
+          ...(images.length > 0
             ? [
-                this.prisma.productImage.createMany({
-                  data: imageUrls.map((url, sortOrder) => ({
+                db.productImage.createMany({
+                  data: images.map(({ url, assetId }, sortOrder) => ({
                     productId: id,
                     url,
+                    assetId,
                     sortOrder,
                   })),
                 }),
               ]
             : []),
-        ]);
+        ];
+
+        if (newAssetIds.length === 0 && oldAssetIds.length === 0) {
+          // Không có ảnh nào thuộc kho lưu trữ: giữ nguyên đường cũ (một transaction dạng mảng)
+          await this.prisma.$transaction([
+            updateProduct(),
+            ...writeImages(this.prisma as unknown as Prisma.TransactionClient),
+          ]);
+        } else {
+          // Thay cả mảng ảnh trong MỘT transaction: khóa asset (mới và cũ) trước, ghi quan hệ mới, rồi đánh dấu asset cũ không còn ai
+          // dùng là PENDING_DELETE. Việc xóa phía kho lưu trữ chỉ làm SAU commit, lỗi không làm hỏng request.
+          const pending = await this.prisma.$transaction(
+            async (tx) => {
+              const locked = await this.media.lockAssets(tx, [
+                ...newAssetIds,
+                ...oldAssetIds,
+              ]);
+              this.media.assertAttachable(locked, newAssetIds);
+              await tx.product.update({
+                where: { id },
+                data: updateData,
+                select: { id: true },
+              });
+              for (const write of writeImages(tx)) await write;
+              return this.media.markUnreferenced(tx, oldAssetIds);
+            },
+            { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+          );
+          await this.media.purge(pending);
+        }
       }
       return this.findOne(id);
     } catch (error) {
@@ -409,41 +463,48 @@ export class ProductsService {
 
   // ===== Ảnh =====
 
-  // Danh sách URL ảnh cần ghi; undefined = không đổi ảnh.
+  // Danh sách ảnh cần ghi (đã phân giải url + assetId); undefined = không đổi ảnh.
   // Ưu tiên `images`. Chỉ gửi `imageUrl` cũ (tương thích tạm) thì coi như images = [imageUrl], null hoặc "" = xóa hết.
-  private resolveImageUrls(dto: {
-    images?: { url: string }[] | null;
+  private async resolveImages(dto: {
+    images?: { url?: string; assetId?: number }[] | null;
     imageUrl?: string | null;
-  }): string[] | undefined {
+  }): Promise<ResolvedImage[] | undefined> {
     if (dto.images === null) {
       // PartialType bỏ qua validate khi null nên chặn ở đây
       throw new BadRequestException('images phải là một mảng');
     }
-    const urls =
+    const inputs =
       dto.images !== undefined
-        ? dto.images.map((image) => image.url)
+        ? dto.images
         : dto.imageUrl !== undefined
           ? dto.imageUrl
-            ? [dto.imageUrl]
+            ? [{ url: dto.imageUrl }]
             : []
           : undefined;
-    if (urls) {
-      const seen = new Set<string>();
-      for (const url of urls) {
-        if (seen.has(url)) {
-          throw new BadRequestException(
-            `Ảnh "${url}" bị trùng trong danh sách ảnh`,
-          );
-        }
-        seen.add(url);
+    if (!inputs) return undefined;
+
+    const resolved = await this.media.resolveProductImages(inputs);
+    const seen = new Set<string>();
+    for (const { url } of resolved) {
+      if (seen.has(url)) {
+        throw new BadRequestException(
+          `Ảnh "${url}" bị trùng trong danh sách ảnh`,
+        );
       }
+      seen.add(url);
     }
-    return urls;
+    return resolved;
+  }
+
+  private assetIdsOf(images: ResolvedImage[]): number[] {
+    return images.flatMap((image) =>
+      image.assetId === null ? [] : [image.assetId],
+    );
   }
 
   // Cột imageUrl (deprecated) = ảnh đầu; null nếu không có ảnh hoặc URL quá dài so với cột
-  private legacyImageUrl(urls: string[]): string | null {
-    const first = urls[0];
+  private legacyImageUrl(images: ResolvedImage[]): string | null {
+    const first = images[0]?.url;
     return first && first.length <= LEGACY_IMAGE_URL_MAX ? first : null;
   }
 

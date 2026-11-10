@@ -751,21 +751,21 @@ describe('Products API (e2e, service giả)', () => {
       await post({ ...validCreate, price: 2147483647 }).expect(201);
     });
 
-    it('imageUrl dài quá 191 ký tự → 400 với message tiếng Việt rõ ràng', async () => {
-      const url = `https://cdn.example.com/${'a'.repeat(170)}.jpg`; // 193 ký tự
-      expect(url.length).toBeGreaterThan(191);
+    it('imageUrl dài quá 500 ký tự → 400 với message tiếng Việt rõ ràng', async () => {
+      const url = `https://cdn.example.com/${'a'.repeat(480)}.jpg`; // 509 ký tự
+      expect(url.length).toBeGreaterThan(500);
       const res = await post({ ...validCreate, imageUrl: url }).expect(400);
       expect(errorsOf(res)).toContainEqual({
         field: 'imageUrl',
-        message: 'Đường dẫn ảnh không được vượt quá 191 ký tự',
+        message: 'Đường dẫn ảnh không được vượt quá 500 ký tự',
       });
       expect(productsService.create).not.toHaveBeenCalled();
     });
 
-    it('imageUrl đúng 191 ký tự → hợp lệ; không phải http(s) → 400', async () => {
+    it('imageUrl đúng 500 ký tự → hợp lệ; không phải http(s) → 400', async () => {
       const prefix = 'https://cdn.example.com/';
-      const ok = prefix + 'a'.repeat(191 - prefix.length);
-      expect(ok.length).toBe(191);
+      const ok = prefix + 'a'.repeat(500 - prefix.length);
+      expect(ok.length).toBe(500);
       await post({ ...validCreate, imageUrl: ok }).expect(201);
 
       for (const imageUrl of [
@@ -796,9 +796,9 @@ describe('Products API (e2e, service giả)', () => {
       }
     });
 
-    it('imageUrl không hợp lệ (abc, ftp, javascript:, quá 191 ký tự) vẫn bị từ chối dù cho phép localhost → 400', async () => {
-      const longLocalhost = `http://localhost:3000/uploads/products/${'a'.repeat(160)}.webp`;
-      expect(longLocalhost.length).toBeGreaterThan(191);
+    it('imageUrl không hợp lệ (abc, ftp, javascript:, quá 500 ký tự) vẫn bị từ chối dù cho phép localhost → 400', async () => {
+      const longLocalhost = `http://localhost:3000/uploads/products/${'a'.repeat(480)}.webp`;
+      expect(longLocalhost.length).toBeGreaterThan(500);
       const cases: [string, string][] = [
         [
           'abc',
@@ -816,7 +816,7 @@ describe('Products API (e2e, service giả)', () => {
           'localhost:3000/a.jpg',
           'Đường dẫn ảnh không hợp lệ, phải bắt đầu bằng http:// hoặc https://',
         ],
-        [longLocalhost, 'Đường dẫn ảnh không được vượt quá 191 ký tự'],
+        [longLocalhost, 'Đường dẫn ảnh không được vượt quá 500 ký tự'],
       ];
       for (const [imageUrl, message] of cases) {
         const res = await post({ ...validCreate, imageUrl }).expect(400);
@@ -1023,7 +1023,7 @@ describe('Products API (e2e, service giả)', () => {
       const res = await patch({
         name: '',
         price: -5,
-        imageUrl: `https://x.com/${'a'.repeat(200)}`,
+        imageUrl: `https://x.com/${'a'.repeat(520)}`,
       }).expect(400);
       expect(errorsOf(res)).toEqual(
         expect.arrayContaining([
@@ -1031,7 +1031,7 @@ describe('Products API (e2e, service giả)', () => {
           { field: 'price', message: 'Giá không được âm' },
           {
             field: 'imageUrl',
-            message: 'Đường dẫn ảnh không được vượt quá 191 ký tự',
+            message: 'Đường dẫn ảnh không được vượt quá 500 ký tự',
           },
         ]),
       );

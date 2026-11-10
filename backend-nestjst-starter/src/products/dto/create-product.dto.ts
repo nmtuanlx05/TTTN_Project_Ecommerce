@@ -55,12 +55,12 @@ export class CreateProductDto {
   price: number;
 
   // DEPRECATED: dùng `images`. Chỉ còn để tương thích tạm: nếu không gửi `images` thì coi như images = [imageUrl]
-  // (null hoặc "" = xóa hết ảnh). Cột DB là VARCHAR(191) nên URL dài hơn sẽ không lưu được.
+  // (null hoặc "" = xóa hết ảnh). Cột DB là VARCHAR(500).
   @IsOptional()
   @TrimToNull()
   @IsString({ message: 'Đường dẫn ảnh phải là chuỗi' })
-  @MaxLength(191, {
-    message: 'Đường dẫn ảnh không được vượt quá 191 ký tự',
+  @MaxLength(500, {
+    message: 'Đường dẫn ảnh không được vượt quá 500 ký tự',
   })
   // require_tld: false để nhận URL không có tên miền chuẩn, vd http://localhost:3000/uploads/... (URL ảnh upload ở dev)
   @IsUrl(
