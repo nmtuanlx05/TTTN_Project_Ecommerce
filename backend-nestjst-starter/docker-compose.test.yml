@@ -1,0 +1,31 @@
+# MySQL TẠM để chạy test trên DB thật (`npm run test:db`). Dùng chung cho máy dev và GitHub Actions.
+# TÁCH BIỆT HOÀN TOÀN với docker-compose.yml (DB dev):
+#   - project khác (name: ecommerce_test), container khác (ecommerce_mysql_test), KHÔNG có volume bền
+#     (dữ liệu nằm trên tmpfs, mất khi dừng container) => `down -v` ở đây không thể chạm DB dev.
+#   - cổng 3308 (3307 là DB dev, 3306 là MySQL cài sẵn trên máy).
+# Mật khẩu dưới đây là giá trị GIẢ chỉ dùng cho DB tạm này, KHÔNG phải secret thật.
+# Tham số máy chủ giữ giống docker-compose.yml (cùng image, cùng charset/collation).
+name: ecommerce_test
+
+services:
+  mysql-test:
+    image: mysql:8.0
+    container_name: ecommerce_mysql_test
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - '127.0.0.1:3308:3306' # host:container
+    environment:
+      MYSQL_ROOT_PASSWORD: test_only_password
+      MYSQL_DATABASE: ecommerce_test
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      # Dùng TCP (-h 127.0.0.1) chứ không dùng socket: trong lúc khởi tạo lần đầu, image chạy một server tạm
+      # chỉ nghe socket; ping qua socket sẽ báo "healthy" quá sớm. Server thật mới nghe TCP.
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -u root -p"$$MYSQL_ROOT_PASSWORD" --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s

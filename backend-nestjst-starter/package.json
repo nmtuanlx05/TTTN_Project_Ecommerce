@@ -14,6 +14,9 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "NODE_ENV=production node dist/main",
     "db:up": "docker compose --env-file .env.development up -d",
+    "db:test:up": "docker compose -p ecommerce_test -f docker-compose.test.yml up -d --wait",
+    "db:test:down": "docker compose -p ecommerce_test -f docker-compose.test.yml down -v",
+    "db:test:migrate": "NODE_ENV=test ts-node scripts/assert-test-db.ts && NODE_ENV=test prisma migrate deploy",
     "db:migrate:prod": "NODE_ENV=production prisma migrate deploy",
     "db:seed:prod": "NODE_ENV=production prisma db seed",
     "db:dev:fill-images": "ts-node prisma/dev-fill-images.ts",
@@ -24,7 +27,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:db": "NODE_ENV=test jest --config ./test/db/jest-db.json --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "11.1.27",
