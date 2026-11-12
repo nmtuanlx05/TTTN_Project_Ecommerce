@@ -194,7 +194,7 @@ model StockMovement {
 
 ### Ảnh lưu trữ (MediaAsset)
 
-Mỗi ảnh tải lên Cloudinary (hoặc driver `local` khi test) có một dòng `media_assets`. Dòng **không bị xóa cứng**: xóa ảnh = `status = DELETED`. Cấu hình và cách dọn: `docs/cloudinary-setup.md`, `docs/api/uploads.md`.
+Mỗi ảnh tải lên Cloudinary có một dòng `media_assets`. Dòng **không bị xóa cứng**: xóa ảnh = `status = DELETED`. Cấu hình và cách dọn: `docs/cloudinary-setup.md`, `docs/api/uploads.md`.
 
 ```prisma
 enum MediaAssetKind {
@@ -222,7 +222,6 @@ model MediaAsset {
   status         MediaAssetStatus @default(ACTIVE)
   uploadedById   Int?
   uploadedBy     User?            @relation("MediaAssetUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
-  sourceUrl      String?          @db.VarChar(500) // URL cũ khi nhập bằng script chuyển ảnh; dùng để hoàn tác, và loại khỏi quét mồ côi
   deleteAttempts Int              @default(0)
   lastError      String?          @db.VarChar(500)
   createdAt      DateTime         @default(now())

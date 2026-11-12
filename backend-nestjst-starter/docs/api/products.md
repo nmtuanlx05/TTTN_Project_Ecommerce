@@ -395,8 +395,7 @@ Mọi message bằng tiếng Việt. Lỗi trả theo từng trường trong `er
 1. `assetId`: ảnh `PRODUCT` còn `ACTIVE`. Sai/đã xóa/khác loại → 400 `MEDIA_ASSET_INVALID` (`errors[].field` = `images.<chỉ số>`).
 2. `url` trùng URL gốc của ảnh đã tải lên (`secureUrl`): dùng ảnh đó (client cũ gửi lại `url` nhận được vẫn chạy).
 3. `url` thuộc kho Cloudinary của hệ thống nhưng không có ảnh `ACTIVE` tương ứng → 400 `MEDIA_ASSET_INVALID` (không cho giả danh).
-4. Ảnh **cũ trên đĩa** của chính backend (`<APP_PUBLIC_URL>/uploads/products/<uuid>.<ext>`): giữ nguyên, không gắn asset (cho tới khi chạy script chuyển ảnh).
-5. **URL ngoài** (vd picsum): chỉ `https://`, `assetId = null`, không do hệ thống quản lý. `ALLOW_EXTERNAL_IMAGE_URLS=false` thì bị từ chối 400 `EXTERNAL_IMAGE_NOT_ALLOWED`.
+4. **URL ngoài** (vd picsum): chỉ `https://`, `assetId = null`, không do hệ thống quản lý. `ALLOW_EXTERNAL_IMAGE_URLS=false` thì bị từ chối 400 `EXTERNAL_IMAGE_NOT_ALLOWED`.
 
 Khi PATCH thay/gỡ ảnh, ảnh cũ không còn ai dùng được đánh dấu xóa trong cùng transaction và xóa phía Cloudinary sau commit (xem `uploads.md`, "Xóa và dọn ảnh").
 Ảnh còn được **đơn hàng cũ** tham chiếu (snapshot `imagePublicId`) **không** bị xóa.

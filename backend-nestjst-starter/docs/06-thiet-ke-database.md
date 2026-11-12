@@ -180,9 +180,9 @@ Schema không khai báo `onDelete` và `onUpdate`, nên Prisma dùng mặc đị
   `order_items.imagePublicId` (có index), nới `users.avatarUrl` và `products.imageUrl` lên `VARCHAR(500)`. Chỉ thêm/nới, không đổi dữ liệu cũ.
   **`publicId` và `imagePublicId` dùng collation `utf8mb4_bin`** (Cloudinary phân biệt hoa/thường), sửa tay trong file migration vì Prisma không biểu diễn được collation, nên `migrate diff` không báo drift về nó.
   Hai cột này khác collation mặc định `utf8mb4_unicode_ci` của các bảng khác: so sánh `publicId` với cột có collation khác trong cùng câu SQL sẽ lỗi "Illegal mix of collations", nên chỉ so khớp `publicId` với `imagePublicId`/tham số.
+- Migration `drop_media_assets_source_url`: bỏ cột `media_assets.sourceUrl` (chỉ phục vụ script chuyển ảnh cũ trên đĩa đã gỡ; 0 dòng có giá trị lúc bỏ).
 - **Backlog ảnh:**
   - Bỏ ghi kép `product_images.url`, `users.avatarUrl` và bỏ cột deprecated `products.imageUrl` sau khi mọi client đọc theo asset (xem `docs/cloudinary-setup.md`, "Kế hoạch bỏ cột cũ").
-  - Nới giới hạn độ dài `APP_PUBLIC_URL` (hiện 441 ký tự theo cột 500) khi bỏ driver local.
   - Thu hồi ảnh theo người dùng khi tài khoản bị khóa.
 - Cách lưu yêu cầu hủy/hoàn tiền của đơn đã thanh toán (Staff tạo, Admin duyệt): schema chưa có model hoặc trường cho việc này (chưa phát sinh khi chỉ có COD; làm cùng thanh toán online).
 - Migration `add_payment_review` (thanh toán VietQR): `payment_transactions.orderId` thành nullable (FK `RESTRICT`/`RESTRICT`), thêm `content`, `reviewReason`, `resolvedAt`, `resolvedById` (FK tới `users`), `resolutionNote`, giá trị enum `NEEDS_REVIEW`, index `(reviewReason, resolvedAt)` và CHECK ở trên. `PaymentTransaction.orderId` giờ là quan hệ tùy chọn (giao dịch không khớp đơn).
