@@ -8,7 +8,7 @@ File này cung cấp hướng dẫn cho Claude Code (claude.ai/code) khi làm vi
 scaffold mặc định của Nest (`AppModule`/`AppController`/`AppService` trả về "Hello World") — các module
 nghiệp vụ chưa được xây dựng. Đã có `docker-compose.yml` (service MySQL 8), `.env.development`/`.env.production` và `prisma.config.ts`
 (Prisma 7: URL kết nối khai báo ở đây, không nằm trong schema). `prisma/schema.prisma` (15 model) đã khớp
-`docs/05` và `docs/06`; migration `init_ecommerce`, `add_user_avatar_url`, `add_stock_movements`, `add_product_images_color_hex`, `add_order_checkout`, `remove_packing_order_status`, `add_wishlist_items`, `add_payment_review` và `add_media_assets` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
+`docs/05` và `docs/06`; migration `init_ecommerce`, `add_user_avatar_url`, `add_stock_movements`, `add_product_images_color_hex`, `add_order_checkout`, `remove_packing_order_status`, `add_wishlist_items`, `add_payment_review`, `add_media_assets` và `drop_media_assets_source_url` đã có trong `prisma/migrations`. Thư mục `docs/` (tiếng Việt) là spec đã được chốt để
 xây dựng dựa trên đó; coi nó là nguồn thông tin chính khi triển khai tính năng, không phải code `src/`
 hiện tại. Nếu `docs/05` lệch với `prisma/schema.prisma` thì schema là bản chuẩn.
 
@@ -125,16 +125,16 @@ COMPLETED` (không có bước đóng gói; đã bỏ `PACKING`), với `CANCELL
   đơn `PAID`, Staff cũng không (403 `ORDER_PAID_ADMIN_ONLY`), Admin hủy thì `paymentStatus` giữ `PAID`. Hết hạn: tác vụ mỗi phút (`payment-expiry.cron.ts` + `@nestjs/schedule`, chỉ nạp ở `PaymentsSchedulerModule`
   của `AppModule` để test không chạy cron thật) hủy qua đúng đường hủy hiện có, lý do "Hết hạn thanh toán". Thiếu/sai biến `VIETQR_*`/`PAYMENT_EXPIRE_MINUTES` chỉ tắt ONLINE (app vẫn chạy); không bao giờ log khóa hay số tài khoản.
   Admin xem giao dịch cần xử lý: `GET /admin/payments/transactions`, `POST /admin/payments/transactions/:id/resolve` (chỉ ADMIN). Chưa chạy thật trên MySQL/SePay/app ngân hàng.
-- **Lưu trữ ảnh (Cloudinary)** (`src/storage/`, `src/media/`, `src/uploads/`; API ở `docs/api/uploads.md`, cấu hình ở `docs/cloudinary-setup.md`): `StorageService` (abstract class, token DI) có
-  driver `cloudinary` (SDK `cloudinary@2.11.0`, `upload_stream` từ buffer, `overwrite:false`), `local` (chỉ test/CI/dev offline) và `disabled` (thiếu khóa: app vẫn chạy, tải ảnh trả 503
-  `STORAGE_NOT_CONFIGURED`); chọn bằng `STORAGE_DRIVER` (mặc định cloudinary). Multer `memoryStorage` (5 MB sản phẩm / 2 MB avatar), kiểm magic bytes + kích thước đọc từ đầu file
-  (`src/uploads/image-info.ts`, tối đa 25 MP), hạn mức theo người dùng 100 ảnh sản phẩm / 10 avatar mỗi 24 giờ (`MEDIA_QUOTA_*`, 429 `UPLOAD_QUOTA_EXCEEDED`). Quyền: ảnh sản phẩm ADMIN+STAFF, avatar mọi role.
+- **Lưu trữ ảnh (Cloudinary)** (`src/storage/`, `src/media/`, `src/uploads/`; API ở `docs/api/uploads.md`, cấu hình ở `docs/cloudinary-setup.md`): **chỉ dùng Cloudinary, không còn lưu ảnh trên đĩa**
+  (đã gỡ driver local, `ServeStaticModule`, thư mục `uploads/`, script chuyển ảnh cũ). `StorageService` (abstract class, token DI) có driver `cloudinary` (SDK `cloudinary@2.11.0`, `upload_stream` từ buffer,
+  `overwrite:false`) và `disabled` (thiếu khóa `CLOUDINARY_*`: app vẫn chạy, tải ảnh trả 503 `STORAGE_NOT_CONFIGURED`). Multer `memoryStorage` (5 MB sản phẩm / 2 MB avatar), kiểm magic bytes + kích thước đọc
+  từ đầu file (`src/uploads/image-info.ts`, tối đa 25 MP), hạn mức theo người dùng 100 ảnh sản phẩm / 10 avatar mỗi 24 giờ (`MEDIA_QUOTA_*`, 429 `UPLOAD_QUOTA_EXCEEDED`). Quyền: ảnh sản phẩm ADMIN+STAFF, avatar mọi role.
   Mỗi ảnh là một dòng `media_assets` (không xóa cứng; `status` ACTIVE/PENDING_DELETE/DELETED). Ảnh gắn bằng `assetId` hoặc `url` trùng `secureUrl` đã đăng ký; avatar chỉ gắn ảnh chính người đó tải;
   URL ngoài giữ được (`assetId = null`, chỉ https, `ALLOW_EXTERNAL_IMAGE_URLS=false` để tắt). `product_images.url`/`users.avatarUrl` **ghi kép** bằng `secureUrl`. **Thứ tự trong transaction ghi ảnh:**
   `MediaService.lockAssets` (`SELECT ... FOR UPDATE`, id tăng dần) là câu ĐẦU, rồi ghi quan hệ, rồi `markUnreferenced` (đánh dấu PENDING_DELETE asset không còn ai dùng); `purge` (xóa phía Cloudinary) chạy SAU commit và không bao giờ ném lỗi.
-  **Không xóa asset còn được `product_images.assetId`, `users.avatarAssetId` hoặc `order_items.imagePublicId` tham chiếu**; `orders.service` chụp `imagePublicId` khi đặt đơn. Dọn ảnh mồ côi (ACTIVE chưa gắn > 24 giờ,
-  không phải ảnh nhập từ script) chạy bằng `MediaCleanupCron` (`MEDIA_CLEANUP_ENABLED`, mỗi giờ; `ScheduleModule.forRoot()` chỉ nạp ở `AppModule`) và `npm run media:cleanup -- --dry-run`. Chuyển ảnh cũ trên đĩa:
-  `npm run media:migrate-legacy` (dry-run mặc định, `--apply`, `--rollback`; không xóa file cũ). Frontend dựng URL biến đổi từ URL gốc (mốc 160/320/640/960/1280, không `dpr_auto`). Chưa chạy với Cloudinary thật và chưa kiểm chứng trên MySQL thật.
+  **Không xóa asset còn được `product_images.assetId`, `users.avatarAssetId` hoặc `order_items.imagePublicId` tham chiếu**; `orders.service` chụp `imagePublicId` khi đặt đơn. Dọn ảnh mồ côi (ACTIVE chưa gắn > 24 giờ)
+  chạy bằng `MediaCleanupCron` (`MEDIA_CLEANUP_ENABLED`, mỗi giờ; `ScheduleModule.forRoot()` chỉ nạp ở `AppModule`) và `npm run media:cleanup -- --dry-run`. Frontend dựng URL biến đổi từ URL gốc (mốc 160/320/640/960/1280, không `dpr_auto`).
+  Đã chạy tay tải ảnh lên Cloudinary thật; chưa kiểm chứng giới hạn gói miễn phí và chưa kiểm chứng trên MySQL thật.
 - **Wishlist** (`src/wishlist/`, API ở `docs/api/wishlist.md`): chỉ `CUSTOMER` (ADMIN/STAFF 403 qua `@RolesMessage`), theo **sản phẩm** không theo biến thể, tối đa 100/khách (`WISHLIST_MAX_ITEMS`, 409 `WISHLIST_FULL`). `GET /wishlist` tái dùng `publicProductListSelect`/`toPublicListItem` + `addedAt` + `isListed` (bật và có biến thể bán = trang chi tiết xem được) + `isAvailable` (isListed và còn hàng; sản phẩm đã tắt vẫn hiện); `GET /wishlist/ids` cho frontend tô tim (không thêm `isFavorite` vào API sản phẩm). `POST`/`DELETE /wishlist/:productId` idempotent (200 `{productId, added|removed}`); POST chỉ nhận sản phẩm bật và có biến thể bán (không thì 404 không mã), khóa dòng `users` `FOR UPDATE` để giữ trần. Chưa chạy thật trên MySQL.
 - Xóa mềm bằng `isActive` cho `Product`/`ProductVariant`/`User`/`Voucher`; `Order` và `OrderItem`
   không bao giờ xóa cứng (hủy đơn bằng `CANCELLED`).
@@ -303,7 +303,7 @@ Code ở `src/auth/`; chi tiết endpoint ở `docs/api/auth.md`. Passport: `Loc
   `npm run db:up` chạy docker compose với `--env-file .env.development`.
 - **Biến môi trường** (mẫu trong `.env.example`, không commit secret thật): `JWT_ACCESS_SECRET`, `JWT_ACCESS_EXPIRES_IN`,
   `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRES_IN`. Thiếu biến thì app không khởi động (`src/config/env.validation.ts`).
-  Lưu trữ ảnh có biến riêng (tùy chọn, xem `docs/cloudinary-setup.md`): `STORAGE_DRIVER`, `CLOUDINARY_CLOUD_NAME`/`API_KEY`/`API_SECRET`/`FOLDER_PREFIX`, `MEDIA_*`, `ALLOW_EXTERNAL_IMAGE_URLS`; thiếu khóa Cloudinary không làm app dừng.
+  Lưu trữ ảnh có biến riêng (tùy chọn, xem `docs/cloudinary-setup.md`): `CLOUDINARY_CLOUD_NAME`/`API_KEY`/`API_SECRET`/`FOLDER_PREFIX`, `MEDIA_*`, `ALLOW_EXTERNAL_IMAGE_URLS`; thiếu khóa Cloudinary không làm app dừng.
   `ADMIN_EMAIL`/`ADMIN_PASSWORD` chỉ dùng cho `npx prisma db seed` (tạo ADMIN đầu tiên, chạy lại an toàn).
 - `JwtStrategy`/`JwtRefreshStrategy` luôn tải lại user từ DB: khóa tài khoản hoặc đổi role có hiệu lực ngay.
 - Login: sai email hoặc mật khẩu → 401 cùng một câu; đúng mật khẩu nhưng `isActive=false` → 403. Email luôn được chuẩn hóa
@@ -361,7 +361,7 @@ Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy tr�
 
 ## Việc tồn đọng
 
-- **Ảnh Cloudinary**: chạy `npm run media:migrate-legacy` (dry-run rồi `--apply`, sau khi sao lưu DB) để chuyển ảnh cũ; chưa kiểm chứng giới hạn gói miễn phí và hành vi SDK thật (xem `docs/cloudinary-setup.md`, "Chưa kiểm chứng"). Sau khi chuyển hết: bỏ ghi kép `product_images.url`/`users.avatarUrl` và cột deprecated `products.imageUrl`.
+- **Ảnh Cloudinary**: chưa kiểm chứng giới hạn gói miễn phí và hành vi SDK ở mọi tình huống (xem `docs/cloudinary-setup.md`, "Chưa kiểm chứng"). Sau này: bỏ ghi kép `product_images.url`/`users.avatarUrl`, cột deprecated `products.imageUrl`.
 
 - **Trước khi `migrate deploy` ở môi trường khác** (migration `remove_packing_order_status` bỏ `PACKING` khỏi enum `OrderStatus`; còn dòng dùng thì `ALTER` lỗi 1265):
   chạy `SELECT (SELECT COUNT(*) FROM orders WHERE status = 'PACKING') AS orders_packing, (SELECT COUNT(*) FROM order_status_histories WHERE fromStatus = 'PACKING' OR toStatus = 'PACKING') AS history_packing;`

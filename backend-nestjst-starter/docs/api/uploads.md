@@ -1,7 +1,7 @@
 # API Uploads
 
 Viết theo code (`src/uploads/`, `src/media/`, `src/storage/`). Cấu hình Cloudinary và các giới hạn đã biết: xem `docs/cloudinary-setup.md`.
-Phân quyền, giới hạn dung lượng, kiểm chữ ký file, hạn mức, mã lỗi và việc phục vụ file tĩnh có e2e với Multer, ServeStatic thật và
+Phân quyền, giới hạn dung lượng, kiểm chữ ký file, hạn mức, mã lỗi có e2e với Multer thật và
 SDK Cloudinary giả (không DB, không mạng): `test/uploads.e2e-spec.ts`. Logic gắn/xóa ảnh có unit test (`src/media/*.spec.ts`).
 
 Module này **nhận ảnh, đẩy lên kho lưu trữ (Cloudinary), ghi một dòng `media_assets` và trả thông tin ảnh**. Việc gắn ảnh vào dữ liệu
@@ -19,7 +19,6 @@ do endpoint khác làm: frontend tải ảnh trước, lấy `assetId`/`url`, r�
 |---|---|---|---|
 | `POST /uploads/products` | ADMIN, STAFF | 5 MB | `<CLOUDINARY_FOLDER_PREFIX>/products/` |
 | `POST /uploads/avatars` | Mọi người đã đăng nhập (ADMIN, STAFF, CUSTOMER) | 2 MB | `<CLOUDINARY_FOLDER_PREFIX>/avatars/` |
-| `GET /uploads/<loại>/<tên file>` | Mọi người, không cần token | - | Chỉ phục vụ ảnh **cũ trên đĩa** (xem "File tĩnh") |
 
 ### Quy tắc gửi file (frontend phải theo)
 
@@ -53,7 +52,6 @@ do endpoint khác làm: frontend tải ảnh trước, lấy `assetId`/`url`, r�
 - `url`: URL **gốc** (https, không kèm biến đổi). `url` giữ nguyên tên trường cũ nên client cũ vẫn chạy.
 - `assetId`: id dùng để **gắn** ảnh vào dữ liệu (ưu tiên hơn `url`). `publicId`, `width`, `height`: dùng để dựng URL hiển thị.
 - `width`/`height`/`format`/`bytes` có thể là `null` nếu kho lưu trữ không trả (hiếm).
-- Với driver `local` (chỉ test/dev offline) `url` là `<APP_PUBLIC_URL>/uploads/<loại>/<uuid>.<đuôi>` và `publicId` là `<loại>/<uuid>`.
 
 ## Response lỗi
 
@@ -107,7 +105,7 @@ https://res.cloudinary.com/<cloud>/image/upload/v1762/…/x.jpg
   Lý do: mỗi tổ hợp biến đổi (kích thước × định dạng) của một ảnh là **một lượt biến đổi riêng được tính vào hạn mức** gói Cloudinary;
   ít mốc cố định thì số biến thể bị chặn trên và CDN tái sử dụng được cache.
 - Hỗ trợ `srcset` bằng cách liệt kê vài mốc: `…w_320… 320w, …w_640… 640w`.
-- Chỉ biến đổi URL có host `res.cloudinary.com` và chứa `/upload/`. URL khác (ảnh ngoài như picsum, ảnh cũ chưa chuyển trên đĩa) thì **dùng nguyên URL**.
+- Chỉ biến đổi URL có host `res.cloudinary.com` và chứa `/upload/`. URL khác (ảnh ngoài như picsum) thì **dùng nguyên URL**.
 - `width`/`height` dùng để giữ tỉ lệ khung (tránh nhảy bố cục).
 
 ## Gắn ảnh vào dữ liệu
@@ -129,7 +127,6 @@ https://res.cloudinary.com/<cloud>/image/upload/v1762/…/x.jpg
 - **Không bao giờ xóa** ảnh còn được `product_images.assetId`, `users.avatarAssetId` hoặc **`order_items.imagePublicId`** (ảnh chụp trong đơn hàng) tham chiếu:
   đơn cũ vẫn thấy ảnh dù sản phẩm đã đổi ảnh.
 - **Ảnh mồ côi**: ảnh `ACTIVE` không ai tham chiếu và cũ hơn **24 giờ** (`MEDIA_ORPHAN_MIN_AGE_HOURS`) bị chuyển sang `PENDING_DELETE` rồi xóa.
-  Ảnh nhập từ script chuyển ảnh cũ (`sourceUrl` có giá trị) **không** bị quét mồ côi, chỉ bị xóa khi được thay thế.
 - Chạy bằng **tác vụ định kỳ** (mỗi giờ, phút 17; tắt bằng `MEDIA_CLEANUP_ENABLED=false`) hoặc chạy tay:
 
 ```bash
@@ -140,22 +137,17 @@ npm run media:cleanup                # thực thi
 - Tác vụ ghi log số lượng (`Dọn ảnh: xóa …, lỗi …, bỏ cuộc …, mồ côi mới đánh dấu …`); e2e không chạy tác vụ thật.
 - Nếu ghi DB lỗi ngay sau khi tải lên Cloudinary, server **xóa ngay** ảnh vừa tải (best effort).
 
-## File tĩnh (ảnh cũ trên đĩa)
+## Không còn phục vụ file tĩnh
 
-- `ServeStaticModule` vẫn phục vụ thư mục `UPLOAD_DIR` tại `/uploads` **cho tới khi ảnh cũ được chuyển hết** sang Cloudinary và cho driver `local`.
-  Không liệt kê thư mục, từ chối dotfiles, không đọc được file ngoài thư mục upload (`../`); không qua `JwtAuthGuard` (ai biết URL đều xem được).
-- Ảnh tải lên mới (driver `cloudinary`) **không** nằm ở đây.
-- Cache: `Cache-Control: public, max-age=31536000, immutable` và `X-Content-Type-Options: nosniff`, `Cross-Origin-Resource-Policy: cross-origin`.
+Backend **không còn** phục vụ thư mục `/uploads` (đã gỡ `ServeStaticModule` và thư mục `uploads/`). Mọi ảnh nằm trên Cloudinary; `GET /uploads/...` trả 404.
+Ảnh cũ trước đây lưu trên đĩa không còn hiển thị: gắn lại ảnh bằng cách tải ảnh mới.
 
 ## Cấu hình (env)
 
-Danh sách biến, mặc định và cách lấy khóa: `docs/cloudinary-setup.md`. Tóm tắt: `STORAGE_DRIVER` (`cloudinary` mặc định | `local`),
-`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_FOLDER_PREFIX`; `UPLOAD_DIR`, `APP_PUBLIC_URL`
-(chỉ còn dùng cho ảnh cũ/driver local); `MEDIA_*`, `ALLOW_EXTERNAL_IMAGE_URLS`.
+Danh sách biến, mặc định và cách lấy khóa: `docs/cloudinary-setup.md`. Tóm tắt: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_FOLDER_PREFIX`; `MEDIA_*`, `ALLOW_EXTERNAL_IMAGE_URLS`.
 
 ## Giới hạn đã biết
 
-- Driver `local` **chỉ** cho test/CI/dev offline: không dùng được khi chạy nhiều máy, mất khi container tạo lại nếu không mount volume.
 - Chỉ kiểm chữ ký và **kích thước** từ phần đầu file, không giải mã toàn bộ ảnh nên không phát hiện hỏng ở phần thân. Không có SVG nên không có rủi ro script trong ảnh.
 - Hạn mức tải lên đếm rồi mới ghi (xem trên) và chưa có rate limit theo IP/tần suất ngắn.
 - Mỗi biến thể kích thước hiển thị là một lượt biến đổi tính vào hạn mức Cloudinary (xem "Hiển thị ảnh" và `docs/cloudinary-setup.md`).

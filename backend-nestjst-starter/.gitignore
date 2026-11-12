@@ -73,6 +73,3 @@ generated/
 # Prisma generated client
 /src/generated
 
-# Ảnh người dùng upload (giữ lại thư mục rỗng bằng .gitkeep)
-/uploads/*
-!/uploads/.gitkeep

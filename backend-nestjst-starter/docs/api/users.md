@@ -154,7 +154,7 @@ hoặc `{ "avatarUrl": "<url nhận từ POST /uploads/avatars>" }`, hoặc `{ "
 - Server lưu `User.avatarAssetId` và `User.avatarUrl` (= URL gốc của ảnh) trong cùng một transaction. `avatarUrl` trả về là URL gốc; hiển thị nên dùng
   biến đổi (xem `uploads.md`, mục "Hiển thị ảnh").
 - **Dọn ảnh cũ**: ảnh avatar cũ không còn ai dùng được đánh dấu trong cùng transaction và xóa phía Cloudinary **sau commit**; lỗi khi xóa chỉ ghi log và tăng
-  số lần thử, **không** làm request thất bại (xem `uploads.md`, mục "Xóa và dọn ảnh"). Avatar cũ chưa chuyển sang Cloudinary (file trên đĩa) **không** bị xóa tự động.
+  số lần thử, **không** làm request thất bại (xem `uploads.md`, mục "Xóa và dọn ảnh").
 - Lỗi:
 
 | Status | Khi nào | `message` |
