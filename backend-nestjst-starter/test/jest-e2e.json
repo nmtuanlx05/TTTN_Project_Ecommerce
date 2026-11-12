@@ -9,5 +9,5 @@
   "moduleNameMapper": {
     "^@nestjs/mapped-types$": "<rootDir>/shims/mapped-types.ts"
   },
-  "transformIgnorePatterns": ["/node_modules/(?!(@nestjs/(jwt|passport))/)"]
+  "transformIgnorePatterns": ["/node_modules/(?!(@nestjs/(jwt|passport|config|schedule))/)"]
 }

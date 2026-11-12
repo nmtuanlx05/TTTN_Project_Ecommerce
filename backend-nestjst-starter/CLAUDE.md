@@ -355,9 +355,8 @@ Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy tr�
   - Lint kiểm tra bằng `npx eslint "{src,apps,libs,test}/**/*.ts"` (không `--fix`). `npm run lint` có `--fix` nên tự sửa
     file; nếu chạy thì xem lại `git status` và `git diff` sau đó.
   - `npm run build` và `npm test`; e2e chỉ chạy cho module đang sửa (có logic tiền/tồn kho).
-  - Lỗi có sẵn, không phải do thay đổi hiện tại: `test/app.e2e-spec.ts` fail (xem "Việc tồn đọng"); ESLint báo lỗi ở
-    `src/generated/**` (file Prisma sinh tự động, đã gitignore), `src/app.controller.ts` và `test/users.e2e-spec.ts`.
-    Chỉ cần đảm bảo không phát sinh thêm lỗi mới.
+  - Hiện không còn lỗi có sẵn: ESLint sạch (`src/generated/**` đã nằm trong `ignores`), e2e qua hết 18 suite. Mọi lỗi lint/test
+    phát sinh đều do thay đổi hiện tại.
 
 ## Việc tồn đọng
 
@@ -375,5 +374,4 @@ Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy tr�
 - **Thanh toán VietQR chưa kiểm chứng thật**: khóa dòng/đua (xác nhận ↔ hết hạn, hai webhook cùng id) chỉ được bảo vệ bằng thiết kế và test Prisma giả; chưa thử với MySQL thật, webhook SePay thật, hay quét QR bằng app ngân hàng (xem danh sách ở `docs/api/payments.md`). Bảng BIN ngân hàng chỉ MB (970422) đã kiểm chứng.
 - **Chưa có**: hoàn tiền tự động và luồng "Staff tạo yêu cầu hủy, Admin duyệt" cho đơn đã thanh toán, cổng VNPay, hoàn hàng `RETURNED`, giới hạn voucher theo khách, guest checkout, email.
 - **Chưa giới hạn số lần đăng nhập sai** (chưa có rate limit/lockout) cho `/auth/login`.
-- **`test/app.e2e-spec.ts` fail từ trước**: nạp `AppModule` thật mà `@nestjs/config` chỉ có bản ESM (Jest không nạp được)
-  và cần DB. `test/jest-e2e.json` đã cho Jest transform `@nestjs/jwt` và `@nestjs/passport` (cũng ESM) để test Auth chạy được.
+- **Số test hiện tại**: 756 unit, 579 e2e (18 suite e2e), đều chạy với Prisma giả, chưa có test nào chạy trên MySQL thật.
