@@ -48,10 +48,6 @@ const KIND_OF_FOLDER: Record<UploadKind, MediaKind> = {
   avatars: 'AVATAR',
 };
 
-// URL ảnh cũ do chính backend này từng phục vụ từ đĩa: <APP_PUBLIC_URL>/uploads/products/<uuid>.<ext>
-const LEGACY_PRODUCT_PATH =
-  /^\/uploads\/products\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:jpg|png|webp)$/;
-
 export interface LockedAsset {
   id: number;
   status: string;
@@ -177,8 +173,8 @@ export class MediaService {
   // Phân giải danh sách ảnh sản phẩm gửi lên thành { url, assetId }. Chưa khóa gì: gọi lockAssets trong transaction ghi.
   // - Có assetId: phải là ảnh PRODUCT còn ACTIVE; url lấy từ asset.
   // - Chỉ có url: trùng secureUrl của asset đã đăng ký thì dùng asset đó (tương thích frontend cũ gửi lại url nhận được).
-  // - URL còn lại: ảnh thuộc kho của hệ thống mà chưa đăng ký thì từ chối; ảnh cũ trên đĩa của backend này được giữ (assetId null);
-  //   URL ngoài chỉ nhận https và khi ALLOW_EXTERNAL_IMAGE_URLS không tắt.
+  // - URL còn lại: ảnh thuộc kho của hệ thống mà chưa đăng ký thì từ chối; URL ngoài chỉ nhận https
+  //   (assetId null) và khi ALLOW_EXTERNAL_IMAGE_URLS không tắt.
   async resolveProductImages(
     inputs: { url?: string | null; assetId?: number | null }[],
   ): Promise<ResolvedImage[]> {
@@ -219,12 +215,9 @@ export class MediaService {
       if (registered) {
         return { url: registered.secureUrl, assetId: registered.id };
       }
-      if (this.storage.ownsUrl(url) && !this.isLegacyUpload(url)) {
+      if (this.storage.ownsUrl(url)) {
         // Thuộc kho của mình nhưng không có asset ACTIVE tương ứng (đã xóa hoặc tự bịa)
         throw this.invalidImage(index);
-      }
-      if (this.isLegacyUpload(url)) {
-        return { url, assetId: null };
       }
       if (!this.settings.allowExternalImageUrls) {
         throw badRequest(
@@ -270,14 +263,6 @@ export class MediaService {
           },
         ],
       },
-    );
-  }
-
-  private isLegacyUpload(url: string): boolean {
-    const prefix = `${this.settings.publicUrl}/uploads/`;
-    return (
-      url.startsWith(prefix) &&
-      LEGACY_PRODUCT_PATH.test(url.slice(this.settings.publicUrl.length))
     );
   }
 
@@ -457,7 +442,6 @@ export class MediaService {
 
   // (1) Thử lại các asset PENDING_DELETE (đã qua MAX_DELETE_ATTEMPTS lần thì bỏ, chỉ đếm).
   // (2) ACTIVE, cũ hơn minAgeHours, không ai tham chiếu thì chuyển PENDING_DELETE rồi xóa.
-  // Asset nhập từ script chuyển ảnh (sourceUrl có giá trị) không bị quét mồ côi: chỉ bị xóa khi được thay thế.
   // dryRun: chỉ đếm, không ghi gì và không gọi kho lưu trữ.
   async cleanup(
     options: { dryRun?: boolean; now?: Date } = {},
@@ -495,7 +479,6 @@ export class MediaService {
       where: {
         status: 'ACTIVE',
         createdAt: { lt: cutoff },
-        sourceUrl: null,
         productImages: { none: {} },
         avatarUsers: { none: {} },
       },

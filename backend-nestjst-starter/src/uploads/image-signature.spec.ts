@@ -1,8 +1,4 @@
-import {
-  ALLOWED_MIME_TYPES,
-  buildFileName,
-  detectImageType,
-} from './image-signature';
+import { ALLOWED_MIME_TYPES, detectImageType } from './image-signature';
 
 const PNG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const webp = (riff = 'RIFF', tag = 'WEBP') =>
@@ -43,22 +39,6 @@ describe('detectImageType', () => {
     ['GIF', Buffer.from('GIF89a......')],
   ])('từ chối %s', (_name, buffer) => {
     expect(detectImageType(buffer)).toBeNull();
-  });
-});
-
-describe('buildFileName', () => {
-  const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-
-  it.each([
-    ['jpeg', 'jpg'],
-    ['png', 'png'],
-    ['webp', 'webp'],
-  ] as const)('%s -> <uuid>.%s', (type, ext) => {
-    expect(buildFileName(type)).toMatch(new RegExp(`^${UUID}\\.${ext}$`));
-  });
-
-  it('mỗi lần gọi ra một tên khác nhau', () => {
-    expect(buildFileName('png')).not.toBe(buildFileName('png'));
   });
 });
 

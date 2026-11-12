@@ -16,7 +16,7 @@ async function main() {
     const media = app.get(MediaService);
     if (!media.storageEnabled && !dryRun) {
       throw new Error(
-        'Kho lưu trữ chưa được cấu hình (STORAGE_DRIVER / CLOUDINARY_*), không thể dọn ảnh',
+        'Kho lưu trữ chưa được cấu hình (CLOUDINARY_*), không thể dọn ảnh',
       );
     }
     const summary = await media.cleanup({ dryRun });

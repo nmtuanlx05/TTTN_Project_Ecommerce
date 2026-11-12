@@ -17,8 +17,6 @@ export interface MediaSettings {
   // Tác vụ dọn ảnh định kỳ (MEDIA_CLEANUP_ENABLED=false để tắt)
   cleanupEnabled: boolean;
   orphanMinAgeHours: number;
-  // APP_PUBLIC_URL đã bỏ dấu / cuối, dùng nhận diện URL ảnh cũ do backend này từng phục vụ
-  publicUrl: string;
 }
 
 function positiveInt(raw: string | undefined, fallback: number): number {
@@ -48,8 +46,5 @@ export function readMediaSettings(
       get('MEDIA_ORPHAN_MIN_AGE_HOURS'),
       DEFAULT_ORPHAN_MIN_AGE_HOURS,
     ),
-    publicUrl: (
-      get('APP_PUBLIC_URL')?.trim() || 'http://localhost:3000'
-    ).replace(/\/+$/, ''),
   };
 }

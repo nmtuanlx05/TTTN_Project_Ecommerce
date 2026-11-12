@@ -1,5 +1,3 @@
-import { validateStorageDriver } from '../storage/storage.config';
-import { validatePublicUrl } from '../uploads/upload.config';
 import { ENV_FILE } from './env-file';
 
 // Các biến bắt buộc cho Auth; thiếu biến nào thì app dừng ngay khi khởi động và nói rõ thiếu biến nào.
@@ -29,21 +27,7 @@ export function validateEnv(
     throw new Error('JWT_ACCESS_SECRET và JWT_REFRESH_SECRET phải khác nhau.');
   }
 
-  // UPLOAD_DIR và APP_PUBLIC_URL là tùy chọn (có giá trị mặc định); chỉ kiểm APP_PUBLIC_URL khi có giá trị.
-  const publicUrl = config.APP_PUBLIC_URL;
-  if (typeof publicUrl === 'string' && publicUrl.trim() !== '') {
-    const error = validatePublicUrl(publicUrl.trim());
-    if (error) {
-      throw new Error(error);
-    }
-  }
-
-  // STORAGE_DRIVER là tùy chọn (mặc định cloudinary); có giá trị mà sai thì dừng ngay. Thiếu khóa Cloudinary KHÔNG làm dừng:
-  // chỉ tắt tải ảnh (503 STORAGE_NOT_CONFIGURED).
-  const driverError = validateStorageDriver(config.STORAGE_DRIVER);
-  if (driverError) {
-    throw new Error(driverError);
-  }
+  // Biến Cloudinary đều tùy chọn: thiếu khóa KHÔNG làm dừng app, chỉ tắt tải ảnh (503 STORAGE_NOT_CONFIGURED).
 
   return config;
 }

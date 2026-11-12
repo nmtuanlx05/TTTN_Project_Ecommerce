@@ -20,7 +20,7 @@ export interface UploadImageOptions {
   type: ImageType;
 }
 
-export type StorageDriverName = 'cloudinary' | 'local' | 'disabled';
+export type StorageDriverName = 'cloudinary' | 'disabled';
 
 // Kho lưu trữ ảnh. Là abstract class để dùng làm token DI. Ném HttpException có `code` khi lỗi (STORAGE_NOT_CONFIGURED, STORAGE_UPLOAD_FAILED).
 export abstract class StorageService {

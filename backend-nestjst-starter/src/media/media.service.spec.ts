@@ -291,14 +291,16 @@ describe('MediaService.resolveProductImages', () => {
     ).rejects.toMatchObject({ response: { code: 'MEDIA_ASSET_INVALID' } });
   });
 
-  it('ảnh cũ trên đĩa của backend này giữ nguyên (assetId null) kể cả http', async () => {
+  it('đường dẫn ảnh cũ trên đĩa (http://localhost/uploads/...) không còn được nhận: bị từ chối như URL http ngoài', async () => {
     const { service, prisma } = setup();
     prisma.mediaAsset.findMany.mockResolvedValue([]);
-    const url =
-      'http://localhost:3000/uploads/products/3f2b8c1e-5d7a-4c0e-9b1a-2e6f4a7d8c90.jpg';
-    await expect(service.resolveProductImages([{ url }])).resolves.toEqual([
-      { url, assetId: null },
-    ]);
+    await expect(
+      service.resolveProductImages([
+        {
+          url: 'http://localhost:3000/uploads/products/3f2b8c1e-5d7a-4c0e-9b1a-2e6f4a7d8c90.jpg',
+        },
+      ]),
+    ).rejects.toMatchObject({ status: 400 });
   });
 
   it('URL ngoài: https được nhận (assetId null); http bị từ chối', async () => {
@@ -523,7 +525,6 @@ describe('MediaService.cleanup', () => {
     const orphanWhere = prisma.mediaAsset.findMany.mock.calls[1][0].where;
     expect(orphanWhere).toMatchObject({
       status: 'ACTIVE',
-      sourceUrl: null,
       productImages: { none: {} },
       avatarUsers: { none: {} },
     });

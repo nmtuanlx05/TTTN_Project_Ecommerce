@@ -1,8 +1,4 @@
-import {
-  defaultFolderPrefix,
-  readStorageConfig,
-  validateStorageDriver,
-} from './storage.config';
+import { defaultFolderPrefix, readStorageConfig } from './storage.config';
 
 const env = (values: Record<string, string>) => (key: string) => values[key];
 const FULL = {
@@ -55,28 +51,7 @@ describe('readStorageConfig', () => {
     expect(JSON.stringify(config)).not.toContain('super-secret');
   });
 
-  it('không cấu hình gì → mặc định cloudinary nên bị tắt (không throw)', () => {
+  it('không cấu hình gì → bị tắt (không throw)', () => {
     expect(readStorageConfig(env({}))).toMatchObject({ driver: 'disabled' });
-  });
-
-  it('STORAGE_DRIVER=local', () => {
-    expect(readStorageConfig(env({ STORAGE_DRIVER: 'local' }))).toEqual({
-      driver: 'local',
-    });
-  });
-
-  it('STORAGE_DRIVER lạ → tắt thay vì throw', () => {
-    expect(readStorageConfig(env({ STORAGE_DRIVER: 's3' }))).toMatchObject({
-      driver: 'disabled',
-    });
-  });
-});
-
-describe('validateStorageDriver', () => {
-  it.each([undefined, '', '  ', 'cloudinary', 'local'])('%p hợp lệ', (v) => {
-    expect(validateStorageDriver(v)).toBeNull();
-  });
-  it('giá trị khác → thông báo tiếng Việt', () => {
-    expect(validateStorageDriver('s3')).toMatch(/STORAGE_DRIVER/);
   });
 });

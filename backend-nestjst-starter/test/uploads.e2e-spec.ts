@@ -1,8 +1,5 @@
 // res.body của supertest có kiểu any; test chỉ đọc để so sánh nên tắt các rule unsafe-* cho file này.
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
 import { Global, INestApplication, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD, NestFactory } from '@nestjs/core';
@@ -56,17 +53,7 @@ function jpeg(width = 40, height = 30) {
   b.writeUInt16BE(width, 9);
   return b;
 }
-function webp(width = 40, height = 30) {
-  const b = Buffer.alloc(40, 1);
-  b.write('RIFF', 0, 'ascii');
-  b.write('WEBP', 8, 'ascii');
-  b.write('VP8X', 12, 'ascii');
-  b.writeUIntLE(width - 1, 24, 3);
-  b.writeUIntLE(height - 1, 27, 3);
-  return b;
-}
-
-// Dựng app với UploadModule/MediaModule/StorageModule THẬT (Multer thật, ServeStatic thật). Chỉ giả: ConfigService, UsersService
+// Dựng app với UploadModule/MediaModule/StorageModule THẬT (Multer thật). Chỉ giả: ConfigService, UsersService
 // (JwtStrategy), PrismaService (bảng media_assets trong bộ nhớ) và SDK Cloudinary.
 async function buildApp(env: Record<string, string>) {
   const assets: Record<string, any>[] = [];
@@ -134,7 +121,7 @@ async function buildApp(env: Record<string, string>) {
   })
   class TestAppModule {}
 
-  // NestFactory (như main.ts): ServeStaticModule chọn loader theo HTTP adapter nên cần app thật mới phục vụ file tĩnh.
+  // NestFactory (như main.ts) để chạy đúng cấu hình app thật.
   const app = await NestFactory.create<INestApplication<App>>(TestAppModule, {
     logger: false,
   });
@@ -165,35 +152,22 @@ async function buildApp(env: Record<string, string>) {
   return { app, assets, prisma, tokens, server, upload };
 }
 
-const listFiles = (dir: string, prefix = ''): string[] =>
-  readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory()
-      ? listFiles(join(dir, entry.name), `${prefix}${entry.name}/`)
-      : [`${prefix}${entry.name}`],
-  );
-
 // Chế độ Cloudinary với SDK giả
 describe('Uploads API (e2e, driver Cloudinary với SDK giả)', () => {
   let ctx: Awaited<ReturnType<typeof buildApp>>;
-  let uploadDir: string;
   const env = () => ({
-    STORAGE_DRIVER: 'cloudinary',
     CLOUDINARY_CLOUD_NAME: 'demo',
     CLOUDINARY_API_KEY: 'KEY-123',
     CLOUDINARY_API_SECRET: 'SECRET-456',
     CLOUDINARY_FOLDER_PREFIX: 'mono/test',
-    UPLOAD_DIR: uploadDir,
-    APP_PUBLIC_URL: 'http://localhost:3000',
     MEDIA_QUOTA_AVATARS_PER_DAY: '3',
   });
 
   beforeAll(async () => {
-    uploadDir = mkdtempSync(join(tmpdir(), 'uploads-e2e-cld-'));
     ctx = await buildApp(env());
   });
   afterAll(async () => {
     await ctx.app.close();
-    rmSync(uploadDir, { recursive: true, force: true });
   });
 
   beforeEach(() => {
@@ -220,7 +194,7 @@ describe('Uploads API (e2e, driver Cloudinary với SDK giả)', () => {
     );
   });
 
-  it('SDK được cấu hình từ biến môi trường (secure:true) và không ghi gì ra ổ đĩa', async () => {
+  it('SDK được cấu hình từ biến môi trường (secure:true)', async () => {
     expect(sdk.config).toHaveBeenCalledWith({
       cloud_name: 'demo',
       api_key: 'KEY-123',
@@ -228,8 +202,6 @@ describe('Uploads API (e2e, driver Cloudinary với SDK giả)', () => {
       secure: true,
     });
     await ctx.upload('/uploads/products', 'ADMIN', png()).expect(201);
-    // Không thư mục tạm, không file nào: ảnh đi thẳng bằng stream
-    expect(listFiles(uploadDir)).toEqual([]);
   });
 
   describe('phân quyền', () => {
@@ -495,18 +467,11 @@ describe('Uploads API (e2e, driver Cloudinary với SDK giả)', () => {
     });
   });
 
-  describe('ServeStatic vẫn phục vụ ảnh cũ trên đĩa cho tới khi chuyển xong', () => {
-    it('GET /uploads/<file cũ> -> 200; không có file -> 404 theo format lỗi chung', async () => {
-      mkdirSync(join(uploadDir, 'products'), { recursive: true });
-      writeFileSync(join(uploadDir, 'products', 'old.png'), png());
-      expect(
-        (await request(ctx.server()).get('/uploads/products/old.png')).status,
-      ).toBe(200);
-      const missing = await request(ctx.server()).get(
-        '/uploads/products/khong-co.png',
-      );
-      expect(missing.status).toBe(404);
-      expect(missing.body.success).toBe(false);
+  describe('không còn phục vụ file tĩnh', () => {
+    it('GET /uploads/... -> 404 theo format lỗi chung', async () => {
+      const res = await request(ctx.server()).get('/uploads/products/x.png');
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
     });
   });
 });
@@ -517,7 +482,6 @@ describe('Uploads API (e2e, thiếu cấu hình Cloudinary)', () => {
   beforeAll(async () => {
     sdk.uploader.upload_stream.mockReset();
     ctx = await buildApp({
-      STORAGE_DRIVER: 'cloudinary',
       CLOUDINARY_CLOUD_NAME: 'demo',
     });
   });
@@ -543,130 +507,5 @@ describe('Uploads API (e2e, thiếu cấu hình Cloudinary)', () => {
     expect(
       (await ctx.upload('/uploads/products', 'CUSTOMER', png())).status,
     ).toBe(403);
-  });
-});
-
-// Driver local: chỉ cho test/CI/dev offline
-describe('Uploads API (e2e, driver local)', () => {
-  let ctx: Awaited<ReturnType<typeof buildApp>>;
-  let uploadDir: string;
-
-  beforeAll(async () => {
-    uploadDir = mkdtempSync(join(tmpdir(), 'uploads-e2e-local-'));
-    ctx = await buildApp({
-      STORAGE_DRIVER: 'local',
-      UPLOAD_DIR: uploadDir,
-      APP_PUBLIC_URL: 'http://localhost:3000',
-    });
-  });
-  afterAll(async () => {
-    await ctx.app.close();
-    rmSync(uploadDir, { recursive: true, force: true });
-  });
-  beforeEach(() => {
-    ctx.assets.length = 0;
-    sdk.uploader.upload_stream.mockReset();
-    // Mỗi test bắt đầu với thư mục upload trống
-    rmSync(uploadDir, { recursive: true, force: true });
-    mkdirSync(uploadDir, { recursive: true });
-  });
-
-  it('ghi file <thư mục>/<uuid>.<đuôi> (đuôi theo nội dung thật), trả URL cục bộ, không đụng Cloudinary', async () => {
-    const res = await ctx.upload(
-      '/uploads/avatars',
-      'CUSTOMER',
-      webp(),
-      '../../x.exe',
-      'image/webp',
-    );
-
-    expect(res.status).toBe(201);
-    expect(res.body.data).toMatchObject({
-      assetId: 1,
-      url: expect.stringMatching(
-        /^http:\/\/localhost:3000\/uploads\/avatars\/[0-9a-f-]{36}\.webp$/,
-      ),
-      publicId: expect.stringMatching(/^avatars\/[0-9a-f-]{36}$/),
-      width: 40,
-      height: 30,
-      format: 'webp',
-    });
-    expect(listFiles(uploadDir)).toEqual([
-      `avatars/${new URL(res.body.data.url as string).pathname.split('/').pop()}`,
-    ]);
-    expect(sdk.uploader.upload_stream).not.toHaveBeenCalled();
-  });
-
-  it('mở URL trả về (không cần token): đúng nội dung và header cho <img> khác origin', async () => {
-    const body = png(40, 30, 200);
-    const up = await ctx.upload('/uploads/products', 'ADMIN', body);
-    const res = await request(ctx.server()).get(
-      new URL(up.body.data.url as string).pathname,
-    );
-    expect(res.status).toBe(200);
-    expect(res.headers['content-type']).toBe('image/png');
-    expect(res.headers['cross-origin-resource-policy']).toBe('cross-origin');
-    expect(res.headers['x-content-type-options']).toBe('nosniff');
-    expect(res.headers['cache-control']).toContain('immutable');
-    expect(Buffer.compare(res.body as Buffer, body)).toBe(0);
-  });
-
-  it('kiểm chữ ký byte như driver Cloudinary: file giả mạo -> 415 và không để lại file', async () => {
-    const res = await ctx.upload(
-      '/uploads/products',
-      'ADMIN',
-      Buffer.from('<?php ?>'),
-      'a.png',
-    );
-    expect(res.status).toBe(415);
-    expect(listFiles(uploadDir)).toEqual([]);
-  });
-
-  it('thư mục upload bị xóa khi server đang chạy: upload vẫn thành công', async () => {
-    rmSync(uploadDir, { recursive: true, force: true });
-    const res = await ctx.upload(
-      '/uploads/products',
-      'STAFF',
-      jpeg(),
-      'a.jpg',
-      'image/jpeg',
-    );
-    expect(res.status).toBe(201);
-    expect(listFiles(uploadDir)).toHaveLength(1);
-  });
-
-  it.each([
-    '/uploads/products/khong-co.png',
-    '/uploads/',
-    '/uploads/products',
-    '/uploads/.tmp/abc',
-  ])('GET %s -> 404 theo format lỗi chung', async (path) => {
-    const res = await request(ctx.server()).get(path);
-    expect(res.status).toBe(404);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('từ chối dotfiles và không đọc được file ngoài thư mục upload bằng ../', async () => {
-    mkdirSync(join(uploadDir, 'products'), { recursive: true });
-    writeFileSync(join(uploadDir, 'products', '.secret.png'), 'x');
-    expect(
-      (await request(ctx.server()).get('/uploads/products/.secret.png')).status,
-    ).toBe(404);
-
-    const outside = join(uploadDir, '..', 'uploads-e2e-outside.txt');
-    writeFileSync(outside, 'secret');
-    try {
-      for (const path of [
-        '/uploads/../uploads-e2e-outside.txt',
-        '/uploads/products/..%2f..%2fuploads-e2e-outside.txt',
-        '/uploads/%2e%2e/uploads-e2e-outside.txt',
-      ]) {
-        const res = await request(ctx.server()).get(path);
-        expect(res.status).not.toBe(200);
-        expect(res.text ?? '').not.toContain('secret');
-      }
-    } finally {
-      rmSync(outside, { force: true });
-    }
   });
 });
