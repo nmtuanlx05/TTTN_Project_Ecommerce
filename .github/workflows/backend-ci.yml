@@ -1,0 +1,75 @@
+name: Backend CI
+
+on:
+  push: # mọi nhánh, chỉ khi có thay đổi ở backend
+    paths:
+      - 'backend-nestjst-starter/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend-nestjst-starter/**'
+      - '.github/workflows/backend-ci.yml'
+
+# Hủy lần chạy cũ khi cùng ref có commit mới
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: backend-nestjst-starter
+
+env:
+  # Giá trị GIẢ: prisma.config.ts bắt buộc có DATABASE_URL, nhưng generate không kết nối DB
+  DATABASE_URL: mysql://ci:ci@127.0.0.1:3306/ci
+  CHECKPOINT_DISABLE: '1'
+
+jobs:
+  lint-format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: backend-nestjst-starter/.nvmrc
+          cache: npm
+          cache-dependency-path: backend-nestjst-starter/package-lock.json
+      - run: npm ci
+      # Lint dùng type-check nên cần src/generated (bị gitignore)
+      - run: npx prisma generate
+      - run: npm run lint:check
+      - run: npm run format:check
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: backend-nestjst-starter/.nvmrc
+          cache: npm
+          cache-dependency-path: backend-nestjst-starter/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm test -- --ci
+      - run: npm run test:e2e -- --ci
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: backend-nestjst-starter/.nvmrc
+          cache: npm
+          cache-dependency-path: backend-nestjst-starter/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run build
