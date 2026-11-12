@@ -63,7 +63,7 @@ model User {
   name                 String?
   phone                String?
   avatarUrl            String?              @db.VarChar(500) // URL ảnh đại diện (ghi kép cùng avatarAssetId: bằng media_assets.secureUrl); null = chưa có
-  avatarAssetId        Int? // ảnh đại diện đã đăng ký (media_assets); null nếu chưa có hoặc là ảnh cũ chưa chuyển
+  avatarAssetId        Int? // ảnh đại diện đã đăng ký (media_assets); null nếu chưa có ảnh
   avatarAsset          MediaAsset?          @relation("UserAvatarAsset", fields: [avatarAssetId], references: [id], onDelete: Restrict)
   role                 Role                 @default(CUSTOMER)
   isActive             Boolean              @default(true)
@@ -373,7 +373,7 @@ model PaymentTransaction {
   @@map("payment_transactions")
 }
 
-// Ảnh đã tải lên kho lưu trữ (Cloudinary hoặc driver local). Dòng này KHÔNG bị xóa cứng: xóa ảnh = status DELETED.
+// Ảnh đã tải lên Cloudinary. Dòng này KHÔNG bị xóa cứng: xóa ảnh = status DELETED.
 // uploadedById: SetNull có chủ ý. User không bị xóa cứng; nếu có xóa thì ảnh vẫn tồn tại và vẫn được dọn đúng, chỉ mất thông tin người tải.
 // publicId phân biệt hoa/thường như Cloudinary nên cột dùng collation utf8mb4_bin (sửa tay ở migration; Prisma không biểu diễn được).
 model MediaAsset {
@@ -388,7 +388,6 @@ model MediaAsset {
   status         MediaAssetStatus @default(ACTIVE)
   uploadedById   Int?
   uploadedBy     User?            @relation("MediaAssetUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
-  sourceUrl      String?          @db.VarChar(500) // URL cũ khi nhập bằng script chuyển ảnh; dùng để hoàn tác
   deleteAttempts Int              @default(0)
   lastError      String?          @db.VarChar(500)
   createdAt      DateTime         @default(now())
