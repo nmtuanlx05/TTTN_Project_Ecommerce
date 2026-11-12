@@ -17,6 +17,13 @@ jest.mock('../src/users/dto/update-user.dto', () => ({
 
 const ACTOR_ID = 99;
 
+// Dạng body lỗi do AllExceptionsFilter trả; res.body của supertest có kiểu any.
+interface ErrorBody {
+  success: boolean;
+  statusCode: number;
+  errors: { field: string; message: string }[];
+}
+
 // Dùng UsersService giả (không cần DB) để kiểm tra phần nối ở tầng toàn cục:
 // ValidationPipe, ParseIdPipe, ResponseInterceptor, AllExceptionsFilter.
 describe('Users API (e2e, service giả)', () => {
@@ -97,9 +104,9 @@ describe('Users API (e2e, service giả)', () => {
       .get('/users?limit=101&sortBy=x')
       .expect(400);
 
-    expect(res.body.success).toBe(false);
-    expect(res.body.statusCode).toBe(400);
-    expect(res.body.errors).toEqual(
+    expect((res.body as ErrorBody).success).toBe(false);
+    expect((res.body as ErrorBody).statusCode).toBe(400);
+    expect((res.body as ErrorBody).errors).toEqual(
       expect.arrayContaining([
         { field: 'limit', message: 'limit không được vượt quá 100' },
         {
@@ -129,11 +136,13 @@ describe('Users API (e2e, service giả)', () => {
       .send({ email: 'abc', password: '123', phone: '12345', role: 'BOSS' })
       .expect(400);
 
-    const fields = res.body.errors.map((e: { field: string }) => e.field);
+    const fields = (res.body as ErrorBody).errors.map(
+      (e: { field: string }) => e.field,
+    );
     expect(fields).toEqual(
       expect.arrayContaining(['email', 'password', 'name', 'phone', 'role']),
     );
-    expect(res.body.errors).toEqual(
+    expect((res.body as ErrorBody).errors).toEqual(
       expect.arrayContaining([
         { field: 'email', message: 'Email không đúng định dạng' },
         { field: 'password', message: 'Mật khẩu phải có ít nhất 6 ký tự' },
@@ -148,7 +157,7 @@ describe('Users API (e2e, service giả)', () => {
       .send({ email: 'a@gmail.com', password: '12345678', name: 'A', foo: 1 })
       .expect(400);
 
-    expect(res.body.errors).toEqual([
+    expect((res.body as ErrorBody).errors).toEqual([
       { field: 'foo', message: 'Trường foo không được phép gửi lên' },
     ]);
   });
@@ -179,7 +188,7 @@ describe('Users API (e2e, service giả)', () => {
       .send({ isActive: 'khoa' })
       .expect(400);
 
-    expect(res.body.errors).toEqual([
+    expect((res.body as ErrorBody).errors).toEqual([
       { field: 'isActive', message: 'isActive phải là true hoặc false' },
     ]);
   });
@@ -208,6 +217,6 @@ describe('Users API (e2e, service giả)', () => {
       .delete('/users/1')
       .expect(404);
 
-    expect(res.body.success).toBe(false);
+    expect((res.body as ErrorBody).success).toBe(false);
   });
 });
