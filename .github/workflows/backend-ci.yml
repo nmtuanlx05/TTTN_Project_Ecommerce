@@ -73,3 +73,32 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npm run build
+
+  # Test trên MySQL THẬT (không mock Prisma). DB tạm dựng bằng docker-compose.test.yml, giống hệt máy dev.
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Mật khẩu GIẢ của DB tạm trong container (khớp docker-compose.test.yml), không phải secret thật
+      DATABASE_URL: mysql://root:test_only_password@127.0.0.1:3308/ecommerce_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: backend-nestjst-starter/.nvmrc
+          cache: npm
+          cache-dependency-path: backend-nestjst-starter/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Dựng MySQL tạm và chờ healthy
+        run: npm run db:test:up
+      - name: Áp toàn bộ migration lên DB trống (prisma migrate deploy)
+        run: npm run db:test:migrate
+      - name: Test trên MySQL thật
+        run: npm run test:db
+      - name: Log MySQL (chỉ khi lỗi)
+        if: failure()
+        run: docker compose -p ecommerce_test -f docker-compose.test.yml logs --no-color
+      - name: Dọn DB tạm
+        if: always()
+        run: npm run db:test:down

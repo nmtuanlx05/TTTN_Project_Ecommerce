@@ -1,0 +1,16 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": "\\.db-spec\\.ts$",
+  "globalSetup": "<rootDir>/global-setup.ts",
+  "maxWorkers": 1,
+  "testTimeout": 60000,
+  "transform": {
+    "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": { "allowJs": true, "esModuleInterop": true, "module": "commonjs", "target": "ES2023", "experimentalDecorators": true, "emitDecoratorMetadata": true, "skipLibCheck": true } }]
+  },
+  "moduleNameMapper": {
+    "^@nestjs/mapped-types$": "<rootDir>/../shims/mapped-types.ts"
+  },
+  "transformIgnorePatterns": ["/node_modules/(?!(@nestjs/(jwt|passport|config|schedule))/)"]
+}
