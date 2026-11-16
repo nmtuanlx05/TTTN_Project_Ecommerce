@@ -10,7 +10,10 @@ export function getTestDatabaseUrl(): string {
 }
 
 // PrismaClient THẬT (không mock) nối vào DB test, dùng adapter MariaDB như PrismaService.
-export function createTestPrisma(): PrismaClient {
+// quiet: true tắt log lỗi của Prisma ra console. Dùng cho test CỐ Ý gây lỗi (CHECK/UNIQUE) để kết quả dễ đọc.
+export function createTestPrisma(
+  options: { quiet?: boolean } = {},
+): PrismaClient {
   const url = new URL(getTestDatabaseUrl());
   const adapter = new PrismaMariaDb({
     host: url.hostname.replace(/^\[|\]$/g, ''),
@@ -22,7 +25,10 @@ export function createTestPrisma(): PrismaClient {
     // MySQL 8 dùng caching_sha2_password: thiếu cờ này driver có thể treo khi lấy khóa RSA (chỉ dùng cho DB tạm cục bộ)
     allowPublicKeyRetrieval: true,
   });
-  return new PrismaClient({ adapter, log: ['warn', 'error'] });
+  return new PrismaClient({
+    adapter,
+    log: options.quiet ? [] : ['warn', 'error'],
+  });
 }
 
 // Lớp phòng thủ thứ hai: hỏi chính MySQL xem đang ở DB nào, phải trùng tên trong URL và kết thúc bằng _test.

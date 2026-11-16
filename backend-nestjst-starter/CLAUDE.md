@@ -28,6 +28,11 @@ Package manager là npm (có `package-lock.json`).
 - `npm test` — unit test (Jest, config nhúng trong `package.json`, `rootDir: src`, match `*.spec.ts`)
 - `npm run test:watch` / `npm run test:cov` — watch mode / coverage
 - `npm run test:e2e` — e2e test qua `test/jest-e2e.json`, match `*.e2e-spec.ts` trong `test/`
+- **Test trên MySQL THẬT** (tách khỏi hai lệnh trên, cần Docker; hướng dẫn đầy đủ ở `docs/testing-database.md`): `npm run db:test:up` (dựng MySQL 8.0 tạm
+  ở cổng **3308** từ `docker-compose.test.yml`, dữ liệu trên tmpfs) → `DATABASE_URL='mysql://root:test_only_password@127.0.0.1:3308/ecommerce_test' npm run db:test:migrate`
+  (`prisma migrate deploy` lên DB trống) → cùng `DATABASE_URL` đó `npm run test:db` (Jest `test/db/jest-db.json`, match `*.db-spec.ts`, chạy tuần tự) → `npm run db:test:down`.
+  `DATABASE_URL` phải đặt ngay trước lệnh, KHÔNG tự đọc `.env*`. Chốt chặn `scripts/assert-test-db.ts` từ chối nếu host không phải máy cục bộ, cổng là 3306/3307 (DB dev),
+  hoặc tên DB không kết thúc bằng `_test`; `test/db/helpers/reset-db.ts` còn hỏi lại `SELECT DATABASE()` trước khi `TRUNCATE`. Chạy một file: `npm run test:db -- checkout-voucher`.
 
 Chạy một test đơn lẻ: unit spec nằm cạnh file source dưới `src/`, nên
 `npx jest app.controller.spec.ts` (hoặc `npx jest -t "test name"`) hoạt động vì rootDir của Jest là
@@ -241,6 +246,9 @@ Order, OrderItem, OrderStatusHistory, PaymentTransaction, Voucher, StockMovement
     - Không bắt buộc viết unit test cho mỗi service.
     - Chỉ viết e2e cho module có logic tiền hoặc tồn kho (Orders, Inventory, Payment).
     - Các module CRUD đơn giản chỉ cần chạy thử bằng tay.
+    - Logic phụ thuộc khóa dòng/đồng thời/ràng buộc DB phải có test ở `test/db/` (MySQL thật), vì Prisma giả không chứng minh được. Test đồng thời so sánh nguyên bảng đếm phản hồi
+      (`tally`: `{ '201': 5, '409:CART_ITEMS_UNAVAILABLE': 20 }`) để lộ ngay phản hồi lạ (500, `SYSTEM_BUSY`). Test đỏ là phát hiện: báo cáo kèm log, không nới kỳ vọng, không tự sửa nghiệp vụ.
+    - Job `integration` trong `.github/workflows/backend-ci.yml` chạy đúng các bước trên (dựng compose, migrate, `test:db`) trên GitHub Actions.
 
 ## Quy ước API
 
@@ -270,8 +278,9 @@ Tổng `total` đếm theo cùng điều kiện lọc, lấy danh sách và đ�
 `sortBy` (whitelist field) + `order` (`asc|desc`), mặc định mới nhất trước. Query boolean (`isActive`) phải
 transform từ chuỗi `"true"/"false"`.
 
-**So khớp chuỗi**: `fold()` (`src/common/utils/fold.ts`) bỏ dấu, hoa/thường và xử lý cả `đ → d` (NFD không tách được `đ`) để khớp
-collation `utf8mb4_unicode_ci` của DB. Dùng nó khi so sánh tên màu/size/SKU trong service và mapper, đừng tự viết lại.
+**So khớp chuỗi**: `fold()` (`src/common/utils/fold.ts`) bỏ dấu, hoa/thường và xử lý cả `đ → d` (NFD không tách được `đ`), giống collation
+`utf8mb4_unicode_ci` của DB **trừ chữ `đ`**: đã đo trên MySQL thật, DB coi `M = m` và `Xám = xam` nhưng KHÔNG coi `đ = d` (`Đen` ≠ `den` ở khóa duy nhất `(productId, size, color)`).
+`fold()` cố ý chặt hơn DB ở điểm này, nên "Đen" và "Den" chỉ bị coi là trùng ở tầng service, không ở DB. Dùng `fold()` khi so sánh tên màu/size/SKU trong service và mapper, đừng tự viết lại.
 
 **Param id**: dùng `parseIdPipe` (`src/common/pipes/parse-id.pipe.ts`); id không hợp lệ → 400 "ID không hợp lệ".
 
@@ -369,9 +378,17 @@ Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy tr�
 
 - **Chưa thu hồi được refresh token**: stateless nên logout chỉ xóa cookie; token bị lộ dùng được tới khi hết 7 ngày
   (chỉ chặn được bằng cách khóa user hoặc đổi `JWT_REFRESH_SECRET`). Cân nhắc lưu hash refresh token / `tokenVersion` ở V2.
-- **Đặt đơn chưa kiểm chứng trên MySQL thật**: khóa `FOR UPDATE`, thứ tự khóa, chống bán vượt tồn và chống dùng quá lượt voucher khi hai request đồng thời chỉ được bảo vệ bằng thiết kế
-  (khóa theo thứ tự cố định + UPDATE có điều kiện + kiểm số dòng); test hiện dùng Prisma giả. Chưa xác minh adapter áp dụng `isolationLevel: ReadCommitted`.
+- **Đặt đơn trên MySQL thật** (`test/db/`, job CI `integration`). **Đã kiểm chứng bằng chạy thật:** cả 10 migration chạy từ DB trống bằng `migrate deploy` (đúng 20 CHECK viết tay, không drift giữa
+  migration và `schema.prisma`); chống bán vượt tồn và không deadlock khi 20-25 khách đặt đồng thời qua HTTP trên `AppModule` thật (đúng số đơn thành công, `reserved` khớp, giỏ của đơn bị từ chối không đổi,
+  không có 500/`SYSTEM_BUSY`; có cả ca hai giỏ thứ tự dòng ngược nhau); lượt voucher cuối (đúng K đơn, `usedCount` không vượt `usageLimit`, voucher không giới hạn đếm đủ, đơn bị từ chối hết lượt không giữ chỗ tồn);
+  `Idempotency-Key` trùng đồng thời (đúng 1 đơn, 1 lần giữ chỗ, 1 lượt voucher); các ràng buộc CHECK/UNIQUE đã thử đều bị MySQL từ chối đúng tên ràng buộc (trừ phát hiện bên dưới); adapter MariaDB **có** áp dụng
+  `isolationLevel: ReadCommitted` (đo bằng hành vi: đọc hai lần quanh thay đổi đã commit; KHÔNG đo bằng `SELECT @@transaction_isolation` vì biến này là mức của phiên nên luôn báo REPEATABLE-READ). Chưa phủ: hủy đơn
+  đồng thời, xác nhận thanh toán ↔ hết hạn.
+- **Đã xử lý (hướng A): `đ` ≠ `d` ở DB.** Test MySQL thật phát hiện tài liệu cũ nói sai "DB coi `đ = d`". Xác nhận bằng truy vấn trực tiếp trên DB tạm: `'đ'='d'` → 0, `'Đen'='den'` → 0, `'M'='m'` → 1 (collation `utf8mb4_unicode_ci`).
+  Giữ nguyên DB và logic `fold()`; chỉ sửa comment và tài liệu. Hệ quả cần biết: chặn trùng `Đen`/`Den` chỉ nằm ở tầng service (`fold()` trong `src/products/`), ràng buộc duy nhất ở DB không chặn cặp này (qua hai request đồng thời hoặc ghi trực tiếp vào DB
+  vẫn có thể có cả hai). Test `constraints.db-spec.ts` ghi nhận đúng hành vi đã đo. Cần xử lý triệt để (ví dụ đổi collation cột bằng migration mới) thì đó là quyết định riêng, chưa làm.
 - **Thanh toán VietQR chưa kiểm chứng thật**: khóa dòng/đua (xác nhận ↔ hết hạn, hai webhook cùng id) chỉ được bảo vệ bằng thiết kế và test Prisma giả; chưa thử với MySQL thật, webhook SePay thật, hay quét QR bằng app ngân hàng (xem danh sách ở `docs/api/payments.md`). Bảng BIN ngân hàng chỉ MB (970422) đã kiểm chứng.
 - **Chưa có**: hoàn tiền tự động và luồng "Staff tạo yêu cầu hủy, Admin duyệt" cho đơn đã thanh toán, cổng VNPay, hoàn hàng `RETURNED`, giới hạn voucher theo khách, guest checkout, email.
 - **Chưa giới hạn số lần đăng nhập sai** (chưa có rate limit/lockout) cho `/auth/login`.
-- **Số test hiện tại**: 756 unit, 579 e2e (18 suite e2e), đều chạy với Prisma giả, chưa có test nào chạy trên MySQL thật.
+- **Số test hiện tại**: 756 unit, 579 e2e (18 suite e2e), đều chạy với Prisma giả. Ngoài ra bộ `test:db` chạy trên MySQL thật (không tính vào hai con số trên): `guard`, `schema-migrations`, `checkout-overselling`
+  `checkout-voucher`, `checkout-idempotency`, `transaction-isolation` đã chạy thật và qua; `constraints` có phát hiện `đ` ≠ `d` ở trên, đã tách thành ca hoa/thường, ca khác dấu và ca ghi nhận hành vi (xem số lượng và kết quả bằng `npm run test:db`).
