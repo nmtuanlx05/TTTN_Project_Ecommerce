@@ -4,6 +4,7 @@
   "testEnvironment": "node",
   "testRegex": "\\.db-spec\\.ts$",
   "globalSetup": "<rootDir>/global-setup.ts",
+  "setupFiles": ["<rootDir>/setup-env.ts"],
   "maxWorkers": 1,
   "testTimeout": 60000,
   "transform": {
