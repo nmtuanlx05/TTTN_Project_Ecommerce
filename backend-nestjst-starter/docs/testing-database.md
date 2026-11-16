@@ -15,8 +15,8 @@ Các lệnh `npm test` (unit) và `npm run test:e2e` đều dùng **Prisma giả
 Bộ test này nằm **tách riêng** khỏi `npm test` và `npm run test:e2e` (thư mục `test/db/`, đuôi file `.db-spec.ts`), nên hai
 lệnh cũ vẫn chạy nhanh và không cần Docker.
 
-> Tiến độ: **PR A** (tài liệu này) gồm hạ tầng, chốt chặn an toàn và kiểm tra migration. **PR B** sẽ thêm các test
-> chống bán vượt tồn, voucher, `Idempotency-Key` và ràng buộc dữ liệu.
+> Tiến độ: **PR A** (đã merge) gồm hạ tầng, chốt chặn an toàn và kiểm tra migration. **PR B** thêm các test
+> chống bán vượt tồn, voucher, `Idempotency-Key`, ràng buộc dữ liệu và mức cô lập transaction (mục 9).
 
 ## 2. Các thành phần
 
@@ -29,6 +29,16 @@ lệnh cũ vẫn chạy nhanh và không cần Docker.
 | `test/db/helpers/prisma-client.ts` | Tạo `PrismaClient` thật nối vào DB test (luôn qua chốt chặn) |
 | `test/db/guard.db-spec.ts` | Test cho chính chốt chặn |
 | `test/db/schema-migrations.db-spec.ts` | Kiểm tra migration trên DB trống |
+| `test/db/setup-env.ts` | Đặt biến JWT giả trước khi nạp ứng dụng (không đặt `DATABASE_URL`) |
+| `test/db/helpers/reset-db.ts` | Xóa sạch dữ liệu giữa các test (qua chốt chặn và kiểm `SELECT DATABASE()`) |
+| `test/db/helpers/factories.ts` | Dựng dữ liệu thật: sản phẩm, biến thể, người mua kèm giỏ, voucher |
+| `test/db/helpers/app.ts`, `auth.ts` | Dựng `AppModule` thật (ghi đè hai cron), ký JWT giả |
+| `test/db/helpers/checkout.ts` | Gọi `POST /orders` qua HTTP và đếm phản hồi (`tally`) |
+| `test/db/checkout-overselling.db-spec.ts` | Chống bán vượt tồn, deadlock |
+| `test/db/checkout-voucher.db-spec.ts` | Lượt voucher cuối |
+| `test/db/checkout-idempotency.db-spec.ts` | `Idempotency-Key` trùng đồng thời |
+| `test/db/constraints.db-spec.ts` | Ràng buộc CHECK và UNIQUE |
+| `test/db/transaction-isolation.db-spec.ts` | Mức cô lập transaction của adapter |
 
 DB test **tách hẳn** DB dev: khác project Docker (`ecommerce_test`), khác container (`ecommerce_mysql_test`), không có
 volume bền, nên `npm run db:test:down` không thể xóa dữ liệu dev.
@@ -116,7 +126,82 @@ Khi lỗi, gặp nhiều nhất:
 Nếu test tìm ra hành vi khác tài liệu hoặc lỗi thật của hệ thống, **đừng sửa test cho qua**: ghi lại log và báo để quyết
 định xử lý nghiệp vụ.
 
-## 8. Giới hạn cần biết
+## 8. Chạy riêng một file
+
+Thêm tên file (hoặc một phần tên) sau `--`:
+
+```bash
+DATABASE_URL='mysql://root:test_only_password@127.0.0.1:3308/ecommerce_test' npm run test:db -- checkout-voucher
+```
+
+`npm run db:test:up` và `db:test:migrate` chỉ cần chạy một lần cho mỗi lần dựng DB; chạy `test:db` nhiều lần liên tiếp được
+(mỗi file tự dọn dữ liệu trước từng test).
+
+## 9. Các test đồng thời và ràng buộc (PR B)
+
+### 9.1 Cách một test đồng thời hoạt động
+
+1. `reset-db.ts` xóa sạch dữ liệu, `factories.ts` dựng sản phẩm, biến thể (có tồn), N người mua mỗi người một giỏ.
+2. `app.ts` khởi động **ứng dụng thật** (cùng `AppModule`, cùng pool 10 kết nối tới MySQL như khi chạy thật), chỉ thay hai tác vụ
+   định kỳ (hủy đơn hết hạn, dọn ảnh) để chúng không tự chạy trong lúc test.
+3. Test bắn `POST /orders` của TẤT CẢ người mua **cùng lúc** (`Promise.all`) qua HTTP.
+4. Test đếm phản hồi bằng `tally`, rồi **đọc lại DB** để kiểm tra tồn kho, số đơn, lượt voucher, giỏ hàng.
+
+Vì sao qua HTTP chứ không gọi thẳng service? Vì lỗi như hết kết nối trong pool hay timeout transaction chỉ lộ ra ở đường đi thật,
+và mã phản hồi (201 / 409 / không có 500) chính là thứ cần khẳng định.
+
+### 9.2 Đọc thông báo lỗi của test đồng thời
+
+Mỗi ca so sánh **nguyên bảng đếm** `mã HTTP[:mã lỗi] -> số lượng`. Ví dụ kỳ vọng:
+
+```
+{ '201': 5, '409:CART_ITEMS_UNAVAILABLE': 20 }   // 5 người mua được, 20 người bị báo hết hàng
+```
+
+Khi lỗi, Jest in phần khác biệt. Cách đọc:
+
+| Thấy trong khác biệt | Ý nghĩa |
+|---|---|
+| `'201': 6` thay vì 5 | **Bán vượt tồn** (nghiêm trọng): dừng lại và báo |
+| `'500': n` | Lỗi không lường trước (vd hết kết nối pool, P2028): đọc log của ứng dụng |
+| `'409:SYSTEM_BUSY': n` | Deadlock/xung đột xảy ra quá 3 lần thử lại |
+| `'400:VOUCHER_USAGE_LIMIT'` ít hơn kỳ vọng | Có đơn dùng vượt lượt voucher |
+| `'201': 2` thay vì 1 ở test Idempotency | Một khách có 2 đơn từ cùng một khóa |
+
+Đừng sửa số kỳ vọng cho test xanh. Test đỏ là phát hiện cần xử lý có chủ đích.
+
+### 9.3 Nhóm test và điều mỗi nhóm chứng minh
+
+- **Chống bán vượt tồn** (`checkout-overselling`): tồn 5 với 25 khách (lặp 3 vòng), mua nhiều cái một đơn, không giữ chỗ một phần,
+  và hai giỏ có thứ tự dòng ngược nhau (A,B) và (B,A) để thử deadlock. Cố ý dùng nhiều khách hơn pool 10 kết nối.
+- **Lượt voucher** (`checkout-voucher`): mỗi khách tồn riêng nên giới hạn duy nhất là lượt voucher; đơn bị từ chối vì hết lượt
+  không được giữ chỗ tồn kho; voucher không giới hạn đếm đúng 12 lượt (không "mất lượt").
+- **Idempotency-Key** (`checkout-idempotency`): 10 request cùng khóa chỉ tạo 1 đơn, 1 lần giữ chỗ, 1 lượt voucher; key khác nhau
+  hoặc không có key thì chỉ 1 đơn (còn lại `409 CART_EMPTY`); cùng khóa nhưng khác khách thì mỗi người có đơn riêng.
+- **CHECK/UNIQUE** (`constraints`): từng ca xuất phát từ bản ghi hợp lệ rồi chỉ đổi một trường, và phải đúng **tên** ràng buộc.
+  UNIQUE kiểm cả quy tắc collation (email/mã voucher khác hoa-thường, màu khác hoa-thường hoặc khác dấu thông thường coi là một)
+  và việc MySQL cho nhiều giá trị `NULL` trong khóa duy nhất.
+  **Ngoại lệ đã đo:** `utf8mb4_unicode_ci` KHÔNG coi `đ` = `d`, nên `Đen` và `den` là hai màu khác nhau ở DB. Test ghi nhận đúng hành
+  vi này (không phải mong muốn), còn việc coi chúng là một chỉ do `fold()` ở tầng service. Đây là ví dụ test trên DB thật sửa lại một
+  câu sai trong tài liệu.
+  Ghi chú: `chk_product_variants_stock` (tồn không âm) về logic **dư thừa** so với `chk_product_variants_reserved`
+  (`0 <= reserved <= stock`), nên khi `stock` âm MySQL có thể báo một trong hai tên; test chấp nhận cả hai.
+- **Mức cô lập** (`transaction-isolation`): đo bằng **hành vi**, không đọc biến. Trong transaction, đọc hai lần quanh một thay đổi
+  đã commit từ kết nối khác: `READ COMMITTED` thấy giá trị mới ở lần đọc thứ hai, `REPEATABLE READ` thì không. Nhờ đó biết
+  `isolationLevel: ReadCommitted` mà `OrdersService` truyền vào có thật sự được MySQL áp dụng, và không "rò" sang transaction sau
+  trên cùng kết nối.
+  **Bài học đo lường:** lần chạy đầu tôi đọc `SELECT @@transaction_isolation` và nhận `REPEATABLE-READ` dù transaction đã chạy
+  `READ COMMITTED`. Prisma đặt mức cho transaction bằng `SET TRANSACTION ISOLATION LEVEL` (chỉ áp cho MỘT transaction kế tiếp),
+  còn biến kia là mức của phiên. Một phép đo sai có thể báo "lỗi" giả; luôn kiểm bằng hành vi khi có thể.
+- **Cột có kiểu giới hạn:** `colorHex` là `VARCHAR(7)`, nên giá trị 9 ký tự bị chặn ở tầng kiểu cột (`P2000`, MySQL lỗi 1406) trước
+  khi tới ràng buộc CHECK; test kiểm riêng điều này.
+
+### 9.4 Giới hạn của test đồng thời
+
+Chạy thấy xanh **không chứng minh** không có race, chỉ làm tăng xác suất phát hiện. Vì vậy các ca chính lặp nhiều vòng.
+Hiện chưa phủ: hủy đơn đồng thời, xác nhận thanh toán đua với hết hạn thanh toán, thanh toán online (VietQR/SePay).
+
+## 10. Giới hạn cần biết
 
 - Test chỉ chạy trên Linux/macOS (cú pháp biến môi trường inline) và cần Docker.
 - Image `mysql:8.0` là tag trôi: bản vá có thể đổi theo thời gian (giống `docker-compose.yml`).
