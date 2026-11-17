@@ -72,7 +72,7 @@ function SearchSelect({
                 <Combobox.Item
                   key={item.value}
                   value={item}
-                  className="flex cursor-default items-center justify-between gap-inline rounded-xs px-2.5 py-2 outline-none select-none data-highlighted:bg-surface-hover"
+                  className="flex cursor-pointer items-center justify-between gap-inline rounded-xs px-2.5 py-2 outline-none select-none data-highlighted:bg-surface-hover"
                 >
                   <span>{item.label}</span>
                   <Combobox.ItemIndicator>
