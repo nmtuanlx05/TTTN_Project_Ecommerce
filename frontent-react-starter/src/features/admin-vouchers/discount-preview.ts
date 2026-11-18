@@ -3,9 +3,7 @@ import type { DiscountType } from "./types"
 
 export const EXAMPLE_SUBTOTAL = 1_000_000
 
-export type DiscountPreview =
-  | { kind: "ok"; amount: number }
-  | { kind: "below-min"; minOrderValue: number }
+export type DiscountPreview = { kind: "ok"; amount: number } | { kind: "below-min"; minOrderValue: number }
 
 /**
  * Ví dụ minh họa trên form. ĐÂY LÀ BẢN SAO quy tắc giảm giá của backend (`orders.pricing.ts`):
@@ -22,9 +20,7 @@ export function previewDiscount(input: {
   const value = parseInteger(input.discountValue)
   if (!Number.isFinite(value) || value <= 0) return null
 
-  const minOrderValue = Number.isFinite(parseInteger(input.minOrderValue))
-    ? parseInteger(input.minOrderValue)
-    : 0
+  const minOrderValue = Number.isFinite(parseInteger(input.minOrderValue)) ? parseInteger(input.minOrderValue) : 0
   if (EXAMPLE_SUBTOTAL < minOrderValue) return { kind: "below-min", minOrderValue }
 
   let amount = value

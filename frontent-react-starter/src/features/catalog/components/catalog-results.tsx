@@ -4,13 +4,7 @@ import { cn } from "@/lib/utils"
 import type { Paginated } from "@/types/api"
 import type { CatalogProductListItem } from "../types"
 import type { CatalogSearch } from "../use-catalog-search-params"
-import {
-  CatalogError,
-  CategoryEmpty,
-  NoMatches,
-  PageOutOfRange,
-  StoreEmpty,
-} from "./catalog-states"
+import { CatalogError, CategoryEmpty, NoMatches, PageOutOfRange, StoreEmpty } from "./catalog-states"
 import { ProductGrid } from "./product-grid"
 import { ProductGridSkeleton } from "./product-grid-skeleton"
 
@@ -39,7 +33,8 @@ function CatalogResults({
   const { items, meta } = data
   if (items.length === 0) {
     if (meta.total > 0) return <PageOutOfRange onFirstPage={() => search.setPage(1)} />
-    const onlyCategory = search.categorySlug !== undefined && !search.q && search.minPrice === undefined && search.maxPrice === undefined
+    const onlyCategory =
+      search.categorySlug !== undefined && !search.q && search.minPrice === undefined && search.maxPrice === undefined
     if (onlyCategory) return <CategoryEmpty />
     return search.hasFilters ? <NoMatches onClear={search.clearFilters} /> : <StoreEmpty />
   }

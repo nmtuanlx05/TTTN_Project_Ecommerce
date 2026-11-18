@@ -32,7 +32,9 @@ function Reveal({ children, className }: { children: ReactNode; className?: stri
         if (node && node.getBoundingClientRect().top >= window.innerHeight) setBelowFold(true)
       }}
       className={cn(
-        belowFold && revealed && "motion-safe:transition-[opacity,transform] motion-safe:duration-(--motion-slow) motion-safe:ease-smooth",
+        belowFold &&
+          revealed &&
+          "motion-safe:transition-[opacity,transform] motion-safe:duration-(--motion-slow) motion-safe:ease-smooth",
         hidden && "motion-safe:translate-y-4 motion-safe:opacity-0",
         className,
       )}

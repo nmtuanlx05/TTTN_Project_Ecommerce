@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { BrandLogo } from "@/components/shared/brand-logo";
+import type { ReactNode } from "react"
+import { BrandLogo } from "@/components/shared/brand-logo"
 
 /**
  * Khung trang đăng nhập và đăng ký: thương hiệu, thẻ ở giữa.
@@ -11,10 +11,10 @@ function AuthShell({
   footer,
   children,
 }: {
-  title: string;
-  description?: string;
-  footer?: ReactNode;
-  children: ReactNode;
+  title: string
+  description?: string
+  footer?: ReactNode
+  children: ReactNode
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas px-gutter">
@@ -27,21 +27,17 @@ function AuthShell({
           <div className="flex flex-col gap-stack">
             <div className="flex flex-col gap-1 align-middle text-center">
               <h1 className="text-h1 uppercase text-ink ">{title}</h1>
-              {description ? (
-                <p className="text-body-sm text-ink-muted">{description}</p>
-              ) : null}
+              {description ? <p className="text-body-sm text-ink-muted">{description}</p> : null}
             </div>
             {children}
           </div>
           {footer ? (
-            <p className="border-t border-border-subtle pt-stack text-body-sm text-ink-muted">
-              {footer}
-            </p>
+            <p className="border-t border-border-subtle pt-stack text-body-sm text-ink-muted">{footer}</p>
           ) : null}
         </section>
       </main>
     </div>
-  );
+  )
 }
 
-export { AuthShell };
+export { AuthShell }

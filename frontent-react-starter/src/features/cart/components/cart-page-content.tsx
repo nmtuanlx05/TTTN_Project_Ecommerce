@@ -35,7 +35,12 @@ function CartPageContent() {
               Xoá tất cả
             </Button>
           </div>
-          <CartLineList items={cart.items} unavailableCount={cart.unavailableCount} size="lg" onAnnounce={setAnnouncement} />
+          <CartLineList
+            items={cart.items}
+            unavailableCount={cart.unavailableCount}
+            size="lg"
+            onAnnounce={setAnnouncement}
+          />
         </div>
         <div className="lg:col-span-4">
           <CartSummary cart={cart} />

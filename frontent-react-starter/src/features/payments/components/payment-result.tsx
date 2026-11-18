@@ -75,18 +75,27 @@ function PaymentResult({ payment, state }: { payment: OrderPayment; state: "PAID
       </dl>
       <div className="flex flex-wrap justify-center gap-3">
         {state === "PAID" ? (
-          <Link to={accountOrderPath(payment.orderCode)} className={cn(buttonVariants({ size: "lg" }), "press rounded-4xl")}>
+          <Link
+            to={accountOrderPath(payment.orderCode)}
+            className={cn(buttonVariants({ size: "lg" }), "press rounded-4xl")}
+          >
             Xem đơn hàng
           </Link>
         ) : null}
         <Link
           to="/products"
-          className={cn(buttonVariants({ size: "lg", variant: state === "PAID" ? "secondary" : "primary" }), "press rounded-4xl")}
+          className={cn(
+            buttonVariants({ size: "lg", variant: state === "PAID" ? "secondary" : "primary" }),
+            "press rounded-4xl",
+          )}
         >
           Tiếp tục mua sắm
         </Link>
         {state !== "PAID" ? (
-          <Link to={accountOrderPath(payment.orderCode)} className={cn(buttonVariants({ size: "lg", variant: "secondary" }), "press rounded-4xl")}>
+          <Link
+            to={accountOrderPath(payment.orderCode)}
+            className={cn(buttonVariants({ size: "lg", variant: "secondary" }), "press rounded-4xl")}
+          >
             Xem đơn hàng
           </Link>
         ) : null}

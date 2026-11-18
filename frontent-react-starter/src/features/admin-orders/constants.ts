@@ -6,7 +6,14 @@ export const PAGE_SIZE = 20
 export const REASON_MAX_LENGTH = 500
 
 /** Nút lọc nhanh. Chỉ gồm trạng thái backend nhận được; PACKING không còn, RETURNED chưa dùng. */
-export const STATUS_TABS: readonly OrderStatus[] = ["PENDING_PAYMENT", "PENDING", "CONFIRMED", "SHIPPING", "COMPLETED", "CANCELLED"]
+export const STATUS_TABS: readonly OrderStatus[] = [
+  "PENDING_PAYMENT",
+  "PENDING",
+  "CONFIRMED",
+  "SHIPPING",
+  "COMPLETED",
+  "CANCELLED",
+]
 
 export const PAYMENT_METHOD_LABEL: Record<AdminPaymentMethod, string> = {
   COD: "COD",
@@ -66,5 +73,8 @@ export const ERROR_CODE = {
 export const PAID_ADMIN_ONLY_MESSAGE = "Đơn đã thanh toán, chỉ quản trị viên được hủy (cần hoàn tiền cho khách)."
 
 /** Nút "Xác nhận đã nhận tiền" chỉ có với đơn online còn chờ chuyển khoản. */
-export const isAwaitingBankTransfer = (order: { status: OrderStatus; paymentMethod: AdminPaymentMethod; paymentStatus: AdminPaymentStatus }) =>
-  order.status === "PENDING_PAYMENT" && order.paymentMethod === "ONLINE" && order.paymentStatus === "UNPAID"
+export const isAwaitingBankTransfer = (order: {
+  status: OrderStatus
+  paymentMethod: AdminPaymentMethod
+  paymentStatus: AdminPaymentStatus
+}) => order.status === "PENDING_PAYMENT" && order.paymentMethod === "ONLINE" && order.paymentStatus === "UNPAID"

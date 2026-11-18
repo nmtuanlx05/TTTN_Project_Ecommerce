@@ -77,7 +77,7 @@ function ConfirmPaymentForm({
         <Alert variant="warning">
           {shortfall
             ? `Giao dịch gốc là ${formatVnd(transaction.amount)} nhưng hệ thống sẽ ghi nhận đã nhận đủ ${formatVnd(target.totalAmount)}. Chỉ xác nhận khi bạn đã thấy đủ tiền trong tài khoản (ví dụ khách đã chuyển bù).`
-            : "Chỉ xác nhận khi bạn đã thấy tiền vào tài khoản. Đơn sẽ chuyển sang \"Chờ xác nhận\" và được ghi là đã thanh toán đủ."}
+            : 'Chỉ xác nhận khi bạn đã thấy tiền vào tài khoản. Đơn sẽ chuyển sang "Chờ xác nhận" và được ghi là đã thanh toán đủ.'}
         </Alert>
         <Field
           label="Ghi chú đối soát"

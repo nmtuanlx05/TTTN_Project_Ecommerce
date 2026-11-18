@@ -87,7 +87,10 @@ function OrderCard({
   }
 
   return (
-    <article aria-label={`Đơn ${order.code}`} className="flex flex-col gap-5 rounded-panel border border-border-subtle bg-surface-raised p-card">
+    <article
+      aria-label={`Đơn ${order.code}`}
+      className="flex flex-col gap-5 rounded-panel border border-border-subtle bg-surface-raised p-card"
+    >
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-0.5">
           <h2 className="text-body font-semibold text-ink">
@@ -114,13 +117,18 @@ function OrderCard({
             </li>
           ))}
           {extra > 0 ? (
-            <li aria-hidden="true" className="grid size-14 place-items-center rounded-card bg-surface-sunken text-body-sm font-medium text-ink-muted">
+            <li
+              aria-hidden="true"
+              className="grid size-14 place-items-center rounded-card bg-surface-sunken text-body-sm font-medium text-ink-muted"
+            >
               +{extra}
             </li>
           ) : null}
         </ul>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <p className="truncate text-body-sm font-medium text-ink">{items.map((item) => item.productName).join(", ")}</p>
+          <p className="truncate text-body-sm font-medium text-ink">
+            {items.map((item) => item.productName).join(", ")}
+          </p>
           <p className="text-body-sm text-ink-muted">{order.itemCount} sản phẩm</p>
         </div>
       </div>

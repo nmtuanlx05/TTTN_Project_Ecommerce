@@ -13,7 +13,9 @@ interface BreadcrumbItem {
 function Breadcrumbs({ items, subtle = false }: { items: BreadcrumbItem[]; subtle?: boolean }) {
   return (
     <nav aria-label="Đường dẫn trang">
-      <ol className={cn("flex flex-wrap items-center gap-x-1 text-ink-muted", subtle ? "text-caption" : "text-body-sm")}>
+      <ol
+        className={cn("flex flex-wrap items-center gap-x-1 text-ink-muted", subtle ? "text-caption" : "text-body-sm")}
+      >
         {items.map((item, index) => (
           <Fragment key={`${index}-${item.label}`}>
             {index > 0 ? <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-ink-subtle" /> : null}
@@ -26,7 +28,10 @@ function Breadcrumbs({ items, subtle = false }: { items: BreadcrumbItem[]; subtl
                   {item.label}
                 </Link>
               ) : (
-                <span aria-current="page" className={cn("block max-w-56 truncate sm:max-w-md", subtle ? "text-ink-muted" : "text-ink")}>
+                <span
+                  aria-current="page"
+                  className={cn("block max-w-56 truncate sm:max-w-md", subtle ? "text-ink-muted" : "text-ink")}
+                >
                   {item.label}
                 </span>
               )}

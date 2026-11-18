@@ -1,19 +1,11 @@
 import { apiGetPage, apiSend } from "@/lib/api-client"
 import type { Paginated } from "@/types/api"
 import type { User } from "@/types/user"
-import type {
-  CreateUserInput,
-  UpdateUserInput,
-  UpdateUserStatusInput,
-  UserListParams,
-} from "./types"
+import type { CreateUserInput, UpdateUserInput, UpdateUserStatusInput, UserListParams } from "./types"
 
 /** Gọi API users (docs/api/users.md). Chỉ `queries.ts` được import file này. */
 
-export function listUsers(
-  params: UserListParams,
-  signal?: AbortSignal,
-): Promise<Paginated<User>> {
+export function listUsers(params: UserListParams, signal?: AbortSignal): Promise<Paginated<User>> {
   return apiGetPage<User>("/users", { params, signal })
 }
 

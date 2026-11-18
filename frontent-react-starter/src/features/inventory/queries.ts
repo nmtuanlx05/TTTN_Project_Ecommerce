@@ -1,10 +1,4 @@
-import {
-  keepPreviousData,
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query"
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { ApiError } from "@/lib/api-error"
 import {
   adjustStock,
@@ -87,11 +81,7 @@ function useRefreshStock() {
  * (tồn đã đổi ở nơi khác) và, với nhập/xuất/điều chỉnh, 0 (mất mạng: thao tác có thể đã được ghi).
  */
 function shouldRefreshOnError(error: ApiError, refreshOnNetworkError: boolean): boolean {
-  return (
-    error.statusCode === 404 ||
-    error.statusCode === 409 ||
-    (refreshOnNetworkError && error.statusCode === 0)
-  )
+  return error.statusCode === 404 || error.statusCode === 409 || (refreshOnNetworkError && error.statusCode === 0)
 }
 
 type VariantInput<T> = { variantId: number; input: T }

@@ -9,10 +9,7 @@ function InventoryPage() {
 
   return (
     <div className="flex flex-col gap-section">
-      <PageHeader
-        title="Kho"
-        description="Nhập kho và theo dõi tồn khả dụng của từng biến thể."
-      />
+      <PageHeader title="Kho" description="Nhập kho và theo dõi tồn khả dụng của từng biến thể." />
 
       <div className="flex flex-col gap-stack">
         <InventorySummaryCards

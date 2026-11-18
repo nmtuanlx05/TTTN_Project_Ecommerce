@@ -39,9 +39,7 @@ export function toFormValues(voucher: Voucher | null): VoucherFormValues {
 /** Giá trị gửi lên cho từng trường ở dạng "đã chuẩn hóa"; `null` là xóa giá trị. */
 function normalize(values: VoucherFormValues) {
   const maxDiscount =
-    values.discountType === "PERCENT" && values.maxDiscount.trim()
-      ? parseInteger(values.maxDiscount)
-      : null
+    values.discountType === "PERCENT" && values.maxDiscount.trim() ? parseInteger(values.maxDiscount) : null
   return {
     code: values.code.trim().toUpperCase(),
     description: values.description.trim() || null,
@@ -66,11 +64,7 @@ const LOCKED_KEYS = ["code", "discountType", "discountValue", "maxDiscount", "st
  * Chỉ gồm trường thật sự đổi. Xóa giá trị (bật "Không giới hạn", xóa/đổi sang FIXED mất `maxDiscount`, xóa mô tả)
  * gửi `null` rõ ràng chứ không bỏ trường. Rỗng nghĩa là không có gì để lưu.
  */
-export function buildUpdateInput(
-  voucher: Voucher,
-  values: VoucherFormValues,
-  locked: boolean,
-): UpdateVoucherInput {
+export function buildUpdateInput(voucher: Voucher, values: VoucherFormValues, locked: boolean): UpdateVoucherInput {
   const next = normalize(values)
   const input: Record<string, unknown> = {}
   for (const key of Object.keys(next) as (keyof typeof next)[]) {

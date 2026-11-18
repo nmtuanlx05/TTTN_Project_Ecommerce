@@ -8,12 +8,7 @@ import {
   REASON_MAX_LENGTH,
 } from "./constants"
 import { parseQuantityInput } from "./quantity-input"
-import type {
-  AdjustStockInput,
-  ExportReason,
-  ExportStockInput,
-  ImportStockInput,
-} from "./types"
+import type { AdjustStockInput, ExportReason, ExportStockInput, ImportStockInput } from "./types"
 
 /**
  * Quy tắc phản chiếu DTO của backend (docs/api/inventory.md). Số trong form là chuỗi (ô chỉ nhận chữ
@@ -53,10 +48,7 @@ const quantity = integerText({
   maxLabel: "100.000 mỗi lần",
 })
 
-const note = z
-  .string()
-  .trim()
-  .max(NOTE_MAX_LENGTH, `Ghi chú tối đa ${NOTE_MAX_LENGTH} ký tự. Rút gọn lại.`)
+const note = z.string().trim().max(NOTE_MAX_LENGTH, `Ghi chú tối đa ${NOTE_MAX_LENGTH} ký tự. Rút gọn lại.`)
 
 export const importSchema = z.object({ quantity, note })
 export type ImportFormValues = z.infer<typeof importSchema>

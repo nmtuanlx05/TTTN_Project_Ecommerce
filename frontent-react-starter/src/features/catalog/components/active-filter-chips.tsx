@@ -28,7 +28,9 @@ function ActiveFilterChips({
 }) {
   const hasPrice = search.minPrice !== undefined || search.maxPrice !== undefined
   const chips = [
-    categoryName ? { key: "category", label: `Danh mục: ${categoryName}`, remove: () => search.setCategory(undefined) } : null,
+    categoryName
+      ? { key: "category", label: `Danh mục: ${categoryName}`, remove: () => search.setCategory(undefined) }
+      : null,
     search.q ? { key: "q", label: `Từ khóa: “${search.q}”`, remove: search.clearQuery } : null,
     hasPrice
       ? {

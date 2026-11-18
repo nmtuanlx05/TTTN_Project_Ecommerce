@@ -30,13 +30,7 @@ function MobileAccount({ session, onNavigate }: { session: HeaderSession; onNavi
   return (
     <div className="flex flex-col gap-inline">
       <div className="flex items-center gap-inline px-3">
-        <UserAvatar
-          avatarUrl={account.avatarUrl}
-          name={account.fullName}
-          email={account.email}
-          size="md"
-          decorative
-        />
+        <UserAvatar avatarUrl={account.avatarUrl} name={account.fullName} email={account.email} size="md" decorative />
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-body-sm font-semibold text-ink">{account.name}</span>
           <span className="truncate text-caption text-ink-muted">{account.email}</span>
@@ -63,21 +57,11 @@ function MobileAccount({ session, onNavigate }: { session: HeaderSession; onNavi
           <OrdersCountBadge count={session.ordersLink.count} />
         </Link>
       ) : null}
-      <Button
-        ref={avatarButtonRef}
-        variant="ghost"
-        className="justify-start"
-        onClick={() => setAvatarOpen(true)}
-      >
+      <Button ref={avatarButtonRef} variant="ghost" className="justify-start" onClick={() => setAvatarOpen(true)}>
         <Camera />
         Ảnh đại diện
       </Button>
-      <Button
-        variant="ghost"
-        className="justify-start"
-        disabled={session.loggingOut}
-        onClick={session.onLogout}
-      >
+      <Button variant="ghost" className="justify-start" disabled={session.loggingOut} onClick={session.onLogout}>
         <LogOut />
         Đăng xuất
       </Button>

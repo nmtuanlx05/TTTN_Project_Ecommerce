@@ -7,10 +7,8 @@ import type { ProductFormValues } from "../schemas"
 import { FormSection } from "./form-section"
 import { ProductPriceField } from "./product-price-field"
 
-const SLUG_HINT_CREATE =
-  "Bỏ trống để hệ thống tự tạo từ tên. Chỉ gồm chữ thường không dấu, số và dấu gạch ngang."
-const SLUG_HINT_EDIT =
-  "Nhập slug, hoặc giữ nguyên slug cũ. Đổi tên không tự đổi slug, để đường dẫn ổn định."
+const SLUG_HINT_CREATE = "Bỏ trống để hệ thống tự tạo từ tên. Chỉ gồm chữ thường không dấu, số và dấu gạch ngang."
+const SLUG_HINT_EDIT = "Nhập slug, hoặc giữ nguyên slug cũ. Đổi tên không tự đổi slug, để đường dẫn ổn định."
 
 /** Tên, slug, danh mục, giá và mô tả. */
 function ProductBasicFields({ mode, idPrefix }: { mode: "create" | "edit"; idPrefix: string }) {

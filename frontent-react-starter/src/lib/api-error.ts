@@ -55,17 +55,12 @@ export class ApiError extends Error {
       )
     }
 
-    const body = response.data as
-      | { message?: unknown; errors?: unknown; code?: unknown }
-      | undefined
+    const body = response.data as { message?: unknown; errors?: unknown; code?: unknown } | undefined
     const message =
-      typeof body?.message === "string" && body.message
-        ? body.message
-        : "Có lỗi xảy ra, vui lòng thử lại."
+      typeof body?.message === "string" && body.message ? body.message : "Có lỗi xảy ra, vui lòng thử lại."
     const errors = Array.isArray(body?.errors)
       ? (body.errors as FieldError[]).filter(
-          (item) =>
-            typeof item?.field === "string" && typeof item?.message === "string",
+          (item) => typeof item?.field === "string" && typeof item?.message === "string",
         )
       : []
 

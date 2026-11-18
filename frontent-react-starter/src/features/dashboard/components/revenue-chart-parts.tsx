@@ -1,13 +1,7 @@
 import { formatCompactVnd, formatDayMonth, formatFullDate, formatVnd } from "@/lib/format"
 import type { MergedPoint } from "./revenue-chart-data"
 
-export function ChartTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean
-  payload?: { payload: MergedPoint }[]
-}) {
+export function ChartTooltip({ active, payload }: { active?: boolean; payload?: { payload: MergedPoint }[] }) {
   if (!active || !payload?.length) return null
   const point = payload[0].payload
 
@@ -19,8 +13,7 @@ export function ChartTooltip({
       </p>
       {point.previousRevenue !== null && point.previousDate ? (
         <p className="text-ink-muted">
-          Kỳ trước ({formatDayMonth(point.previousDate)}):{" "}
-          <span data-numeric>{formatVnd(point.previousRevenue)}</span>
+          Kỳ trước ({formatDayMonth(point.previousDate)}): <span data-numeric>{formatVnd(point.previousRevenue)}</span>
         </p>
       ) : null}
     </div>
@@ -39,14 +32,7 @@ export function LastPointLabel({ x, y, value, index, dataLength }: LabelProps & 
   if (index !== dataLength - 1 || x === undefined || y === undefined) return null
 
   return (
-    <text
-      x={Number(x)}
-      y={Number(y) - 10}
-      textAnchor="end"
-      className="text-caption"
-      fill="var(--ink)"
-      fontWeight={600}
-    >
+    <text x={Number(x)} y={Number(y) - 10} textAnchor="end" className="text-caption" fill="var(--ink)" fontWeight={600}>
       {formatCompactVnd(Number(value), true)}
     </text>
   )
@@ -63,15 +49,7 @@ export function Legend() {
       </span>
       <span className="inline-flex items-center gap-1.5">
         <svg width="18" height="8" aria-hidden="true">
-          <line
-            x1="0"
-            y1="4"
-            x2="18"
-            y2="4"
-            stroke="var(--ink-subtle)"
-            strokeWidth="2"
-            strokeDasharray="4 3"
-          />
+          <line x1="0" y1="4" x2="18" y2="4" stroke="var(--ink-subtle)" strokeWidth="2" strokeDasharray="4 3" />
         </svg>
         Kỳ trước
       </span>

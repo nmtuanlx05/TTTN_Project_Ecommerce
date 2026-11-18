@@ -49,7 +49,12 @@ function Pagination({
         {icon}
       </span>
     ) : (
-      <Link to={hrefFor(target)} onClick={handleClick} aria-label={label} className={cn(CELL, "hover:bg-surface-hover")}>
+      <Link
+        to={hrefFor(target)}
+        onClick={handleClick}
+        aria-label={label}
+        className={cn(CELL, "hover:bg-surface-hover")}
+      >
         {icon}
       </Link>
     )

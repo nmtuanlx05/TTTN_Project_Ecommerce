@@ -4,41 +4,25 @@ import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Badge, OrderStatusBadge, PaymentStatusBadge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatOrderTime, formatVnd } from "@/lib/format"
 import type { DashboardPaymentStatus, PendingOrder } from "../types"
 
 /** `FAILED` chưa có trong `PaymentStatusBadge` (ui/badge); xử lý cục bộ giống order-payment-cell.tsx của admin-orders. */
 function PaymentCell({ status }: { status: DashboardPaymentStatus }) {
-  return status === "FAILED" ? (
-    <Badge variant="unpaid">Thanh toán lỗi</Badge>
-  ) : (
-    <PaymentStatusBadge status={status} />
-  )
+  return status === "FAILED" ? <Badge variant="unpaid">Thanh toán lỗi</Badge> : <PaymentStatusBadge status={status} />
 }
 
 function RecentOrders({ orders }: { orders: PendingOrder[] }) {
   const navigate = useNavigate()
   return (
-    <section
-      aria-labelledby="recent-orders-title"
-      className="flex flex-col gap-stack"
-    >
+    <section aria-labelledby="recent-orders-title" className="flex flex-col gap-stack">
       <div className="flex flex-wrap items-end justify-between gap-inline">
         <div>
           <h2 id="recent-orders-title" className="font-display text-h2 uppercase text-ink">
             Đơn mới cần xử lý
           </h2>
-          <p className="mt-0.5 text-caption text-ink-muted">
-            Đơn chưa giao, mới nhất lên trước
-          </p>
+          <p className="mt-0.5 text-caption text-ink-muted">Đơn chưa giao, mới nhất lên trước</p>
         </div>
         <Button variant="secondary" size="sm" render={<Link to="/admin/orders" />}>
           Xem tất cả đơn
@@ -65,11 +49,7 @@ function RecentOrders({ orders }: { orders: PendingOrder[] }) {
           </TableHeader>
           <TableBody>
             {orders.map((order) => (
-              <TableRow
-                key={order.id}
-                className="cursor-pointer"
-                onClick={() => navigate(`/admin/orders/${order.id}`)}
-              >
+              <TableRow key={order.id} className="cursor-pointer" onClick={() => navigate(`/admin/orders/${order.id}`)}>
                 <TableCell>
                   <Link
                     to={`/admin/orders/${order.id}`}

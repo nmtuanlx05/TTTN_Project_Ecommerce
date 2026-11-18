@@ -43,7 +43,9 @@ function OrderActionsPanel({
       {awaiting ? (
         <p className="text-body-sm text-ink-muted">
           Đơn đang chờ khách chuyển khoản. Hệ thống tự xác nhận khi nhận được tiền
-          {isAdmin ? "; nếu webhook không tới, bạn có thể xác nhận thủ công sau khi đối chiếu sao kê." : ". Xác nhận thủ công chỉ dành cho quản trị viên."}
+          {isAdmin
+            ? "; nếu webhook không tới, bạn có thể xác nhận thủ công sau khi đối chiếu sao kê."
+            : ". Xác nhận thủ công chỉ dành cho quản trị viên."}
         </p>
       ) : null}
       {paidLocked && ORDER_ACTIONS[status].includes("cancel") ? (

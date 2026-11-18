@@ -1,15 +1,5 @@
 import { useMemo } from "react"
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  LabelList,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
+import { Area, AreaChart, CartesianGrid, LabelList, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCompactVnd, formatDayMonth } from "@/lib/format"
@@ -25,20 +15,11 @@ import { RevenueChartTable } from "./revenue-chart-table"
  */
 const EMPTY_AXIS_MAX = 100_000
 
-function RevenueChart({
-  series,
-  previousSeries,
-}: {
-  series: DailyPoint[]
-  previousSeries: DailyPoint[]
-}) {
+function RevenueChart({ series, previousSeries }: { series: DailyPoint[]; previousSeries: DailyPoint[] }) {
   const isMobile = useIsMobile()
   const allZero = series.every((p) => p.revenue === 0) && previousSeries.every((p) => p.revenue === 0)
   const singleDay = series.length === 1
-  const data = useMemo(
-    () => mergeSeries(series, previousSeries),
-    [series, previousSeries],
-  )
+  const data = useMemo(() => mergeSeries(series, previousSeries), [series, previousSeries])
 
   return (
     <section
@@ -50,9 +31,7 @@ function RevenueChart({
           <h2 id="revenue-chart-title" className="font-display text-h3 text-ink">
             Doanh thu theo ngày
           </h2>
-          <p className="mt-0.5 text-caption text-ink-muted">
-            Doanh thu theo ngày hoàn thành đơn
-          </p>
+          <p className="mt-0.5 text-caption text-ink-muted">Doanh thu theo ngày hoàn thành đơn</p>
         </div>
         <Legend />
       </div>
@@ -61,11 +40,7 @@ function RevenueChart({
       <div className="h-72 w-full min-w-0">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 16, right: 12, bottom: 0, left: 0 }}>
-            <CartesianGrid
-              vertical={false}
-              stroke="var(--border-subtle)"
-              strokeWidth={1}
-            />
+            <CartesianGrid vertical={false} stroke="var(--border-subtle)" strokeWidth={1} />
             <XAxis
               dataKey="date"
               tickFormatter={formatDayMonth}
@@ -85,10 +60,7 @@ function RevenueChart({
               tickMargin={8}
               tick={{ fill: "var(--ink-muted)", fontSize: 11 }}
             />
-            <Tooltip
-              content={<ChartTooltip />}
-              cursor={{ stroke: "var(--border-strong)", strokeWidth: 1 }}
-            />
+            <Tooltip content={<ChartTooltip />} cursor={{ stroke: "var(--border-strong)", strokeWidth: 1 }} />
             <Line
               type="monotone"
               dataKey="previousRevenue"

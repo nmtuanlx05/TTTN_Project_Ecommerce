@@ -41,4 +41,11 @@ export const ERROR_CODE = {
   txnAlreadyResolved: "PAYMENT_TXN_ALREADY_RESOLVED",
 } as const
 
-export const TRANSACTION_HEADERS = ["Thời gian", "Số tiền", "Nội dung chuyển khoản", "Lý do", "Đơn hàng", "Xử lý"] as const
+export const TRANSACTION_HEADERS = [
+  "Thời gian",
+  "Số tiền",
+  "Nội dung chuyển khoản",
+  "Lý do",
+  "Đơn hàng",
+  "Xử lý",
+] as const

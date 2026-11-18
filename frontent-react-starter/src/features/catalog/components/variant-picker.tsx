@@ -71,10 +71,14 @@ function VariantPicker({
             selected={choice[axis]}
             options={optionValues(variants, axis).map((value) => ({
               value,
-              ...(inStockOnly ? describeInStockOption(variants, axis, value) : describeOption(variants, choice, axis, value)),
+              ...(inStockOnly
+                ? describeInStockOption(variants, axis, value)
+                : describeOption(variants, choice, axis, value)),
               swatch: axis === "color" ? colorHexOf(variants, value) : undefined,
             }))}
-            onSelect={(value) => onChange((inStockOnly ? selectInStockOption : selectOption)(variants, choice, axis, value))}
+            onSelect={(value) =>
+              onChange((inStockOnly ? selectInStockOption : selectOption)(variants, choice, axis, value))
+            }
           />
         </div>
       ))}

@@ -25,9 +25,7 @@ function InventorySummaryCard({
       className={cn(
         "flex flex-col gap-1 rounded-md border p-card text-left outline-none transition-colors",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        pressed
-          ? "border-ink bg-surface-raised"
-          : "border-border-subtle bg-surface hover:bg-surface-hover",
+        pressed ? "border-ink bg-surface-raised" : "border-border-subtle bg-surface hover:bg-surface-hover",
       )}
     >
       <span className="flex items-center gap-1.5 text-body-sm text-ink-muted">

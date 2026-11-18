@@ -1,18 +1,5 @@
-import {
-  flexRender,
-  rowSortingFeature,
-  tableFeatures,
-  useTable,
-  type ColumnDef,
-} from "@tanstack/react-table"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { flexRender, rowSortingFeature, tableFeatures, useTable, type ColumnDef } from "@tanstack/react-table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ImagePreview } from "@/components/shared/image-preview"
 import { formatDateTime, formatVnd } from "@/lib/format"
 import type { SortOrder } from "@/types/api"
@@ -56,13 +43,7 @@ function ProductsTable({
       header: () => <span className="sr-only">Ảnh</span>,
       enableSorting: false,
       cell: ({ row }) => (
-        <ImagePreview
-          src={row.original.imageUrl}
-          alt={row.original.name}
-          shape="portrait"
-          zoomable
-          className="w-9"
-        />
+        <ImagePreview src={row.original.imageUrl} alt={row.original.name} shape="portrait" zoomable className="w-9" />
       ),
     },
     {
@@ -90,10 +71,7 @@ function ProductsTable({
       header: "Biến thể",
       enableSorting: false,
       cell: ({ row }) => (
-        <ProductVariantsCell
-          active={row.original.activeVariantCount}
-          total={row.original.variantCount}
-        />
+        <ProductVariantsCell active={row.original.activeVariantCount} total={row.original.variantCount} />
       ),
     },
     {
@@ -114,11 +92,7 @@ function ProductsTable({
       header: () => <span className="sr-only">Hành động</span>,
       enableSorting: false,
       cell: ({ row }) => (
-        <ProductRowActions
-          product={row.original}
-          pending={pendingId === row.original.id}
-          onToggle={onToggleStatus}
-        />
+        <ProductRowActions product={row.original} pending={pendingId === row.original.id} onToggle={onToggleStatus} />
       ),
     },
   ]
@@ -145,9 +119,7 @@ function ProductsTable({
                 <TableHead
                   key={header.id}
                   className={id === "price" ? "text-right" : undefined}
-                  aria-sort={
-                    sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined
-                  }
+                  aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
                 >
                   {sortable ? (
                     <ProductSortHeader
@@ -169,10 +141,7 @@ function ProductsTable({
         {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id}>
             {row.getAllCells().map((cell) => (
-              <TableCell
-                key={cell.id}
-                className={cell.column.id === "price" ? "text-right" : undefined}
-              >
+              <TableCell key={cell.id} className={cell.column.id === "price" ? "text-right" : undefined}>
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
               </TableCell>
             ))}

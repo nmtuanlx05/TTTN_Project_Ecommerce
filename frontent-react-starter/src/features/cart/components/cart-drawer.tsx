@@ -41,7 +41,12 @@ function CartDrawer({
   let body
   if (cart && cart.items.length > 0) {
     body = (
-      <CartLineList items={cart.items} unavailableCount={cart.unavailableCount} size="sm" onAnnounce={setAnnouncement} />
+      <CartLineList
+        items={cart.items}
+        unavailableCount={cart.unavailableCount}
+        size="sm"
+        onAnnounce={setAnnouncement}
+      />
     )
   } else if (empty) {
     body = (
@@ -72,9 +77,20 @@ function CartDrawer({
       className="soft-ui w-full max-w-none sm:max-w-[27rem] sm:rounded-l-panel"
     >
       <CartDrawerHeader itemCount={cart ? cart.itemCount : null} />
-      {cart && !empty ? <FreeShippingBar subtotal={cart.subtotal} className="border-b border-border-subtle px-gutter pb-4" /> : null}
-      <div className={cn("scrollbar-soft min-h-0 flex-1 overflow-y-auto px-gutter", empty && "flex flex-col justify-center")}>{body}</div>
-      {cart && !empty ? <CartDrawerFooter subtotal={cart.subtotal} canCheckout={cart.itemCount > 0} onNavigate={close} /> : null}
+      {cart && !empty ? (
+        <FreeShippingBar subtotal={cart.subtotal} className="border-b border-border-subtle px-gutter pb-4" />
+      ) : null}
+      <div
+        className={cn(
+          "scrollbar-soft min-h-0 flex-1 overflow-y-auto px-gutter",
+          empty && "flex flex-col justify-center",
+        )}
+      >
+        {body}
+      </div>
+      {cart && !empty ? (
+        <CartDrawerFooter subtotal={cart.subtotal} canCheckout={cart.itemCount > 0} onNavigate={close} />
+      ) : null}
       <p role="status" aria-live="polite" className="sr-only">
         {announcement}
       </p>

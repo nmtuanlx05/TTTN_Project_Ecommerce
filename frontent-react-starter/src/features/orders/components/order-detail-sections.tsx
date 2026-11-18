@@ -17,7 +17,13 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
 
 function MoneyRow({ label, value, strong }: { label: ReactNode; value: string; strong?: boolean }) {
   return (
-    <div className={strong ? "flex items-baseline justify-between gap-4 border-t border-border-subtle pt-4" : "flex justify-between gap-4 text-body-sm"}>
+    <div
+      className={
+        strong
+          ? "flex items-baseline justify-between gap-4 border-t border-border-subtle pt-4"
+          : "flex justify-between gap-4 text-body-sm"
+      }
+    >
       <dt className={strong ? "font-semibold text-ink" : "text-ink-muted"}>{label}</dt>
       <dd data-numeric className={strong ? "text-h3 font-semibold text-ink" : "text-ink"}>
         {value}
@@ -61,7 +67,9 @@ function OrderSideCards({ order }: { order: Order }) {
       <Card title="Địa chỉ nhận hàng">
         <address className="flex flex-col gap-1 text-body-sm text-ink not-italic">
           <span className="font-medium">{address.receiverName}</span>
-          <span data-numeric className="text-ink-muted">{address.phone}</span>
+          <span data-numeric className="text-ink-muted">
+            {address.phone}
+          </span>
           <span className="text-ink-muted">{formatAddress(address)}</span>
           {address.note ? <span className="text-ink-muted">Ghi chú: {address.note}</span> : null}
         </address>
@@ -94,7 +102,10 @@ function OrderSideCards({ order }: { order: Order }) {
               value={`−${formatVnd(order.discountAmount)}`}
             />
           ) : null}
-          <MoneyRow label="Phí vận chuyển" value={order.shippingFee === 0 ? "Miễn phí" : formatVnd(order.shippingFee)} />
+          <MoneyRow
+            label="Phí vận chuyển"
+            value={order.shippingFee === 0 ? "Miễn phí" : formatVnd(order.shippingFee)}
+          />
           <MoneyRow strong label="Tổng cộng" value={formatVnd(order.totalAmount)} />
         </dl>
       </Card>

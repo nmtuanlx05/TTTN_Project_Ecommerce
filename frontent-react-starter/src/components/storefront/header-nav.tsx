@@ -70,8 +70,7 @@ function HeaderNav({ items, className }: { items: NavItem[]; className?: string 
     else if (event.key === "ArrowUp") {
       if (index === 0) toParent()
       else focusAt(index - 1)
-    }
-    else if (event.key === "Home") focusAt(0)
+    } else if (event.key === "Home") focusAt(0)
     else if (event.key === "End") focusAt(-1)
     else if (event.key === "Tab" && event.shiftKey && index === 0) toParent()
     else return

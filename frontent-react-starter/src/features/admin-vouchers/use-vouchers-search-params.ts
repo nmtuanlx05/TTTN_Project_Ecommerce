@@ -30,8 +30,7 @@ export function useVouchersSearchParams() {
   const sortParam = searchParams.get("sortBy")
   const sortBy = SORT_FIELDS.find((item) => item === sortParam) ?? DEFAULT_SORT.sortBy
   const orderParam = searchParams.get("order")
-  const order: SortOrder =
-    orderParam === "asc" || orderParam === "desc" ? orderParam : DEFAULT_SORT.order
+  const order: SortOrder = orderParam === "asc" || orderParam === "desc" ? orderParam : DEFAULT_SORT.order
 
   const pageParam = Number(searchParams.get("page"))
   const page = Number.isInteger(pageParam) && pageParam >= 1 ? pageParam : 1
@@ -81,8 +80,7 @@ export function useVouchersSearchParams() {
 
     /** Bấm tiêu đề cột: đang sắp theo cột này thì đảo chiều, không thì sắp theo cột này. */
     toggleSort: (column: VoucherSortBy) => {
-      const nextOrder: SortOrder =
-        column === sortBy ? (order === "asc" ? "desc" : "asc") : firstOrder(column)
+      const nextOrder: SortOrder = column === sortBy ? (order === "asc" ? "desc" : "asc") : firstOrder(column)
       const isDefault = column === DEFAULT_SORT.sortBy && nextOrder === DEFAULT_SORT.order
       update({
         sortBy: isDefault ? undefined : column,

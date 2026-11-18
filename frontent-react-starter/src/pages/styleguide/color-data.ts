@@ -262,8 +262,7 @@ export type TypeStep = {
 }
 
 /** Chuỗi kiểm chứng dấu tiếng Việt do khách hàng chỉ định. */
-export const DIACRITIC_PROBE =
-  "ĐƠN HÀNG ĐÃ GIAO — ƯU ĐÃI — KIỂM KÊ KHO — TỔNG CỘNG"
+export const DIACRITIC_PROBE = "ĐƠN HÀNG ĐÃ GIAO — ƯU ĐÃI — KIỂM KÊ KHO — TỔNG CỘNG"
 
 export const TYPE_SCALE: TypeStep[] = [
   {
@@ -314,8 +313,7 @@ export const TYPE_SCALE: TypeStep[] = [
     lineHeight: "1.62",
     letterSpacing: "0",
     weight: "400",
-    sample:
-      "Áo khoác dáng rộng, vải kaki dệt chéo, lót lưới thoáng. Đổi trả trong 30 ngày.",
+    sample: "Áo khoác dáng rộng, vải kaki dệt chéo, lót lưới thoáng. Đổi trả trong 30 ngày.",
     className: "text-body-lg",
   },
   {
@@ -325,8 +323,7 @@ export const TYPE_SCALE: TypeStep[] = [
     lineHeight: "1.6",
     letterSpacing: "0",
     weight: "400",
-    sample:
-      "Tồn khả dụng được tính bằng tồn kho trừ đi số lượng đang giữ cho các đơn chưa giao.",
+    sample: "Tồn khả dụng được tính bằng tồn kho trừ đi số lượng đang giữ cho các đơn chưa giao.",
     className: "text-body",
   },
   {

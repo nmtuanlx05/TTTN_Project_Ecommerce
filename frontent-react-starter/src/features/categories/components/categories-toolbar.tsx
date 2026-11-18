@@ -15,12 +15,7 @@ function CategoriesToolbar({
 }) {
   return (
     <div className="flex flex-col gap-inline md:flex-row md:items-center">
-      <SearchInput
-        value={q}
-        onSearch={onSearch}
-        placeholder="Tìm theo tên hoặc slug"
-        label="Tìm danh mục"
-      />
+      <SearchInput value={q} onSearch={onSearch} placeholder="Tìm theo tên hoặc slug" label="Tìm danh mục" />
       {hasFilters ? (
         <Button variant="ghost" onClick={onClear}>
           <X />

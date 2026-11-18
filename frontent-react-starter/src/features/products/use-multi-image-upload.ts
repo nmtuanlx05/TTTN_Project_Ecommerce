@@ -32,11 +32,7 @@ function overflowNotice(room: number, names: string[]) {
  * Lỗi mạng/server/hạn mức thì mục ở lại với nút thử lại; lỗi do file (413, 415 từ server) thì chỉ cho bỏ qua. Tải xong thì gọi `onUploaded(url, image)` (`image.assetId` để gắn vào sản phẩm) và gỡ mục khỏi hàng đợi. Gỡ component thì hủy request đang chạy.
  * Hook không biết danh sách ảnh: nơi gọi truyền số chỗ còn trống (`free`) mỗi lần thêm file.
  */
-export function useMultiImageUpload({
-  onUploaded,
-}: {
-  onUploaded: (url: string, image: UploadedImage) => void
-}) {
+export function useMultiImageUpload({ onUploaded }: { onUploaded: (url: string, image: UploadedImage) => void }) {
   const [items, setItems] = useState<UploadItem[]>([])
   const [notice, setNotice] = useState<string | null>(null)
   const nextId = useRef(1)

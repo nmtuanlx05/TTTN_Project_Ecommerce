@@ -32,21 +32,16 @@ function FormDialog({
   children: ReactNode
 }) {
   return (
-    <Dialog.Root
-      open={open}
-      disablePointerDismissal
-      onOpenChange={(next) => (busy ? undefined : onOpenChange(next))}
-    >
+    <Dialog.Root open={open} disablePointerDismissal onOpenChange={(next) => (busy ? undefined : onOpenChange(next))}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-surface-sunken/70 backdrop-blur-xs duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <Dialog.Popup
           finalFocus={finalFocus}
-          className="fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col rounded-md border border-border-default bg-surface-raised outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
+          className="fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col rounded-md border border-border-default bg-surface-raised outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+        >
           <div className="flex flex-col gap-1.5 border-b border-border-subtle p-card">
             <Dialog.Title className="font-display text-h3 text-ink">{title}</Dialog.Title>
-            <Dialog.Description className="text-body-sm text-ink-muted">
-              {description}
-            </Dialog.Description>
+            <Dialog.Description className="text-body-sm text-ink-muted">{description}</Dialog.Description>
           </div>
           {children}
         </Dialog.Popup>
@@ -58,9 +53,7 @@ function FormDialog({
 /** Vùng chứa các ô nhập; cuộn riêng khi màn hình thấp để footer luôn thấy. */
 function FormDialogBody({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col gap-stack overflow-y-auto p-card", className)}>
-      {children}
-    </div>
+    <div className={cn("flex min-h-0 flex-1 flex-col gap-stack overflow-y-auto p-card", className)}>{children}</div>
   )
 }
 

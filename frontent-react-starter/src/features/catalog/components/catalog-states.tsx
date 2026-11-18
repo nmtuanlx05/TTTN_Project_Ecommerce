@@ -11,7 +11,11 @@ function CategoryNotFound() {
       titleAs="h1"
       title="Không tìm thấy danh mục"
       description="Danh mục này không tồn tại hoặc đã được đổi tên. Quay lại cửa hàng để chọn danh mục khác."
-      action={<Link to="/products" className={buttonVariants({ variant: "secondary" })}>Về cửa hàng</Link>}
+      action={
+        <Link to="/products" className={buttonVariants({ variant: "secondary" })}>
+          Về cửa hàng
+        </Link>
+      }
     />
   )
 }
@@ -24,7 +28,11 @@ function CatalogError({ onRetry, asPage = false }: { onRetry: () => void; asPage
       titleAs={asPage ? "h1" : "p"}
       title="Không tải được sản phẩm"
       description="Kết nối bị gián đoạn hoặc máy chủ đang bận. Thử lại sau giây lát."
-      action={<Button variant="secondary" onClick={onRetry}>Thử lại</Button>}
+      action={
+        <Button variant="secondary" onClick={onRetry}>
+          Thử lại
+        </Button>
+      }
     />
   )
 }
@@ -36,7 +44,11 @@ function CategoryEmpty() {
       icon={PackageOpen}
       title="Danh mục này chưa có sản phẩm"
       description="Sản phẩm mới sẽ sớm được thêm vào. Xem các sản phẩm khác trong cửa hàng."
-      action={<Link to="/products" className={buttonVariants({ variant: "secondary" })}>Xem tất cả sản phẩm</Link>}
+      action={
+        <Link to="/products" className={buttonVariants({ variant: "secondary" })}>
+          Xem tất cả sản phẩm
+        </Link>
+      }
     />
   )
 }
@@ -47,7 +59,11 @@ function NoMatches({ onClear }: { onClear: () => void }) {
       icon={SearchX}
       title="Không có sản phẩm phù hợp"
       description="Thử bỏ bớt bộ lọc hoặc đổi từ khóa."
-      action={<Button variant="secondary" onClick={onClear}>Xóa bộ lọc</Button>}
+      action={
+        <Button variant="secondary" onClick={onClear}>
+          Xóa bộ lọc
+        </Button>
+      }
     />
   )
 }
@@ -69,7 +85,11 @@ function PageOutOfRange({ onFirstPage }: { onFirstPage: () => void }) {
       icon={SearchX}
       title="Trang này không có sản phẩm"
       description="Có thể danh sách đã thay đổi. Quay lại trang đầu để xem tiếp."
-      action={<Button variant="secondary" onClick={onFirstPage}>Về trang 1</Button>}
+      action={
+        <Button variant="secondary" onClick={onFirstPage}>
+          Về trang 1
+        </Button>
+      }
     />
   )
 }

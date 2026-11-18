@@ -7,8 +7,8 @@ import { STORE } from "@/lib/store-info"
  */
 function FooterBrand() {
   const { contact } = STORE
-  const contactLines = [contact.address, contact.phone, contact.email, contact.hours].filter(
-    (line): line is string => Boolean(line),
+  const contactLines = [contact.address, contact.phone, contact.email, contact.hours].filter((line): line is string =>
+    Boolean(line),
   )
 
   return (

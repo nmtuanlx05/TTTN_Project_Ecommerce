@@ -24,9 +24,7 @@ function MovementItem({ movement }: { movement: StockMovement }) {
   return (
     <li className="flex flex-col gap-1 border-b border-border-subtle py-2 last:border-b-0">
       <div className="flex items-center justify-between gap-inline">
-        <span className="text-body-sm font-medium text-ink">
-          {MOVEMENT_TYPE_LABEL[movement.type] ?? movement.type}
-        </span>
+        <span className="text-body-sm font-medium text-ink">{MOVEMENT_TYPE_LABEL[movement.type] ?? movement.type}</span>
         <time dateTime={movement.createdAt} className="text-caption whitespace-nowrap text-ink-muted">
           {formatDateTime(movement.createdAt)}
         </time>

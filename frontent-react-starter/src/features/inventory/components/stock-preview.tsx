@@ -5,13 +5,7 @@ import { Alert } from "@/components/ui/alert"
  * Dòng xem trước tính phía client ("Tồn sau khi nhập: x"); server vẫn là nguồn đúng. `warning` là cảnh báo
  * không chặn (server có thể từ chối). Vùng live để người đọc màn hình biết số đã đổi khi đang gõ.
  */
-function StockPreview({
-  lines,
-  warning,
-}: {
-  lines: { label: string; value: ReactNode }[]
-  warning?: string | null
-}) {
+function StockPreview({ lines, warning }: { lines: { label: string; value: ReactNode }[]; warning?: string | null }) {
   return (
     <div className="flex flex-col gap-inline" aria-live="polite">
       <dl className="flex flex-col gap-1 rounded-md bg-surface-sunken p-card text-body-sm">

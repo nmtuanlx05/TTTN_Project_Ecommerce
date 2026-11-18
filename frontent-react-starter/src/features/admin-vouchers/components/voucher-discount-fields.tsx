@@ -9,13 +9,23 @@ import type { DiscountType } from "../types"
 import { lockedNote, type VoucherFieldsProps } from "./voucher-form-types"
 
 const TYPES: { value: DiscountType; title: string; description: string; icon: typeof Percent }[] = [
-  { value: "PERCENT", title: "Phần trăm", description: "Giảm theo % tạm tính, có thể đặt mức giảm tối đa.", icon: Percent },
+  {
+    value: "PERCENT",
+    title: "Phần trăm",
+    description: "Giảm theo % tạm tính, có thể đặt mức giảm tối đa.",
+    icon: Percent,
+  },
   { value: "FIXED", title: "Số tiền cố định", description: "Giảm một số tiền cụ thể (₫).", icon: Banknote },
 ]
 
 /** Loại giảm (radio-card), giá trị và mức giảm tối đa (chỉ với phần trăm). Cả ba bị khóa khi voucher đã được dùng. */
 function VoucherDiscountFields({ form, id, usedCount }: VoucherFieldsProps) {
-  const { register, control, setValue, formState: { errors } } = form
+  const {
+    register,
+    control,
+    setValue,
+    formState: { errors },
+  } = form
   const locked = usedCount > 0
   const type = useWatch({ control, name: "discountType" })
 

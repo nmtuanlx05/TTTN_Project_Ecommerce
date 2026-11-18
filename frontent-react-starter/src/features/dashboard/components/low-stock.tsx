@@ -44,17 +44,11 @@ function LowStock({ total, variants }: { total: number; variants: LowStockVarian
           {variants.map((variant) => {
             const soldOut = variant.available <= 0
             return (
-              <li
-                key={variant.id}
-                className="flex flex-wrap items-center justify-between gap-inline py-row"
-              >
+              <li key={variant.id} className="flex flex-wrap items-center justify-between gap-inline py-row">
                 <div className="min-w-0">
-                  <p className="truncate text-body-sm text-ink">
-                    {variant.productName}
-                  </p>
+                  <p className="truncate text-body-sm text-ink">{variant.productName}</p>
                   <p className="text-caption text-ink-muted">
-                    Size {variant.size} · {variant.color} ·{" "}
-                    <span data-numeric>{variant.sku}</span> · Ngưỡng{" "}
+                    Size {variant.size} · {variant.color} · <span data-numeric>{variant.sku}</span> · Ngưỡng{" "}
                     <span data-numeric>{formatNumber(variant.minStock)}</span>
                   </p>
                 </div>
@@ -75,13 +69,7 @@ function LowStock({ total, variants }: { total: number; variants: LowStockVarian
                     </div>
                     <div className="text-right">
                       <dt className="text-ink-muted">Khả dụng</dt>
-                      <dd
-                        data-numeric
-                        className={cn(
-                          "font-semibold",
-                          soldOut ? "text-danger-fg" : "text-ink",
-                        )}
-                      >
+                      <dd data-numeric className={cn("font-semibold", soldOut ? "text-danger-fg" : "text-ink")}>
                         {formatNumber(variant.available)}
                       </dd>
                     </div>

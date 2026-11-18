@@ -32,7 +32,8 @@ export function useWishlistWiring(requireLogin: ReturnType<typeof useRequireLogi
   useEffect(() => {
     if (handoff) returnTargetRef.current = openerRef.current
   }, [handoff])
-  const gate = (action: () => void) => requireLogin(action, { guest: WISHLIST_MESSAGES.guest, admin: WISHLIST_MESSAGES.admin })
+  const gate = (action: () => void) =>
+    requireLogin(action, { guest: WISHLIST_MESSAGES.guest, admin: WISHLIST_MESSAGES.admin })
 
   const { isPending, toggle } = wishlist
   const ui = {

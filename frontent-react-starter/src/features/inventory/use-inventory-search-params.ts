@@ -21,8 +21,7 @@ export function useInventorySearchParams() {
   const q = (searchParams.get("q") ?? "").trim().slice(0, SEARCH_MAX_LENGTH)
 
   const categoryParam = Number(searchParams.get("categoryId"))
-  const categoryId =
-    Number.isInteger(categoryParam) && categoryParam >= 1 ? categoryParam : undefined
+  const categoryId = Number.isInteger(categoryParam) && categoryParam >= 1 ? categoryParam : undefined
 
   const statusParam = searchParams.get("stockStatus")
   const stockStatus = STOCK_STATUSES.find((status) => status === statusParam)
@@ -32,8 +31,7 @@ export function useInventorySearchParams() {
   const sortParam = searchParams.get("sortBy")
   const sortBy = SORT_FIELDS.find((item) => item === sortParam) ?? DEFAULT_SORT.sortBy
   const orderParam = searchParams.get("order")
-  const order: SortOrder =
-    orderParam === "asc" || orderParam === "desc" ? orderParam : DEFAULT_SORT.order
+  const order: SortOrder = orderParam === "asc" || orderParam === "desc" ? orderParam : DEFAULT_SORT.order
 
   const pageParam = Number(searchParams.get("page"))
   const page = Number.isInteger(pageParam) && pageParam >= 1 ? pageParam : 1
@@ -88,8 +86,7 @@ export function useInventorySearchParams() {
     hasFilters,
 
     setQuery: (value: string) => update({ q: value.trim() }, { replace: true }),
-    setCategory: (value: number | undefined) =>
-      update({ categoryId: value === undefined ? undefined : String(value) }),
+    setCategory: (value: number | undefined) => update({ categoryId: value === undefined ? undefined : String(value) }),
     setStockStatus: (value: StockStatus | undefined) => update({ stockStatus: value }),
     setIncludeHidden: (value: boolean) => update({ includeHidden: value ? "true" : undefined }),
     setPage: (value: number, replace = false) =>

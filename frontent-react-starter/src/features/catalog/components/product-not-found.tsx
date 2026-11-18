@@ -11,7 +11,11 @@ function ProductNotFound() {
       titleAs="h1"
       title="Không tìm thấy sản phẩm"
       description="Sản phẩm này không còn bán hoặc đường dẫn chưa đúng. Xem các sản phẩm khác trong cửa hàng."
-      action={<Link to="/products" className={buttonVariants({ variant: "secondary" })}>Về cửa hàng</Link>}
+      action={
+        <Link to="/products" className={buttonVariants({ variant: "secondary" })}>
+          Về cửa hàng
+        </Link>
+      }
     />
   )
 }

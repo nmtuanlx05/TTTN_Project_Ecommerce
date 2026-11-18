@@ -30,17 +30,15 @@ function TablePagination({
   return (
     <div className="flex flex-col gap-inline sm:flex-row sm:items-center sm:justify-between">
       <p aria-live="polite" className="text-body-sm text-ink-muted">
-        Hiển thị <span data-numeric>{formatNumber(from)}–{formatNumber(to)}</span> trên{" "}
-        <span data-numeric>{formatNumber(total)}</span> {noun}
+        Hiển thị{" "}
+        <span data-numeric>
+          {formatNumber(from)}–{formatNumber(to)}
+        </span>{" "}
+        trên <span data-numeric>{formatNumber(total)}</span> {noun}
       </p>
 
       <nav aria-label="Phân trang" className="flex items-center gap-inline">
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={disabled || page <= 1}
-          onClick={() => onPageChange(page - 1)}
-        >
+        <Button variant="secondary" size="sm" disabled={disabled || page <= 1} onClick={() => onPageChange(page - 1)}>
           <ChevronLeft />
           Trước
         </Button>

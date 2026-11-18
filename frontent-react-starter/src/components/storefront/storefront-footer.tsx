@@ -16,11 +16,11 @@ import { FooterLinkColumn } from "./footer-link-column"
  */
 function StorefrontFooter({ quickLinks = [], newsletter }: { quickLinks?: NavItem[]; newsletter?: ReactNode }) {
   const { footer } = STORE
-  const quickLinkItems = [
-    footer.quickLinksLead,
-    ...quickLinks.map(({ label, href }) => ({ label, href })),
+  const quickLinkItems = [footer.quickLinksLead, ...quickLinks.map(({ label, href }) => ({ label, href }))]
+  const policyLinks = [
+    footer.ordersLink,
+    ...footer.policySlugs.map((slug) => ({ label: infoPageTitle(slug), href: infoPageHref(slug) })),
   ]
-  const policyLinks = [footer.ordersLink, ...footer.policySlugs.map((slug) => ({ label: infoPageTitle(slug), href: infoPageHref(slug) }))]
 
   return (
     <footer className="dark soft-ui border-t border-border-strong bg-surface-sunken text-ink">

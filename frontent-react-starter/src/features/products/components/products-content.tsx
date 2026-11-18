@@ -22,8 +22,7 @@ function ProductsContent({
   pendingId: number | undefined
   onToggleStatus: (product: ProductListItem) => void
 }) {
-  const { data, error, isPending, isError, isPlaceholderData, isFetching, refetch } =
-    useProducts(search.params)
+  const { data, error, isPending, isError, isPlaceholderData, isFetching, refetch } = useProducts(search.params)
   const { search: locationSearch } = useLocation()
 
   const { page, setPage } = search
@@ -42,13 +41,7 @@ function ProductsContent({
     return (
       <Alert variant="danger" title="Không tải được danh sách sản phẩm">
         <p>{error.message}</p>
-        <Button
-          variant="secondary"
-          size="sm"
-          className="mt-2"
-          loading={isFetching}
-          onClick={() => refetch()}
-        >
+        <Button variant="secondary" size="sm" className="mt-2" loading={isFetching} onClick={() => refetch()}>
           <RotateCw />
           Thử lại
         </Button>
@@ -74,10 +67,7 @@ function ProductsContent({
         title="Chưa có sản phẩm nào"
         description="Thêm sản phẩm đầu tiên cùng các biến thể size, màu để bắt đầu bán hàng."
         action={
-          <Button
-            nativeButton={false}
-            render={<Link to="/admin/products/new" state={listLinkState(locationSearch)} />}
-          >
+          <Button nativeButton={false} render={<Link to="/admin/products/new" state={listLinkState(locationSearch)} />}>
             <Plus />
             Thêm sản phẩm
           </Button>

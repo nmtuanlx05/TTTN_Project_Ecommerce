@@ -39,11 +39,14 @@ function StorefrontCheckoutPage() {
         <p className="font-serif text-h3 font-normal text-ink-muted italic">Hoàn tất đơn hàng của bạn</p>
         <h1 className="text-h1 text-ink uppercase">Thanh toán</h1>
       </header>
-      <CheckoutContent user={{ name: user?.name ?? null, phone: user?.phone ?? null }} onOrderPlaced={() => {
+      <CheckoutContent
+        user={{ name: user?.name ?? null, phone: user?.phone ?? null }}
+        onOrderPlaced={() => {
           resetCart()
           // Đơn mới: làm mới số đếm và huy hiệu "Đơn hàng của tôi" ở header.
           invalidateOrders()
-        }} />
+        }}
+      />
     </PageContainer>
   )
 }

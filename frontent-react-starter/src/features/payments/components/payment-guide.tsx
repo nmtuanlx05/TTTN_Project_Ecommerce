@@ -32,7 +32,8 @@ function PaymentGuide({ orderCode }: { orderCode: string }) {
       </ol>
       <p className="font-medium text-ink">Vui lòng không sửa nội dung chuyển khoản để đơn được xác nhận tự động.</p>
       <p>
-        Đang dùng điện thoại? Hãy bấm &quot;Lưu ảnh QR&quot;, rồi trong app ngân hàng chọn quét mã từ ảnh trong thư viện.
+        Đang dùng điện thoại? Hãy bấm &quot;Lưu ảnh QR&quot;, rồi trong app ngân hàng chọn quét mã từ ảnh trong thư
+        viện.
       </p>
       <p>
         Đã chuyển khoản mà chưa thấy cập nhật? {contactText()} kèm mã đơn{" "}

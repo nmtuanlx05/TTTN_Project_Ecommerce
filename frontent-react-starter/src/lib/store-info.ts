@@ -104,7 +104,10 @@ interface StoreInfo {
 export const STORE: StoreInfo = {
   name: "MONO STUDIO",
   tagline: "Thời trang tối giản cho mọi ngày",
-  announcements: [`MIỄN PHÍ VẬN CHUYỂN CHO ĐƠN HÀNG TỪ ${formatNumber(FREE_SHIPPING_THRESHOLD)}₫`, "ĐỔI TRẢ TRONG 30 NGÀY"],
+  announcements: [
+    `MIỄN PHÍ VẬN CHUYỂN CHO ĐƠN HÀNG TỪ ${formatNumber(FREE_SHIPPING_THRESHOLD)}₫`,
+    "ĐỔI TRẢ TRONG 30 NGÀY",
+  ],
   footer: {
     description: "Thời trang tối giản cho mọi ngày. Chất liệu thoáng mát, form chuẩn, dễ phối.",
     quickLinksTitle: "Đường dẫn nhanh",

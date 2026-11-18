@@ -42,7 +42,16 @@ function StorefrontDialog({
                 <Dialog.Description className="text-body-sm text-ink-muted">{description}</Dialog.Description>
               ) : null}
             </div>
-            <Dialog.Close render={<Button variant="ghost" size="icon" aria-label="Đóng" className="press -mt-1 rounded-4xl bg-surface-sunken" />}>
+            <Dialog.Close
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Đóng"
+                  className="press -mt-1 rounded-4xl bg-surface-sunken"
+                />
+              }
+            >
               <X aria-hidden="true" />
             </Dialog.Close>
           </div>

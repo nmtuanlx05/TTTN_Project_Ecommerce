@@ -25,7 +25,8 @@ function CartLineList({
     <div className={className}>
       {unavailableCount > 0 ? (
         <p className="mb-2 rounded-xs bg-surface-sunken px-3 py-2 text-caption text-ink">
-          {unavailableCount} sản phẩm không còn bán hoặc đã hết hàng, hãy xóa khỏi giỏ. Các sản phẩm này không tính vào tạm tính.
+          {unavailableCount} sản phẩm không còn bán hoặc đã hết hàng, hãy xóa khỏi giỏ. Các sản phẩm này không tính vào
+          tạm tính.
         </p>
       ) : null}
       <ul ref={listRef} tabIndex={-1} aria-label="Sản phẩm trong giỏ hàng" className="outline-none">

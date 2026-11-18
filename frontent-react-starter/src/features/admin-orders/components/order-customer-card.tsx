@@ -15,7 +15,10 @@ function OrderCustomerCard({ order }: { order: AdminOrder }) {
   const { shippingAddress: address, customer, customerEmail, handledBy } = order
   const email = customer?.email ?? customerEmail
   return (
-    <section aria-labelledby="order-customer" className="flex flex-col gap-stack rounded-md border border-border-subtle bg-surface p-card">
+    <section
+      aria-labelledby="order-customer"
+      className="flex flex-col gap-stack rounded-md border border-border-subtle bg-surface p-card"
+    >
       <h2 id="order-customer" className="font-display text-h3 text-ink">
         Khách hàng và giao hàng
       </h2>
@@ -24,7 +27,12 @@ function OrderCustomerCard({ order }: { order: AdminOrder }) {
         <Row label="Số điện thoại">
           <span data-numeric>{address.phone}</span>
         </Row>
-        {customer ? <Row label="Tài khoản đặt đơn">{customer.name ? `${customer.name} · ` : ""}{customer.email}</Row> : null}
+        {customer ? (
+          <Row label="Tài khoản đặt đơn">
+            {customer.name ? `${customer.name} · ` : ""}
+            {customer.email}
+          </Row>
+        ) : null}
         {!customer && email ? <Row label="Email">{email}</Row> : null}
         <Row label="Người phụ trách đơn">{handledBy ? (handledBy.name ?? `#${handledBy.id}`) : "Chưa có"}</Row>
         <div className="sm:col-span-2">

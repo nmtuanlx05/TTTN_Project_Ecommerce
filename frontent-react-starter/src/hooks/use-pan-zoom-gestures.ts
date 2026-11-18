@@ -1,13 +1,5 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from "react"
-import {
-  MIN_SCALE,
-  RESET_VIEW,
-  clampPan,
-  distance,
-  midpoint,
-  zoomAt,
-  type ViewUpdater,
-} from "@/lib/pan-zoom"
+import { MIN_SCALE, RESET_VIEW, clampPan, distance, midpoint, zoomAt, type ViewUpdater } from "@/lib/pan-zoom"
 
 /** Quãng xê dịch tối đa (px) vẫn coi là "bấm" chứ không phải kéo. */
 const TAP_SLOP = 8

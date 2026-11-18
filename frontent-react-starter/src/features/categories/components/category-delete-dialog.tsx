@@ -28,8 +28,7 @@ function CategoryDeleteDialog({
         category ? (
           <>
             <strong className="font-semibold text-ink">{category.name}</strong>{" "}
-            <span className="text-ink-muted">({category.slug})</span> sẽ bị xóa vĩnh viễn, không
-            khôi phục được.{" "}
+            <span className="text-ink-muted">({category.slug})</span> sẽ bị xóa vĩnh viễn, không khôi phục được.{" "}
             {isEmpty
               ? "Danh mục đang trống nên xóa được."
               : `Danh mục hiện còn ${category.productCount} sản phẩm và ${category.childCount} danh mục con; hệ thống sẽ từ chối xóa cho tới khi bạn chuyển hết chúng đi.`}

@@ -1,13 +1,7 @@
 import { RotateCw } from "lucide-react"
 import { useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCategoryOptions } from "@/hooks/use-category-options"
 import { cn } from "@/lib/utils"
@@ -77,9 +71,7 @@ function CategorySelect({
         {allLabel ? <SelectItem value={NONE}>{allLabel}</SelectItem> : null}
         {options.map((option) => (
           <SelectItem key={option.value} value={String(option.value)}>
-            <span className={cn(INDENT[Math.min(option.depth, INDENT.length - 1)])}>
-              {option.name}
-            </span>
+            <span className={cn(INDENT[Math.min(option.depth, INDENT.length - 1)])}>{option.name}</span>
           </SelectItem>
         ))}
       </SelectContent>

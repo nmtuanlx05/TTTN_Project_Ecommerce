@@ -8,21 +8,13 @@ import { Input } from "@/components/ui/input"
  * `ref` là prop thường ở React 19, đủ cho `register()` của react-hook-form.
  * `autoComplete` mặc định `new-password` (form tạo/đổi mật khẩu); form đăng nhập truyền `current-password`.
  */
-function PasswordInput({
-  autoComplete = "new-password",
-  ...props
-}: Omit<React.ComponentProps<typeof Input>, "type">) {
+function PasswordInput({ autoComplete = "new-password", ...props }: Omit<React.ComponentProps<typeof Input>, "type">) {
   const [visible, setVisible] = useState(false)
   const Icon = visible ? EyeOff : Eye
 
   return (
     <div className="relative">
-      <Input
-        {...props}
-        type={visible ? "text" : "password"}
-        autoComplete={autoComplete}
-        className="pr-11"
-      />
+      <Input {...props} type={visible ? "text" : "password"} autoComplete={autoComplete} className="pr-11" />
       <button
         type="button"
         aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}

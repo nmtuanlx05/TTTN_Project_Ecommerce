@@ -76,7 +76,9 @@ function HeroSlide({
           <span aria-hidden="true" className="h-px w-8 bg-ink-muted" />
           {eyebrow}
         </p>
-        <h2 className="text-h1 uppercase text-balance text-ink md:text-display lg:text-h1 xl:text-display">{slide.title}</h2>
+        <h2 className="text-h1 uppercase text-balance text-ink md:text-display lg:text-h1 xl:text-display">
+          {slide.title}
+        </h2>
         <p className="font-serif text-h3 font-normal text-ink italic md:text-h2">{slide.subtitle}</p>
         <p className="max-w-prose text-body-sm text-ink-muted md:text-body">{slide.description}</p>
         <div className="flex flex-wrap gap-inline pt-2">
@@ -91,7 +93,9 @@ function HeroSlide({
           </Link>
         </div>
       </div>
-      <div className={cn(HERO_IMAGE_FRAME_CLASS, HERO_IMAGE_MOBILE_CLASS, "md:aspect-[3/2] md:max-h-none lg:aspect-auto")}>
+      <div
+        className={cn(HERO_IMAGE_FRAME_CLASS, HERO_IMAGE_MOBILE_CLASS, "md:aspect-[3/2] md:max-h-none lg:aspect-auto")}
+      >
         <StaticImage
           src={slide.image.src}
           alt={slide.image.alt}

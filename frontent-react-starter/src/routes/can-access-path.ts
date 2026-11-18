@@ -9,8 +9,6 @@ export function canAccessPath(role: Role, path: string): boolean {
   const pathname = path.split(/[?#]/)[0]
   if (pathname !== "/admin" && !pathname.startsWith("/admin/")) return true
   if (role === "CUSTOMER") return false
-  const item = NAV_ITEMS.find(
-    (navItem) => pathname === navItem.to || pathname.startsWith(`${navItem.to}/`),
-  )
+  const item = NAV_ITEMS.find((navItem) => pathname === navItem.to || pathname.startsWith(`${navItem.to}/`))
   return item ? item.roles.includes(role) : true
 }

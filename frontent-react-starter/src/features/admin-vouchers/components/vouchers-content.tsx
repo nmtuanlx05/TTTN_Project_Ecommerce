@@ -22,8 +22,7 @@ function VouchersContent({
   onEdit: (voucher: Voucher) => void
   onToggle: (voucher: Voucher, isActive: boolean) => void
 }) {
-  const { data, error, isPending, isError, isPlaceholderData, isFetching, refetch } =
-    useVouchers(search.params)
+  const { data, error, isPending, isError, isPlaceholderData, isFetching, refetch } = useVouchers(search.params)
 
   const { page, setPage } = search
   const totalPages = data?.meta.totalPages ?? 0

@@ -19,9 +19,7 @@ function ProductRowActions({
   // Icon cho biết TRẠNG THÁI hiện tại (mắt mở = đang hiện, mắt gạch chéo = đang ẩn); nhãn và tooltip
   // nói rõ hành động khi bấm, để người dùng không phải đoán icon là trạng thái hay là nút.
   const ToggleIcon = product.isActive ? Eye : EyeOff
-  const toggleLabel = product.isActive
-    ? `Ẩn sản phẩm ${product.name}`
-    : `Hiện lại sản phẩm ${product.name}`
+  const toggleLabel = product.isActive ? `Ẩn sản phẩm ${product.name}` : `Hiện lại sản phẩm ${product.name}`
 
   return (
     <div className="flex justify-end gap-1">

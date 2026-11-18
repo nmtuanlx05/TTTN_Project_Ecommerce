@@ -2,13 +2,7 @@ import { X } from "lucide-react"
 import { CategorySelect } from "@/components/admin/category-select"
 import { SearchInput } from "@/components/admin/search-input"
 import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { VISIBILITY_LABEL } from "../constants"
 
 const ALL = "all"
@@ -41,12 +35,7 @@ function ProductsToolbar({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-col gap-inline md:flex-row md:items-center">
-        <SearchInput
-          value={q}
-          onSearch={onSearch}
-          placeholder="Tìm theo tên hoặc slug"
-          label="Tìm sản phẩm"
-        />
+        <SearchInput value={q} onSearch={onSearch} placeholder="Tìm theo tên hoặc slug" label="Tìm sản phẩm" />
 
         <div className="flex flex-col gap-inline sm:flex-row sm:items-center">
           <CategorySelect

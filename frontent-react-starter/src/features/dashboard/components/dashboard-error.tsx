@@ -9,9 +9,17 @@ function describe(error: ApiError): { title: string; message: string; retry: boo
   }
   switch (error.code) {
     case "INVALID_DATE_RANGE":
-      return { title: "Khoảng ngày không hợp lệ", message: "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.", retry: false }
+      return {
+        title: "Khoảng ngày không hợp lệ",
+        message: "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.",
+        retry: false,
+      }
     case "DATE_RANGE_TOO_LONG":
-      return { title: "Khoảng ngày quá dài", message: "Chỉ xem được tối đa 366 ngày mỗi lần. Hãy chọn khoảng ngắn hơn.", retry: false }
+      return {
+        title: "Khoảng ngày quá dài",
+        message: "Chỉ xem được tối đa 366 ngày mỗi lần. Hãy chọn khoảng ngắn hơn.",
+        retry: false,
+      }
     case "INVALID_DATE":
       return { title: "Ngày không hợp lệ", message: "Hãy chọn lại ngày bắt đầu và kết thúc.", retry: false }
     default:

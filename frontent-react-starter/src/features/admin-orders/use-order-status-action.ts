@@ -43,7 +43,8 @@ export function useOrderStatusAction(order: { id: number; code: string }) {
     } else if (statusCode === 403) {
       dialog.hide()
       toast.add({
-        title: code === ERROR_CODE.paidAdminOnly ? PAID_ADMIN_ONLY_MESSAGE : "Bạn không đủ quyền thực hiện thao tác này",
+        title:
+          code === ERROR_CODE.paidAdminOnly ? PAID_ADMIN_ONLY_MESSAGE : "Bạn không đủ quyền thực hiện thao tác này",
         data: { tone: "danger" },
       })
     } else {

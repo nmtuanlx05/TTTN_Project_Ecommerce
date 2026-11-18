@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils"
 
 const SIDE_CLASS = {
   left: "inset-y-0 left-0 w-5/6 max-w-sm border-r data-ending-style:-translate-x-full data-starting-style:-translate-x-full",
-  right: "inset-y-0 right-0 w-5/6 max-w-sm border-l data-ending-style:translate-x-full data-starting-style:translate-x-full",
+  right:
+    "inset-y-0 right-0 w-5/6 max-w-sm border-l data-ending-style:translate-x-full data-starting-style:translate-x-full",
   top: "inset-x-0 top-0 max-h-dvh border-b data-ending-style:-translate-y-full data-starting-style:-translate-y-full",
 } as const
 
@@ -91,7 +92,10 @@ function StorefrontDrawer({
       {trigger ? <Dialog.Trigger render={trigger}>{triggerContent}</Dialog.Trigger> : null}
       <Dialog.Portal>
         <Dialog.Backdrop
-          className={cn("fixed inset-0 z-50 bg-canvas/70 backdrop-blur-xs", handoff ? HANDOFF_BACKDROP[handoff] : BACKDROP_MOTION)}
+          className={cn(
+            "fixed inset-0 z-50 bg-canvas/70 backdrop-blur-xs",
+            handoff ? HANDOFF_BACKDROP[handoff] : BACKDROP_MOTION,
+          )}
         />
         <Dialog.Popup
           aria-modal="true"

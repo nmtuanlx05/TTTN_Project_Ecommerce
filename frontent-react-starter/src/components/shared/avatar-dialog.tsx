@@ -32,12 +32,7 @@ function AvatarDialog({
       description="Chọn ảnh mới hoặc xóa ảnh hiện tại. Ảnh chỉ thay đổi sau khi bạn bấm Lưu."
       finalFocus={finalFocus}
     >
-      <AvatarForm
-        {...account}
-        onSaved={onSaved}
-        onClose={() => onOpenChange(false)}
-        onBusyChange={setBusy}
-      />
+      <AvatarForm {...account} onSaved={onSaved} onClose={() => onOpenChange(false)} onBusyChange={setBusy} />
     </FormDialog>
   )
 }

@@ -15,17 +15,11 @@ import type {
 
 /** Gọi API kho (docs/api/inventory.md). Chỉ `queries.ts` được import file này. */
 
-export function listInventory(
-  params: InventoryListParams,
-  signal?: AbortSignal,
-): Promise<Paginated<InventoryItem>> {
+export function listInventory(params: InventoryListParams, signal?: AbortSignal): Promise<Paginated<InventoryItem>> {
   return apiGetPage<InventoryItem>("/admin/inventory", { params, signal })
 }
 
-export function getInventorySummary(
-  params: InventorySummaryParams,
-  signal?: AbortSignal,
-): Promise<InventorySummary> {
+export function getInventorySummary(params: InventorySummaryParams, signal?: AbortSignal): Promise<InventorySummary> {
   return apiGet<InventorySummary>("/admin/inventory/summary", { params, signal })
 }
 

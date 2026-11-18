@@ -24,10 +24,7 @@ export const loginSchema = z.object({
 export const registerSchema = z
   .object({
     email: emailField,
-    password: z
-      .string()
-      .min(1, "Nhập mật khẩu cho tài khoản.")
-      .min(PASSWORD_MIN_LENGTH, PASSWORD_TOO_SHORT_MESSAGE),
+    password: z.string().min(1, "Nhập mật khẩu cho tài khoản.").min(PASSWORD_MIN_LENGTH, PASSWORD_TOO_SHORT_MESSAGE),
     confirmPassword: z.string().min(1, "Nhập lại mật khẩu để xác nhận."),
     name: z.string().trim(),
     phone: z

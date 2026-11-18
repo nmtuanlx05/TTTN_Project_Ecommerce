@@ -1,15 +1,10 @@
-import axios, {
-  type AxiosRequestConfig,
-  type InternalAxiosRequestConfig,
-} from "axios"
+import axios, { type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios"
 import { ApiError } from "@/lib/api-error"
 import type { Paginated, PaginationMeta } from "@/types/api"
 
 const baseURL = import.meta.env.VITE_API_URL
 if (!baseURL) {
-  throw new Error(
-    "Thiếu VITE_API_URL. Sao chép .env.example thành .env, điền địa chỉ backend rồi khởi động lại.",
-  )
+  throw new Error("Thiếu VITE_API_URL. Sao chép .env.example thành .env, điền địa chỉ backend rồi khởi động lại.")
 }
 
 /**
@@ -86,9 +81,7 @@ apiClient.interceptors.response.use(
     if (axios.isCancel(error)) return Promise.reject(error)
     const apiError = ApiError.from(error)
 
-    const config = axios.isAxiosError(error)
-      ? (error.config as RetriableConfig | undefined)
-      : undefined
+    const config = axios.isAxiosError(error) ? (error.config as RetriableConfig | undefined) : undefined
     const bridge = authBridge
     const sentAuth = config?.headers?.get("Authorization")
     // Chỉ làm mới khi request đã gửi token (người chưa đăng nhập gặp 401 thì không có gì để làm mới).
@@ -141,10 +134,7 @@ async function apiGet<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
 }
 
 /** GET danh sách phân trang: trả `{ items, meta }`. */
-async function apiGetPage<T>(
-  url: string,
-  config?: AxiosRequestConfig,
-): Promise<Paginated<T>> {
+async function apiGetPage<T>(url: string, config?: AxiosRequestConfig): Promise<Paginated<T>> {
   const response = await apiClient.get<Envelope<T[]>>(url, config)
   const body = unwrap(response.data)
   if (!body.meta) {
@@ -185,11 +175,7 @@ const UPLOAD_TIMEOUT_MS = 60_000
  * và backend báo thiếu file. `Content-Type: false` gỡ header đó để trình duyệt tự thêm
  * `multipart/form-data; boundary=...`. Gặp 401, interceptor gửi lại đúng request này (`FormData` còn nguyên file).
  */
-async function apiUpload<T>(
-  url: string,
-  file: File,
-  { signal, onProgress }: UploadOptions = {},
-): Promise<T> {
+async function apiUpload<T>(url: string, file: File, { signal, onProgress }: UploadOptions = {}): Promise<T> {
   const body = new FormData()
   body.append(UPLOAD_FIELD, file)
   const response = await apiClient.post<Envelope<T>>(url, body, {
@@ -203,12 +189,5 @@ async function apiUpload<T>(
   return unwrap(response.data).data
 }
 
-export {
-  apiGet,
-  apiGetPage,
-  apiSend,
-  apiUpload,
-  configureAuth,
-  refreshSession,
-}
+export { apiGet, apiGetPage, apiSend, apiUpload, configureAuth, refreshSession }
 export type { UploadOptions }

@@ -72,7 +72,14 @@ function QuickAddDialog({
   finalFocus: React.ComponentProps<typeof StorefrontDialog>["finalFocus"]
 }) {
   return (
-    <StorefrontDialog open={open} onOpenChange={onOpenChange} title="Chọn phân loại" description={product.name} finalFocus={finalFocus} onOpenChangeComplete={onOpenChangeComplete}>
+    <StorefrontDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Chọn phân loại"
+      description={product.name}
+      finalFocus={finalFocus}
+      onOpenChangeComplete={onOpenChangeComplete}
+    >
       <QuickAddForm product={product} pending={pending} onAdd={onAdd} />
     </StorefrontDialog>
   )

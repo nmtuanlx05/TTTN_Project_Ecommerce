@@ -31,13 +31,7 @@ const HIDE_WHEN_ZERO: Record<OrderStatus, boolean> = {
  * Mỗi dòng (trừ hai trạng thái chưa lọc được) là liên kết sang danh sách đơn đã lọc theo trạng thái VÀ khoảng
  * ngày đang xem; số đếm tính theo ngày đặt nên khớp với danh sách. Thanh tỉ lệ chỉ là nền của dòng nên aria-hidden.
  */
-function StatusBreakdown({
-  statusCounts,
-  range,
-}: {
-  statusCounts: OrderStatusCount[]
-  range: DateRange
-}) {
+function StatusBreakdown({ statusCounts, range }: { statusCounts: OrderStatusCount[]; range: DateRange }) {
   const max = Math.max(...statusCounts.map((item) => item.count), 1)
   const total = statusCounts.reduce((sum, item) => sum + item.count, 0)
   const rows = statusCounts.filter((item) => item.count > 0 || !HIDE_WHEN_ZERO[item.status])
@@ -53,9 +47,7 @@ function StatusBreakdown({
         <h2 id="status-breakdown-title" className="font-display text-h3 text-ink">
           Đơn theo trạng thái
         </h2>
-        <p className="mt-0.5 text-caption text-ink-muted">
-          Tổng {formatNumber(total)} đơn đặt trong kỳ
-        </p>
+        <p className="mt-0.5 text-caption text-ink-muted">Tổng {formatNumber(total)} đơn đặt trong kỳ</p>
       </div>
 
       <ul className="flex flex-col gap-0.5">
@@ -81,10 +73,7 @@ function StatusBreakdown({
           return (
             <li key={item.status}>
               {LINKABLE[item.status] ? (
-                <Link
-                  to={`/admin/orders?status=${item.status}&from=${range.from}&to=${range.to}`}
-                  className={rowClass}
-                >
+                <Link to={`/admin/orders?status=${item.status}&from=${range.from}&to=${range.to}`} className={rowClass}>
                   {inner}
                 </Link>
               ) : (

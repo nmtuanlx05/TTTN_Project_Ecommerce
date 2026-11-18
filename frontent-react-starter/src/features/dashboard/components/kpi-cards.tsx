@@ -1,12 +1,7 @@
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  formatCompactVnd,
-  formatNumber,
-  formatSignedPercent,
-  formatVnd,
-} from "@/lib/format"
+import { formatCompactVnd, formatNumber, formatSignedPercent, formatVnd } from "@/lib/format"
 import type { KpiSnapshot } from "../types"
 
 type Metric = {
@@ -84,13 +79,7 @@ function Delta({ ratio, invert }: { ratio: number | "new" | "none"; invert?: boo
   )
 }
 
-function KpiCards({
-  current,
-  previous,
-}: {
-  current: KpiSnapshot
-  previous: KpiSnapshot
-}) {
+function KpiCards({ current, previous }: { current: KpiSnapshot; previous: KpiSnapshot }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {METRICS.map((metric) => {
@@ -103,16 +92,10 @@ function KpiCards({
             <p className="text-overline uppercase text-ink-muted">{metric.label}</p>
             {/* Con số lớn dùng font body, chữ số tỉ lệ tự nhiên — không tabular,
                 vì ở cỡ lớn chữ số đều chiều rộng trông rời rạc */}
-            <p
-              className="text-h1 font-semibold text-ink"
-              title={metric.title?.(value)}
-            >
+            <p className="text-h1 font-semibold text-ink" title={metric.title?.(value)}>
               {metric.format(value)}
             </p>
-            <Delta
-              ratio={changeRatio(value, previous[metric.key])}
-              invert={metric.invert}
-            />
+            <Delta ratio={changeRatio(value, previous[metric.key])} invert={metric.invert} />
             <p className="mt-1 text-caption text-ink-muted">{metric.note}</p>
           </div>
         )
@@ -125,10 +108,7 @@ function KpiCardsSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {METRICS.map((metric) => (
-        <div
-          key={metric.key}
-          className="flex flex-col gap-2 rounded-md border border-border-subtle bg-surface p-card"
-        >
+        <div key={metric.key} className="flex flex-col gap-2 rounded-md border border-border-subtle bg-surface p-card">
           <Skeleton className="h-3 w-24" />
           <Skeleton className="h-8 w-32" />
           <Skeleton className="h-3 w-40" />

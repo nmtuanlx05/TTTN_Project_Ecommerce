@@ -70,15 +70,14 @@ function PaymentAwaiting({
               highlight
             />
             <PaymentCopyRow label="Ngân hàng" value={transfer.bank.name} />
-            <PaymentCopyRow
-              label="Số tài khoản"
-              value={transfer.accountNo}
-              copyLabel="Sao chép số tài khoản"
-            />
+            <PaymentCopyRow label="Số tài khoản" value={transfer.accountNo} copyLabel="Sao chép số tài khoản" />
             <PaymentCopyRow label="Chủ tài khoản" value={transfer.accountName} />
           </dl>
         </section>
-        <section aria-label="Hướng dẫn thanh toán" className="rounded-panel border border-border-subtle bg-surface-raised p-6 sm:p-8">
+        <section
+          aria-label="Hướng dẫn thanh toán"
+          className="rounded-panel border border-border-subtle bg-surface-raised p-6 sm:p-8"
+        >
           <h2 className="mb-4 text-h3 font-semibold text-ink">Cách thanh toán</h2>
           <PaymentGuide orderCode={payment.orderCode} />
         </section>

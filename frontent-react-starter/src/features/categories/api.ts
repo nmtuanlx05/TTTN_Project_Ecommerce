@@ -11,10 +11,7 @@ import type {
 
 /** Gọi API categories (docs/api/categories.md). Chỉ `queries.ts` được import file này. */
 
-export function listCategories(
-  params: CategoryListParams,
-  signal?: AbortSignal,
-): Promise<Paginated<Category>> {
+export function listCategories(params: CategoryListParams, signal?: AbortSignal): Promise<Paginated<Category>> {
   return apiGetPage<Category>("/admin/categories", { params, signal })
 }
 

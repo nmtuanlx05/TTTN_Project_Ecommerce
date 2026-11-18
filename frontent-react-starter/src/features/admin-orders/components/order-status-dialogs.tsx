@@ -9,7 +9,7 @@ import { CancelOrderForm } from "./cancel-order-form"
 const CONSEQUENCE: Record<Exclude<OrderAction, "cancel">, string> = {
   confirm:
     'Đơn chuyển sang "Đã xác nhận" và bạn trở thành người phụ trách đơn này. Hàng vẫn đang được giữ chỗ, chưa trừ khỏi kho.',
-  ship: 'Hàng sẽ được trừ khỏi kho (giảm cả tồn kho lẫn hàng giữ chỗ). Sau bước này KHÔNG hủy được đơn nữa.',
+  ship: "Hàng sẽ được trừ khỏi kho (giảm cả tồn kho lẫn hàng giữ chỗ). Sau bước này KHÔNG hủy được đơn nữa.",
   complete: "Đơn COD sẽ được ghi là đã thanh toán. Thao tác này không thể hoàn tác.",
 }
 

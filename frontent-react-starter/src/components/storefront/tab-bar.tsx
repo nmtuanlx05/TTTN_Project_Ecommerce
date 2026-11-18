@@ -4,7 +4,8 @@ import { cn } from "@/lib/utils"
 import { panelDomId, tabDomId } from "@/lib/tab-ids"
 
 /** Tab đang chọn là nút đặc nhưng KHÔNG đảo màu khi hover (đảo sẽ trông như vừa bị bỏ chọn): ghi đè lại hover của variant `primary` trong phạm vi `soft-ui`. */
-const SELECTED_TAB = "soft:hover:border-transparent soft:hover:bg-primary soft:hover:text-primary-fg soft:active:bg-primary-active soft:active:text-primary-fg"
+const SELECTED_TAB =
+  "soft:hover:border-transparent soft:hover:bg-primary soft:hover:text-primary-fg soft:active:bg-primary-active soft:active:text-primary-fg"
 
 interface TabItem {
   id: string

@@ -9,17 +9,11 @@ import { ACTIVE_LABEL } from "../constants"
 function UserStatus({ isActive }: { isActive: boolean }) {
   return (
     <span
-      className={cn(
-        "inline-flex items-center gap-1.5 whitespace-nowrap",
-        isActive ? "text-ink" : "text-ink-muted",
-      )}
+      className={cn("inline-flex items-center gap-1.5 whitespace-nowrap", isActive ? "text-ink" : "text-ink-muted")}
     >
       <span
         aria-hidden="true"
-        className={cn(
-          "size-2 shrink-0 rounded-full border border-ink-muted",
-          isActive && "border-ink bg-ink",
-        )}
+        className={cn("size-2 shrink-0 rounded-full border border-ink-muted", isActive && "border-ink bg-ink")}
       />
       {isActive ? ACTIVE_LABEL.active : ACTIVE_LABEL.locked}
     </span>

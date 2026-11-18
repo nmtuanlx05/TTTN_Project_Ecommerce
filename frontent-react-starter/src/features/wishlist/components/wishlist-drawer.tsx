@@ -39,7 +39,13 @@ function WishlistDrawer({
   if (query.data && items.length > 0) {
     body = (
       <>
-        <WishlistGrid items={items} isPending={isPending} onToggle={onToggle} onNavigate={close} renderAddToCart={renderAddToCart} />
+        <WishlistGrid
+          items={items}
+          isPending={isPending}
+          onToggle={onToggle}
+          onNavigate={close}
+          renderAddToCart={renderAddToCart}
+        />
         {query.hasNextPage ? (
           <div className="flex flex-col items-center gap-2 pb-6">
             {query.isFetchNextPageError ? (
@@ -91,7 +97,12 @@ function WishlistDrawer({
       className="soft-ui w-full max-w-none sm:max-w-[29rem] sm:rounded-l-panel"
     >
       <WishlistDrawerHeader count={count} />
-      <div className={cn("scrollbar-soft min-h-0 flex-1 overflow-y-auto px-gutter pt-6", centered && "flex flex-col justify-center pt-0")}>
+      <div
+        className={cn(
+          "scrollbar-soft min-h-0 flex-1 overflow-y-auto px-gutter pt-6",
+          centered && "flex flex-col justify-center pt-0",
+        )}
+      >
         {body}
       </div>
     </StorefrontDrawer>

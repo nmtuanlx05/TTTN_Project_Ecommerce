@@ -65,7 +65,10 @@ function ProductImageDropzone({
         "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring",
         empty ? "flex-col items-center p-card text-center" : "flex-col p-2 sm:flex-row sm:items-center",
         locked ? "cursor-not-allowed border-border-subtle bg-surface-sunken" : "cursor-pointer",
-        !locked && (drop.isDragging ? "border-ink bg-surface-hover" : "border-border-strong bg-transparent hover:bg-surface-hover"),
+        !locked &&
+          (drop.isDragging
+            ? "border-ink bg-surface-hover"
+            : "border-border-strong bg-transparent hover:bg-surface-hover"),
       )}
     >
       <input
@@ -93,8 +96,8 @@ function ProductImageDropzone({
           {prompt}
         </p>
         <p className="text-caption text-ink-muted">
-          {count}/{MAX_PRODUCT_IMAGES} ảnh · {ACCEPTED_IMAGE_LABEL}, tối đa {IMAGE_UPLOAD_RULES.products.maxLabel} mỗi ảnh.
-          Ảnh đầu là ảnh đại diện.
+          {count}/{MAX_PRODUCT_IMAGES} ảnh · {ACCEPTED_IMAGE_LABEL}, tối đa {IMAGE_UPLOAD_RULES.products.maxLabel} mỗi
+          ảnh. Ảnh đầu là ảnh đại diện.
         </p>
       </div>
     </div>

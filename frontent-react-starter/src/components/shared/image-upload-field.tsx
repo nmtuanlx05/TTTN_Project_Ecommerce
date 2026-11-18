@@ -3,11 +3,7 @@ import { ImagePlus, LoaderCircle, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useFileDrop } from "@/hooks/use-file-drop"
 import { useImageUpload } from "@/hooks/use-image-upload"
-import {
-  ACCEPTED_IMAGE_LABEL,
-  IMAGE_INPUT_ACCEPT,
-  IMAGE_UPLOAD_RULES,
-} from "@/lib/image-rules"
+import { ACCEPTED_IMAGE_LABEL, IMAGE_INPUT_ACCEPT, IMAGE_UPLOAD_RULES } from "@/lib/image-rules"
 import { cn } from "@/lib/utils"
 import type { ImageUploadKind, UploadedImage } from "@/types/upload"
 import { ImagePreview } from "./image-preview"
@@ -76,9 +72,7 @@ function ImageUploadField({
         className={cn(
           "flex flex-col gap-stack rounded-md border border-dashed p-card transition-colors sm:flex-row sm:items-center",
           "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring",
-          drop.isDragging
-            ? "border-ink bg-surface-hover"
-            : "border-border-strong bg-transparent",
+          drop.isDragging ? "border-ink bg-surface-hover" : "border-border-strong bg-transparent",
         )}
       >
         <ImagePreview
@@ -132,8 +126,8 @@ function ImageUploadField({
             <ImageUploadProgress progress={upload.progress} />
           ) : (
             <p className="text-caption text-ink-muted">
-              Kéo ảnh vào khung này hoặc bấm {hasImage ? "Đổi ảnh" : "Chọn ảnh"}. {ACCEPTED_IMAGE_LABEL},
-              tối đa {rules.maxLabel}.
+              Kéo ảnh vào khung này hoặc bấm {hasImage ? "Đổi ảnh" : "Chọn ảnh"}. {ACCEPTED_IMAGE_LABEL}, tối đa{" "}
+              {rules.maxLabel}.
             </p>
           )}
         </div>

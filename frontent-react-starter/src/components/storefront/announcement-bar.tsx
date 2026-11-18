@@ -43,7 +43,10 @@ function AnnouncementBar({ messages = STORE.announcements }: { messages?: string
           <div
             key={half}
             aria-hidden={half === 1 ? true : undefined}
-            className={cn("flex shrink-0 items-center motion-reduce:min-w-0 motion-reduce:shrink", half === 1 && "motion-reduce:hidden")}
+            className={cn(
+              "flex shrink-0 items-center motion-reduce:min-w-0 motion-reduce:shrink",
+              half === 1 && "motion-reduce:hidden",
+            )}
           >
             {SETS.map((set) => {
               const isReadable = half === 0 && set === 0

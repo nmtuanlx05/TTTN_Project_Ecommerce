@@ -43,5 +43,4 @@ export const SEARCH_MAX_LENGTH = 100
 export const OTHER_NOTE_REQUIRED_MESSAGE = 'Xuất kho với lý do "Khác" phải có ghi chú'
 
 /** Mất mạng khi đổi tồn: request có thể đã tới server, nên không được tự thử lại. */
-export const UNCERTAIN_RESULT_MESSAGE =
-  "Chưa rõ thao tác đã được ghi hay chưa, hãy xem Lịch sử trước khi thử lại."
+export const UNCERTAIN_RESULT_MESSAGE = "Chưa rõ thao tác đã được ghi hay chưa, hãy xem Lịch sử trước khi thử lại."

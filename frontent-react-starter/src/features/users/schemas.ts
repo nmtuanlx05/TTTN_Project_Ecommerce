@@ -17,14 +17,10 @@ export const createUserSchema = z.object({
     .string()
     .trim()
     .refine((value) => value === "" || VN_PHONE_REGEX.test(value), {
-      message:
-        "Số điện thoại chưa đúng. Nhập số di động Việt Nam, ví dụ 0912345678 hoặc +84912345678, hoặc để trống.",
+      message: "Số điện thoại chưa đúng. Nhập số di động Việt Nam, ví dụ 0912345678 hoặc +84912345678, hoặc để trống.",
     }),
   // Không trim: khoảng trắng có thể là một phần của mật khẩu.
-  password: z
-    .string()
-    .min(1, "Nhập mật khẩu cho tài khoản.")
-    .min(PASSWORD_MIN_LENGTH, PASSWORD_TOO_SHORT_MESSAGE),
+  password: z.string().min(1, "Nhập mật khẩu cho tài khoản.").min(PASSWORD_MIN_LENGTH, PASSWORD_TOO_SHORT_MESSAGE),
   role: z.enum(["ADMIN", "STAFF", "CUSTOMER"], { message: "Chọn một vai trò." }),
 })
 

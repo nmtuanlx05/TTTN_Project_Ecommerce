@@ -26,7 +26,13 @@ function AccountSidebar({
     <aside aria-label="Tài khoản của bạn">
       <div className="scrollbar-soft flex flex-col gap-4 rounded-panel border border-border-subtle bg-surface-raised p-card max-lg:flex-row max-lg:items-center max-lg:gap-3 max-lg:overflow-x-auto max-lg:p-3">
         <div className="flex min-w-0 items-center gap-3 border-b border-border-subtle pb-4 max-lg:shrink-0 max-lg:border-b-0 max-lg:border-r max-lg:pr-3 max-lg:pb-0">
-          <UserAvatar avatarUrl={account.avatarUrl} name={account.fullName} email={account.email} size="lg" decorative />
+          <UserAvatar
+            avatarUrl={account.avatarUrl}
+            name={account.fullName}
+            email={account.email}
+            size="lg"
+            decorative
+          />
           <div className="flex min-w-0 flex-col">
             <span className="truncate text-body-sm font-semibold text-ink max-lg:max-w-32">{account.name}</span>
             <span className="truncate text-caption text-ink-muted max-lg:hidden">{account.email}</span>

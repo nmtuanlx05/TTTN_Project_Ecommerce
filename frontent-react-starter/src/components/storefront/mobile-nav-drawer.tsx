@@ -11,13 +11,7 @@ import { StorefrontDrawer } from "./storefront-drawer"
  * Nút menu + ngăn kéo trái (dưới `xl`): điều hướng chính, tài khoản. Tự đóng khi pathname đổi hoặc khi bấm
  * một liên kết bên trong (`onNavigate`); focus trả về nút menu.
  */
-function MobileNavDrawer({
-  items,
-  session,
-}: {
-  items: NavItem[]
-  session: HeaderSession
-}) {
+function MobileNavDrawer({ items, session }: { items: NavItem[]; session: HeaderSession }) {
   const [open, setOpen] = useOpenUntilNavigation()
   const close = () => setOpen(false)
 

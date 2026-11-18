@@ -88,10 +88,7 @@ export const IMG_PRESETS = {
 export type ImgPresetName = keyof typeof IMG_PRESETS
 
 /** Thuộc tính `src`/`srcSet`/`sizes` cho `<img>` theo preset. `srcSet` và `sizes` chỉ có khi URL biến đổi được và preset có từ hai mức. */
-export function imgAttrs(
-  url: string,
-  preset: ImgPresetName,
-): { src: string; srcSet?: string; sizes?: string } {
+export function imgAttrs(url: string, preset: ImgPresetName): { src: string; srcSet?: string; sizes?: string } {
   const { src, widths, sizes } = IMG_PRESETS[preset]
   const srcSet = imgSrcSet(url, widths)
   return srcSet ? { src: imgUrl(url, src), srcSet, sizes } : { src: imgUrl(url, src) }

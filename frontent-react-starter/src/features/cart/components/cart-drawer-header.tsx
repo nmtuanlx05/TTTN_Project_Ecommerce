@@ -10,7 +10,16 @@ function CartDrawerHeader({ itemCount }: { itemCount: number | null }) {
         Giỏ hàng của bạn
         {itemCount !== null ? <span className="text-body-sm font-normal text-ink-muted">({itemCount})</span> : null}
       </Dialog.Title>
-      <Dialog.Close render={<Button variant="ghost" size="icon" aria-label="Đóng giỏ hàng" className="press rounded-4xl bg-surface-sunken" />}>
+      <Dialog.Close
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Đóng giỏ hàng"
+            className="press rounded-4xl bg-surface-sunken"
+          />
+        }
+      >
         <X aria-hidden="true" />
       </Dialog.Close>
     </div>
