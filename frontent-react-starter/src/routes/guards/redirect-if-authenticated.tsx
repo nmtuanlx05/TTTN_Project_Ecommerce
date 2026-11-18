@@ -16,10 +16,7 @@ function RedirectIfAuthenticated() {
 
   const from: unknown = (location.state as { from?: unknown } | null)?.from
   const target =
-    isSafeRedirectPath(from) &&
-    from !== "/login" &&
-    from !== "/register" &&
-    canAccessPath(user.role, from)
+    isSafeRedirectPath(from) && from !== "/login" && from !== "/register" && canAccessPath(user.role, from)
       ? from
       : landingPathFor(user.role)
   return <Navigate to={target} replace />

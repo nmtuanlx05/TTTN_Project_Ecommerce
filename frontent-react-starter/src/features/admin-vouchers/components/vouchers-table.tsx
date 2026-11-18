@@ -1,13 +1,6 @@
 import { flexRender, useTable } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { SortOrder } from "@/types/api"
 import { SORTABLE_COLUMNS } from "../constants"
 import type { Voucher, VoucherSortBy } from "../types"
@@ -53,9 +46,7 @@ function VouchersTable({
               return (
                 <TableHead
                   key={header.id}
-                  aria-sort={
-                    sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined
-                  }
+                  aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
                 >
                   {sortable ? (
                     <button
@@ -79,9 +70,7 @@ function VouchersTable({
         {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id}>
             {row.getAllCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
+              <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
             ))}
           </TableRow>
         ))}

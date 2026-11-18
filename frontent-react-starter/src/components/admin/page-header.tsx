@@ -23,9 +23,7 @@ function PageHeader({
     >
       <div className="min-w-0">
         <h1 className="font-display text-h1 uppercase text-ink">{title}</h1>
-        {description ? (
-          <p className="mt-1 max-w-prose text-body-sm text-ink-muted">{description}</p>
-        ) : null}
+        {description ? <p className="mt-1 max-w-prose text-body-sm text-ink-muted">{description}</p> : null}
       </div>
       {actions ? <div className="shrink-0">{actions}</div> : null}
     </div>

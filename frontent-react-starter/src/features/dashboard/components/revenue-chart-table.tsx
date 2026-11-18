@@ -10,9 +10,7 @@ function RevenueChartTable({ data }: { data: MergedPoint[] }) {
       </summary>
       <div className="mt-stack max-h-64 overflow-auto rounded-xs border border-border-subtle">
         <table className="w-full text-caption">
-          <caption className="sr-only">
-            Doanh thu từng ngày của kỳ này và kỳ trước, kèm số đơn đặt trong ngày
-          </caption>
+          <caption className="sr-only">Doanh thu từng ngày của kỳ này và kỳ trước, kèm số đơn đặt trong ngày</caption>
           <thead className="sticky top-0 bg-surface-sunken">
             <tr>
               <th scope="col" className="px-3 py-1.5 text-left text-ink-muted">

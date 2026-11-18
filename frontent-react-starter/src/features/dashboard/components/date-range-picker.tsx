@@ -63,9 +63,7 @@ function DateRangePicker({
               className={cn(
                 "rounded-xs px-3 py-1.5 text-body-sm whitespace-nowrap transition-colors",
                 "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                selected
-                  ? "bg-primary text-primary-fg"
-                  : "text-ink-muted hover:bg-surface-hover hover:text-ink",
+                selected ? "bg-primary text-primary-fg" : "text-ink-muted hover:bg-surface-hover hover:text-ink",
               )}
             >
               {option.label}

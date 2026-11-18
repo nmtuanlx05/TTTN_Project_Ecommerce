@@ -21,7 +21,17 @@ function product(urls: string[]): ProductDetail {
     updatedAt: "2026-11-01T00:00:00.000Z",
     category: { id: 3, name: "Áo", slug: "ao" },
     variants: [
-      { id: 10, sku: "A-S", size: "S", color: "Trắng", colorHex: null, isActive: true, stock: 0, reserved: 0, minStock: 0 },
+      {
+        id: 10,
+        sku: "A-S",
+        size: "S",
+        color: "Trắng",
+        colorHex: null,
+        isActive: true,
+        stock: 0,
+        reserved: 0,
+        minStock: 0,
+      },
     ],
   }
 }

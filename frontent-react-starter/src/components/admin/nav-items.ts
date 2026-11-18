@@ -1,13 +1,4 @@
-import {
-  Boxes,
-  FolderTree,
-  Landmark,
-  LayoutDashboard,
-  ReceiptText,
-  Shirt,
-  TicketPercent,
-  Users,
-} from "lucide-react"
+import { Boxes, FolderTree, Landmark, LayoutDashboard, ReceiptText, Shirt, TicketPercent, Users } from "lucide-react"
 import type { Role } from "@/types/user"
 
 export type NavItem = {

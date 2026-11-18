@@ -1,21 +1,8 @@
-import {
-  flexRender,
-  rowSortingFeature,
-  tableFeatures,
-  useTable,
-  type ColumnDef,
-} from "@tanstack/react-table"
+import { flexRender, rowSortingFeature, tableFeatures, useTable, type ColumnDef } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { SortOrder } from "@/types/api"
 import { PAGE_SIZE } from "../constants"
 import type { Category, CategorySortBy } from "../types"
@@ -58,9 +45,7 @@ function CategoriesTable({
       id: "slug",
       header: "Slug",
       enableSorting: false,
-      cell: ({ row }) => (
-        <span className="font-mono whitespace-nowrap text-ink-muted">{row.original.slug}</span>
-      ),
+      cell: ({ row }) => <span className="font-mono whitespace-nowrap text-ink-muted">{row.original.slug}</span>,
     },
     {
       id: "parent",
@@ -135,9 +120,7 @@ function CategoriesTable({
               return (
                 <TableHead
                   key={header.id}
-                  aria-sort={
-                    sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined
-                  }
+                  aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
                 >
                   {sortable ? (
                     <button
@@ -146,10 +129,7 @@ function CategoriesTable({
                       className="-mx-1 inline-flex items-center gap-1 rounded-xs px-1 text-inherit outline-none hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                     >
                       {flexRender(header.column.columnDef.header, header.getContext())}
-                      <Icon
-                        className={sorted ? "size-3 text-ink" : "size-3"}
-                        aria-hidden="true"
-                      />
+                      <Icon className={sorted ? "size-3 text-ink" : "size-3"} aria-hidden="true" />
                     </button>
                   ) : (
                     flexRender(header.column.columnDef.header, header.getContext())
@@ -164,9 +144,7 @@ function CategoriesTable({
         {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id}>
             {row.getAllCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
+              <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
             ))}
           </TableRow>
         ))}

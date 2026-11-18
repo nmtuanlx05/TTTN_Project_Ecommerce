@@ -16,9 +16,7 @@ import { InventoryTableSkeleton } from "./inventory-table-skeleton"
  * nằm NGOÀI nhánh chọn này để đang mở mà danh sách tải lại (vd. sau lỗi 409) thì hộp thoại không bị gỡ.
  */
 function InventoryContent({ search }: { search: InventorySearch }) {
-  const { data, error, isPending, isError, isPlaceholderData, isFetching, refetch } = useInventory(
-    search.params,
-  )
+  const { data, error, isPending, isError, isPlaceholderData, isFetching, refetch } = useInventory(search.params)
   const dialog = useInventoryDialog()
 
   const { page, setPage } = search

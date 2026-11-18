@@ -6,16 +6,11 @@ import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  createCategorySchema,
-  updateCategorySchema,
-  type CategoryFormValues,
-} from "../schemas"
+import { createCategorySchema, updateCategorySchema, type CategoryFormValues } from "../schemas"
 import type { Category } from "../types"
 import { ParentSelect } from "./parent-select"
 
-const SLUG_HINT_CREATE =
-  "Bỏ trống để hệ thống tự tạo từ tên. Chỉ gồm chữ thường không dấu, số và dấu gạch ngang."
+const SLUG_HINT_CREATE = "Bỏ trống để hệ thống tự tạo từ tên. Chỉ gồm chữ thường không dấu, số và dấu gạch ngang."
 const SLUG_HINT_EDIT =
   "Đổi tên không tự đổi slug, để đường dẫn ổn định. Chỉ gồm chữ thường không dấu, số và dấu gạch ngang."
 
@@ -35,10 +30,7 @@ function CategoryForm({
   busy: boolean
   formError: string | null
   onCancel: () => void
-  onSubmit: (
-    values: CategoryFormValues,
-    setError: UseFormSetError<CategoryFormValues>,
-  ) => void
+  onSubmit: (values: CategoryFormValues, setError: UseFormSetError<CategoryFormValues>) => void
 }) {
   const mode = category ? "edit" : "create"
   const id = useId()
@@ -64,9 +56,7 @@ function CategoryForm({
       className="flex min-h-0 flex-1 flex-col"
     >
       <FormDialogBody>
-        {formError ? (
-          <Alert variant="danger">{formError}</Alert>
-        ) : null}
+        {formError ? <Alert variant="danger">{formError}</Alert> : null}
 
         <Field label="Tên danh mục" htmlFor={`${id}-name`} required error={errors.name?.message}>
           <Input autoComplete="off" {...register("name")} />
@@ -103,21 +93,10 @@ function CategoryForm({
       </FormDialogBody>
 
       <FormDialogFooter>
-        <Button
-          className="cursor-pointer"
-          type="button"
-          variant="secondary"
-          disabled={busy}
-          onClick={onCancel}
-        >
+        <Button className="cursor-pointer" type="button" variant="secondary" disabled={busy} onClick={onCancel}>
           Hủy bỏ
         </Button>
-        <Button
-          className="cursor-pointer"
-          type="submit"
-          loading={busy}
-          disabled={mode === "edit" && !isDirty}
-        >
+        <Button className="cursor-pointer" type="submit" loading={busy} disabled={mode === "edit" && !isDirty}>
           {mode === "create" ? "Thêm danh mục" : "Lưu thay đổi"}
         </Button>
       </FormDialogFooter>

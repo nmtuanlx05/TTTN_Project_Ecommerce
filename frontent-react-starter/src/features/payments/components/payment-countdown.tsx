@@ -14,7 +14,10 @@ function PaymentCountdown({ remainingMs, expiresAt }: { remainingMs: number | nu
           "Đã hết thời gian, đang kiểm tra lại với hệ thống…"
         ) : (
           <>
-            Đơn được giữ trong <strong data-numeric className="text-body font-semibold">{formatCountdown(remainingMs)}</strong>
+            Đơn được giữ trong{" "}
+            <strong data-numeric className="text-body font-semibold">
+              {formatCountdown(remainingMs)}
+            </strong>
           </>
         )}
         <span className="block text-caption">

@@ -1,8 +1,8 @@
-import { NavLink } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { NavCountBadge } from "@/components/admin/nav-count-badge";
-import { NAV_ITEMS } from "@/components/admin/nav-items";
-import type { Role } from "@/types/user";
+import { NavLink } from "react-router-dom"
+import { cn } from "@/lib/utils"
+import { NavCountBadge } from "@/components/admin/nav-count-badge"
+import { NAV_ITEMS } from "@/components/admin/nav-items"
+import type { Role } from "@/types/user"
 
 /**
  * Menu điều hướng của khu quản trị.
@@ -12,22 +12,11 @@ import type { Role } from "@/types/user";
  * (nền khối, bo góc, rail) không khớp tông hairline của hệ thống này.
  */
 /** Số đếm tùy chọn của từng mục menu, khóa theo `to` (vd. "/admin/orders"). */
-type NavCounts = Record<string, { count: number; label: string }>;
+type NavCounts = Record<string, { count: number; label: string }>
 
-function AdminNav({
-  role,
-  onNavigate,
-  counts,
-}: {
-  role: Role;
-  onNavigate?: () => void;
-  counts?: NavCounts;
-}) {
+function AdminNav({ role, onNavigate, counts }: { role: Role; onNavigate?: () => void; counts?: NavCounts }) {
   return (
-    <nav
-      aria-label="Điều hướng khu quản trị"
-      className="flex flex-col gap-0.5 p-2"
-    >
+    <nav aria-label="Điều hướng khu quản trị" className="flex flex-col gap-0.5 p-2">
       {NAV_ITEMS.filter((item) => item.roles.includes(role)).map(({ to, label, icon: Icon, ready }) => (
         <NavLink
           key={to}
@@ -37,24 +26,18 @@ function AdminNav({
             cn(
               "flex items-center gap-inline rounded-xs px-3 py-2 text-body-sm transition-colors",
               "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-              isActive
-                ? "bg-primary text-primary-fg"
-                : "text-ink-muted hover:bg-surface-hover hover:text-ink",
+              isActive ? "bg-primary text-primary-fg" : "text-ink-muted hover:bg-surface-hover hover:text-ink",
             )
           }
         >
           <Icon className="size-4 shrink-0" aria-hidden="true" />
           <span className="truncate">{label}</span>
-          {!ready ? (
-            <span className="ml-auto text-caption text-ink-subtle">Sắp có</span>
-          ) : null}
-          {counts?.[to] ? (
-            <NavCountBadge count={counts[to].count} label={counts[to].label} />
-          ) : null}
+          {!ready ? <span className="ml-auto text-caption text-ink-subtle">Sắp có</span> : null}
+          {counts?.[to] ? <NavCountBadge count={counts[to].count} label={counts[to].label} /> : null}
         </NavLink>
       ))}
     </nav>
-  );
+  )
 }
 
 /** Cột trái cố định, chỉ hiện từ 1024px trở lên. */
@@ -62,17 +45,15 @@ function AdminSidebar({ role, counts }: { role: Role; counts?: NavCounts }) {
   return (
     <aside className="hidden w-60 shrink-0 border-r border-border-subtle bg-surface-sunken lg:flex lg:flex-col">
       <div className="flex h-16 items-center border-b border-border-subtle px-4">
-        <span className="font-display text-body uppercase tracking-[0.12em] text-ink">
-          MONO STUDIO
-        </span>
+        <span className="font-display text-body uppercase tracking-[0.12em] text-ink">MONO STUDIO</span>
       </div>
       <AdminNav role={role} counts={counts} />
       <div className="mt-auto border-t border-border-subtle p-4">
         <p className="text-caption text-ink-muted">Khu quản trị nội bộ</p>
       </div>
     </aside>
-  );
+  )
 }
 
-export { AdminSidebar, AdminNav };
-export type { NavCounts };
+export { AdminSidebar, AdminNav }
+export type { NavCounts }

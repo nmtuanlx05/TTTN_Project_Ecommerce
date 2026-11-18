@@ -32,13 +32,7 @@ export const STATUS_BADGE: Record<VoucherStatus, BadgeVariant> = {
   EXPIRED: "returned",
 }
 
-export const SORT_FIELDS: readonly VoucherSortBy[] = [
-  "createdAt",
-  "code",
-  "startsAt",
-  "expiresAt",
-  "usedCount",
-]
+export const SORT_FIELDS: readonly VoucherSortBy[] = ["createdAt", "code", "startsAt", "expiresAt", "usedCount"]
 
 /** Cột có nút sắp xếp ở tiêu đề (id cột trùng tên trường `sortBy`). */
 export const SORTABLE_COLUMNS: readonly VoucherSortBy[] = ["code", "startsAt", "usedCount"]

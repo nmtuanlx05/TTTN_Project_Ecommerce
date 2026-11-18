@@ -22,7 +22,11 @@ function HeaderAccount({ session }: { session: HeaderSession }) {
     )
   }
   if (session.status === "anonymous") {
-    return <Link to="/login" className={cn(buttonVariants(), "press")}>Đăng nhập</Link>
+    return (
+      <Link to="/login" className={cn(buttonVariants(), "press")}>
+        Đăng nhập
+      </Link>
+    )
   }
   return <div aria-hidden="true" className="h-control w-28" />
 }

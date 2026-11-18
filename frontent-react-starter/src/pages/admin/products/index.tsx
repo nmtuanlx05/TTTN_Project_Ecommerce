@@ -20,10 +20,7 @@ function ProductsPage() {
         title="Sản phẩm"
         description="Quản lý sản phẩm và các biến thể theo size, màu."
         actions={
-          <Button
-            nativeButton={false}
-            render={<Link to="/admin/products/new" state={listLinkState(locationSearch)} />}
-          >
+          <Button nativeButton={false} render={<Link to="/admin/products/new" state={listLinkState(locationSearch)} />}>
             <Plus />
             Thêm sản phẩm
           </Button>
@@ -41,11 +38,7 @@ function ProductsPage() {
           onActiveChange={search.setActive}
           onClear={search.clearFilters}
         />
-        <ProductsContent
-          search={search}
-          pendingId={status.pendingId}
-          onToggleStatus={status.request}
-        />
+        <ProductsContent search={search} pendingId={status.pendingId} onToggleStatus={status.request} />
       </div>
 
       <ProductStatusDialog {...status.dialogProps} />

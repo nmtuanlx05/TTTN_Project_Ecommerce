@@ -6,7 +6,10 @@ import { lockedNote, type VoucherFieldsProps } from "./voucher-form-types"
 
 /** Mã và mô tả. Mã tự chuyển HOA khi gõ (giữ nguyên vị trí con trỏ); mã bị khóa khi voucher đã được dùng. */
 function VoucherBasicFields({ form, id, usedCount }: VoucherFieldsProps) {
-  const { register, formState: { errors } } = form
+  const {
+    register,
+    formState: { errors },
+  } = form
   const locked = usedCount > 0
   const code = register("code")
 
@@ -25,9 +28,7 @@ function VoucherBasicFields({ form, id, usedCount }: VoucherFieldsProps) {
         htmlFor={`${id}-code`}
         required
         error={errors.code?.message}
-        description={
-          locked ? lockedNote(usedCount) : "Tự chuyển thành chữ HOA. 3 đến 30 ký tự: A-Z, 0-9, _ và -."
-        }
+        description={locked ? lockedNote(usedCount) : "Tự chuyển thành chữ HOA. 3 đến 30 ký tự: A-Z, 0-9, _ và -."}
       >
         <Input
           autoComplete="off"

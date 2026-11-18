@@ -1,23 +1,7 @@
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query"
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { ApiError } from "@/lib/api-error"
-import {
-  createProduct,
-  getProduct,
-  listProducts,
-  setProductStatus,
-  updateProduct,
-} from "./api"
-import type {
-  CreateProductInput,
-  ProductDetail,
-  ProductListParams,
-  UpdateProductInput,
-} from "./types"
+import { createProduct, getProduct, listProducts, setProductStatus, updateProduct } from "./api"
+import type { CreateProductInput, ProductDetail, ProductListParams, UpdateProductInput } from "./types"
 
 export const productKeys = {
   /** Tiền tố chung: làm mới cả danh sách phân trang lẫn chi tiết. */

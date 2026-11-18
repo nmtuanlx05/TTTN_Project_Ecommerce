@@ -7,7 +7,10 @@ import { lockedNote, type VoucherFieldsProps } from "./voucher-form-types"
  * không qua Date. Mã chạy từ 00:00 ngày bắt đầu đến hết ngày kết thúc. Ngày bắt đầu bị khóa khi voucher đã được dùng.
  */
 function VoucherDateFields({ form, id, usedCount }: VoucherFieldsProps) {
-  const { register, formState: { errors } } = form
+  const {
+    register,
+    formState: { errors },
+  } = form
   const locked = usedCount > 0
 
   return (

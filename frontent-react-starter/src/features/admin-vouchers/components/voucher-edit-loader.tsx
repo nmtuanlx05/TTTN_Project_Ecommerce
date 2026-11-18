@@ -19,11 +19,7 @@ function VoucherEditLoader({
   voucher: Voucher
   busy: boolean
   onCancel: () => void
-  onSubmit: (
-    values: VoucherFormValues,
-    setError: UseFormSetError<VoucherFormValues>,
-    locked: boolean,
-  ) => void
+  onSubmit: (values: VoucherFormValues, setError: UseFormSetError<VoucherFormValues>, locked: boolean) => void
 }) {
   const { data, error, isPending, isError, isFetching, refetch } = useVoucher(voucher.id)
 

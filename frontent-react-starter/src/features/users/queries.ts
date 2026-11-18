@@ -1,22 +1,8 @@
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query"
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { ApiError } from "@/lib/api-error"
 import type { User } from "@/types/user"
-import type {
-  CreateUserInput,
-  UpdateUserInput,
-  UserListParams,
-} from "./types"
-import {
-  createUser,
-  listUsers,
-  setUserStatus,
-  updateUser,
-} from "./api"
+import type { CreateUserInput, UpdateUserInput, UserListParams } from "./types"
+import { createUser, listUsers, setUserStatus, updateUser } from "./api"
 
 export const userKeys = {
   /** Tiền tố chung: làm mới mọi danh sách và chi tiết user. */

@@ -30,7 +30,10 @@ function CartSummary({ cart }: { cart: Cart }) {
       <FreeShippingBar subtotal={cart.subtotal} />
       <p className="text-caption text-ink-muted">Phí vận chuyển được tính ở bước thanh toán.</p>
       <CheckoutButton disabled={cart.itemCount === 0} />
-      <Link to="/products" className={cn(buttonVariants({ variant: "ghost" }), "press self-center underline underline-offset-4")}>
+      <Link
+        to="/products"
+        className={cn(buttonVariants({ variant: "ghost" }), "press self-center underline underline-offset-4")}
+      >
         Tiếp tục mua sắm
       </Link>
     </aside>

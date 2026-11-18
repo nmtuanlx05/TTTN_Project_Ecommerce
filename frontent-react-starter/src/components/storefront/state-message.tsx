@@ -24,12 +24,7 @@ function StateMessage({
   className?: string
 }) {
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center justify-center gap-stack px-card py-block text-center",
-        className,
-      )}
-    >
+    <div className={cn("flex flex-col items-center justify-center gap-stack px-card py-block text-center", className)}>
       <Icon className="size-8 text-ink-subtle" aria-hidden="true" />
       <div className="flex flex-col gap-1">
         <Title className="text-h3 font-semibold text-ink">{title}</Title>

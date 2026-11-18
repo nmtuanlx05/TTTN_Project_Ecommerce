@@ -56,8 +56,20 @@ function InlineAddToCart({
         Thêm vào giỏ hàng
       </Button>
       {open && add.detail && add.choice ? (
-        <div ref={panelRef} id={panelId} role="group" aria-label={`Chọn phân loại ${add.detail.name}`} className="flex flex-col gap-4 rounded-card bg-surface-sunken/50 p-3">
-          <VariantPicker compact inStockOnly variants={add.detail.variants} choice={add.choice} onChange={add.setChoice} />
+        <div
+          ref={panelRef}
+          id={panelId}
+          role="group"
+          aria-label={`Chọn phân loại ${add.detail.name}`}
+          className="flex flex-col gap-4 rounded-card bg-surface-sunken/50 p-3"
+        >
+          <VariantPicker
+            compact
+            inStockOnly
+            variants={add.detail.variants}
+            choice={add.choice}
+            onChange={add.setChoice}
+          />
           <Button
             type="button"
             loading={add.adding}

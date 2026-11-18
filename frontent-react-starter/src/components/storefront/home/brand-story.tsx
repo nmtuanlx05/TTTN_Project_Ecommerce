@@ -17,7 +17,10 @@ function BrandStory() {
   return (
     <Reveal className="mt-block">
       <div className="mx-auto w-full max-w-7xl px-gutter lg:max-w-(--story-max) lg:px-(--story-edge)">
-        <section aria-labelledby="home-story" className="dark relative isolate overflow-hidden rounded-panel bg-surface-sunken text-ink">
+        <section
+          aria-labelledby="home-story"
+          className="dark relative isolate overflow-hidden rounded-panel bg-surface-sunken text-ink"
+        >
           <StaticImage src={image.src} alt={image.alt} objectPosition={image.objectPosition} fallbackLetter={false} />
           <div aria-hidden="true" className="absolute inset-0 bg-scrim/70" />
           <div className="relative flex min-h-104 flex-col items-start justify-center gap-stack p-8 md:p-14 lg:min-h-136">

@@ -28,11 +28,7 @@ function VoucherForm({
   detail: VoucherDetail | null
   busy: boolean
   onCancel: () => void
-  onSubmit: (
-    values: VoucherFormValues,
-    setError: UseFormSetError<VoucherFormValues>,
-    locked: boolean,
-  ) => void
+  onSubmit: (values: VoucherFormValues, setError: UseFormSetError<VoucherFormValues>, locked: boolean) => void
 }) {
   const id = useId()
   const mode = detail ? "edit" : "create"

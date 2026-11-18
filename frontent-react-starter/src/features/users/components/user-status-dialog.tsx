@@ -24,8 +24,7 @@ function UserStatusDialog({
       description={
         user ? (
           <>
-            <strong className="font-semibold text-ink">{displayName(user)}</strong>
-            {" "}
+            <strong className="font-semibold text-ink">{displayName(user)}</strong>{" "}
             <span className="text-ink-muted">({user.email})</span>{" "}
             {user.isActive
               ? "sẽ không đăng nhập được nữa. Dữ liệu và lịch sử đơn hàng vẫn được giữ, bạn có thể mở khóa lại bất cứ lúc nào."

@@ -23,8 +23,7 @@ export function useCategoriesSearchParams() {
   const sortParam = searchParams.get("sortBy")
   const sortBy = SORT_FIELDS.find((item) => item === sortParam) ?? DEFAULT_SORT.sortBy
   const orderParam = searchParams.get("order")
-  const order: SortOrder =
-    orderParam === "asc" || orderParam === "desc" ? orderParam : DEFAULT_SORT.order
+  const order: SortOrder = orderParam === "asc" || orderParam === "desc" ? orderParam : DEFAULT_SORT.order
 
   const pageParam = Number(searchParams.get("page"))
   const page = Number.isInteger(pageParam) && pageParam >= 1 ? pageParam : 1

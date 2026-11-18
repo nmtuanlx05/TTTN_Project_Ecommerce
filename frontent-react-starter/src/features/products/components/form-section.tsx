@@ -1,15 +1,7 @@
 import type { ReactNode } from "react"
 
 /** Một khối của form dài: tiêu đề, mô tả ngắn và các ô nhập. */
-function FormSection({
-  title,
-  description,
-  children,
-}: {
-  title: string
-  description?: string
-  children: ReactNode
-}) {
+function FormSection({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-stack rounded-md border border-border-subtle bg-surface p-card">
       <div className="flex flex-col gap-1">

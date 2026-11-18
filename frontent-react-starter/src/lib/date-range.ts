@@ -47,12 +47,7 @@ export function dayCount(range: DateRange): number {
 }
 
 function isAllowedRange(range: DateRange): boolean {
-  return (
-    range.from >= MIN_DATE &&
-    range.to <= todayVn() &&
-    range.from <= range.to &&
-    dayCount(range) <= MAX_RANGE_DAYS
-  )
+  return range.from >= MIN_DATE && range.to <= todayVn() && range.from <= range.to && dayCount(range) <= MAX_RANGE_DAYS
 }
 
 /** Đọc khoảng tùy chọn từ URL; không hợp lệ (sai dạng, ngược, quá dài, tương lai) thì null. */
@@ -81,11 +76,7 @@ export function resolveRange(preset: RangePreset, custom?: DateRange): DateRange
  * Áp một đầu mút mới do người dùng chọn rồi kéo đầu mút kia cho khoảng luôn hợp lệ:
  * chặn tương lai và trước MIN_DATE, `from` ≤ `to`, tối đa MAX_RANGE_DAYS ngày.
  */
-export function adjustCustomRange(
-  range: DateRange,
-  field: "from" | "to",
-  value: string,
-): DateRange {
+export function adjustCustomRange(range: DateRange, field: "from" | "to", value: string): DateRange {
   const today = todayVn()
   // So sánh chuỗi YYYY-MM-DD theo thứ tự từ điển cũng là thứ tự thời gian
   const picked = value < MIN_DATE ? MIN_DATE : value > today ? today : value

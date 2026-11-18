@@ -17,15 +17,7 @@ import { ImageLightboxToolbar } from "./image-lightbox-toolbar"
  *   nên ở mức vừa khung ảnh không bị nút che.
  * - Ảnh đang tải vẫn được render (trong suốt) để có kích thước gốc tính mức "vừa khung".
  */
-function ImageLightboxViewer({
-  src,
-  alt,
-  onClose,
-}: {
-  src: string
-  alt: string
-  onClose: () => void
-}) {
+function ImageLightboxViewer({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
   const [natural, setNatural] = useState<{ src: string; width: number; height: number } | null>(null)
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
   const failed = failedSrc === src
@@ -99,9 +91,7 @@ function ImageLightboxViewer({
             }
             className={cn(
               "shrink-0 will-change-transform",
-              ready
-                ? "max-h-none max-w-none"
-                : "pointer-events-none max-h-full max-w-full opacity-0",
+              ready ? "max-h-none max-w-none" : "pointer-events-none max-h-full max-w-full opacity-0",
               ready && (scale > 1 ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in"),
               ready && zoom.smooth && "transition-transform duration-150",
             )}

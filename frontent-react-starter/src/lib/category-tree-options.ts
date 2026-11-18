@@ -20,8 +20,7 @@ export function buildCategoryTreeOptions(categories: PublicCategory[]): Category
   const ids = new Set(categories.map((category) => category.id))
   const childrenOf = new Map<number | null, PublicCategory[]>()
   for (const category of categories) {
-    const parentKey =
-      category.parentId !== null && ids.has(category.parentId) ? category.parentId : null
+    const parentKey = category.parentId !== null && ids.has(category.parentId) ? category.parentId : null
     const siblings = childrenOf.get(parentKey) ?? []
     siblings.push(category)
     childrenOf.set(parentKey, siblings)
@@ -31,9 +30,7 @@ export function buildCategoryTreeOptions(categories: PublicCategory[]): Category
   const visited = new Set<number>()
 
   function walk(parentKey: number | null, depth: number, parentPath: string) {
-    const siblings = [...(childrenOf.get(parentKey) ?? [])].sort((a, b) =>
-      a.name.localeCompare(b.name, "vi"),
-    )
+    const siblings = [...(childrenOf.get(parentKey) ?? [])].sort((a, b) => a.name.localeCompare(b.name, "vi"))
     for (const category of siblings) {
       if (visited.has(category.id)) continue
       visited.add(category.id)

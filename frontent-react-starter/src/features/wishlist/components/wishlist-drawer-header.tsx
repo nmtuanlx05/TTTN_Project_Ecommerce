@@ -11,7 +11,14 @@ function WishlistDrawerHeader({ count }: { count: number }) {
         {count > 0 ? <span className="text-body-sm font-normal text-ink-muted">({count})</span> : null}
       </Dialog.Title>
       <Dialog.Close
-        render={<Button variant="ghost" size="icon" aria-label="Đóng danh sách yêu thích" className="press rounded-4xl bg-surface-sunken" />}
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Đóng danh sách yêu thích"
+            className="press rounded-4xl bg-surface-sunken"
+          />
+        }
       >
         <X aria-hidden="true" />
       </Dialog.Close>

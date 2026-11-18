@@ -33,9 +33,7 @@ function firstLetter(word: string): string | null {
  */
 export function initialsOf(account: { name: string | null; email: string }): string {
   const name = account.name?.trim()
-  const words = name
-    ? name.split(/\s+/u)
-    : (account.email.split("@")[0] ?? "").split(EMAIL_WORD_SEPARATOR)
+  const words = name ? name.split(/\s+/u) : (account.email.split("@")[0] ?? "").split(EMAIL_WORD_SEPARATOR)
   const letters = words.flatMap((word) => firstLetter(word) ?? [])
   return letters.slice(-2).join("") || "?"
 }

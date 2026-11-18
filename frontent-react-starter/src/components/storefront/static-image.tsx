@@ -33,7 +33,13 @@ function StaticImage({
   const { showImage, loaded, imgProps } = useImageLoad({ src, usable: STATIC_SRC.test(src) })
 
   return (
-    <div className={cn("absolute inset-0 overflow-hidden", showImage && !loaded ? "shimmer" : "bg-surface-sunken", className)}>
+    <div
+      className={cn(
+        "absolute inset-0 overflow-hidden",
+        showImage && !loaded ? "shimmer" : "bg-surface-sunken",
+        className,
+      )}
+    >
       {showImage ? (
         <img
           src={src}

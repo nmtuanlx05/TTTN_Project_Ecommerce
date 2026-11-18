@@ -31,7 +31,11 @@ function ResolveForm({
   const length = useWatch({ control, name: "note" }).length
 
   return (
-    <form noValidate onSubmit={handleSubmit((values) => onSubmit(values.note))} className="flex min-h-0 flex-1 flex-col">
+    <form
+      noValidate
+      onSubmit={handleSubmit((values) => onSubmit(values.note))}
+      className="flex min-h-0 flex-1 flex-col"
+    >
       <FormDialogBody>
         {formError ? <Alert variant="danger">{formError}</Alert> : null}
         <Field

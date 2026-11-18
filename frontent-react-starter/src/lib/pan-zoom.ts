@@ -73,13 +73,7 @@ export function clampPan(view: View, content: Size, stage: Size): View {
 }
 
 /** Đổi mức zoom nhưng giữ điểm `anchor` đứng yên trên màn hình (zoom quanh con trỏ hoặc tâm hai ngón). */
-export function zoomAt(
-  view: View,
-  nextScale: number,
-  anchor: Point,
-  content: Size,
-  stage: Size,
-): View {
+export function zoomAt(view: View, nextScale: number, anchor: Point, content: Size, stage: Size): View {
   let scale = clamp(nextScale, MIN_SCALE, MAX_SCALE)
   if (scale - MIN_SCALE < SNAP_RANGE) scale = MIN_SCALE
   const ratio = scale / view.scale

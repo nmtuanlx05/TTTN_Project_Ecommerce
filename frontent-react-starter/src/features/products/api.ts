@@ -1,19 +1,10 @@
 import { apiGet, apiGetPage, apiSend } from "@/lib/api-client"
 import type { Paginated } from "@/types/api"
-import type {
-  CreateProductInput,
-  ProductDetail,
-  ProductListItem,
-  ProductListParams,
-  UpdateProductInput,
-} from "./types"
+import type { CreateProductInput, ProductDetail, ProductListItem, ProductListParams, UpdateProductInput } from "./types"
 
 /** Gọi API products (docs/api/products.md, phía admin). Chỉ `queries.ts` được import file này. */
 
-export function listProducts(
-  params: ProductListParams,
-  signal?: AbortSignal,
-): Promise<Paginated<ProductListItem>> {
+export function listProducts(params: ProductListParams, signal?: AbortSignal): Promise<Paginated<ProductListItem>> {
   return apiGetPage<ProductListItem>("/admin/products", { params, signal })
 }
 

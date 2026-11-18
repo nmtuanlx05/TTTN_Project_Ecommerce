@@ -31,7 +31,13 @@ function ClearCartConfirm({
       finalFocus={() => (cleared.current ? returnFocusTo.current : true)}
     >
       <div className="flex flex-col-reverse gap-3 p-gutter sm:flex-row sm:justify-end">
-        <Button type="button" variant="secondary" disabled={clear.isPending} onClick={() => onOpenChange(false)} className="press">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={clear.isPending}
+          onClick={() => onOpenChange(false)}
+          className="press"
+        >
           Hủy
         </Button>
         <Button

@@ -65,8 +65,7 @@ export function useCancelOrder() {
     onSuccess: () => toast.add({ title: "Đã hủy đơn hàng", data: { tone: "success" } }),
     onError: (error) =>
       toast.add({
-        title:
-          error.code === "ORDER_NOT_CANCELLABLE_BY_CUSTOMER" ? NOT_CANCELLABLE_MESSAGE : error.message,
+        title: error.code === "ORDER_NOT_CANCELLABLE_BY_CUSTOMER" ? NOT_CANCELLABLE_MESSAGE : error.message,
         data: { tone: "danger" },
       }),
     onSettled: invalidate,

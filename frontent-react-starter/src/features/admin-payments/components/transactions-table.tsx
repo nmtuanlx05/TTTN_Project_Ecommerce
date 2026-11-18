@@ -20,7 +20,8 @@ function ActionsCell({
     return (
       <div className="flex flex-col gap-0.5 text-caption text-ink-muted">
         <span>
-          Đã xử lý{transaction.resolvedBy?.name ? ` bởi ${transaction.resolvedBy.name}` : ""} lúc {formatDateTime(transaction.resolvedAt)}
+          Đã xử lý{transaction.resolvedBy?.name ? ` bởi ${transaction.resolvedBy.name}` : ""} lúc{" "}
+          {formatDateTime(transaction.resolvedAt)}
         </span>
         {transaction.resolutionNote ? <span className="text-ink">{transaction.resolutionNote}</span> : null}
       </div>

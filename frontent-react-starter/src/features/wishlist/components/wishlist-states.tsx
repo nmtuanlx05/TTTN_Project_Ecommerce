@@ -7,7 +7,12 @@ import { Skeleton } from "@/components/ui/skeleton"
 /** Khung chờ lần tải đầu: bốn thẻ cùng tỉ lệ ảnh 3:4, hai cột như lưới thật. */
 function WishlistSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Đang tải danh sách yêu thích" role="status" className="grid grid-cols-2 gap-x-4 gap-y-6">
+    <div
+      aria-busy="true"
+      aria-label="Đang tải danh sách yêu thích"
+      role="status"
+      className="grid grid-cols-2 gap-x-4 gap-y-6"
+    >
       {[0, 1, 2, 3].map((key) => (
         <div key={key} className="flex flex-col gap-2">
           <Skeleton className="aspect-[3/4] w-full rounded-card" />

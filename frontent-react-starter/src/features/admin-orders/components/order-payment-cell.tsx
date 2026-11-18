@@ -7,11 +7,7 @@ function OrderPaymentCell({ method, status }: { method: AdminPaymentMethod; stat
   return (
     <div className="flex flex-col items-start gap-1">
       <span>{PAYMENT_METHOD_LABEL[method]}</span>
-      {status === "FAILED" ? (
-        <Badge variant="unpaid">Thanh toán lỗi</Badge>
-      ) : (
-        <PaymentStatusBadge status={status} />
-      )}
+      {status === "FAILED" ? <Badge variant="unpaid">Thanh toán lỗi</Badge> : <PaymentStatusBadge status={status} />}
     </div>
   )
 }

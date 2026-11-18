@@ -1,11 +1,6 @@
 import { apiGet, apiGetPage, apiSend } from "@/lib/api-client"
 import type { Paginated } from "@/types/api"
-import type {
-  AdminOrder,
-  AdminOrderListItem,
-  AdminOrderListParams,
-  UpdateOrderStatusInput,
-} from "./types"
+import type { AdminOrder, AdminOrderListItem, AdminOrderListParams, UpdateOrderStatusInput } from "./types"
 
 /** Gọi API quản trị đơn hàng (backend docs/api/orders.md). Chỉ `queries.ts` được import file này. */
 

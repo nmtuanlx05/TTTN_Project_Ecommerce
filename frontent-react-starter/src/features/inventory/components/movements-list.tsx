@@ -50,9 +50,7 @@ function MovementsList({ variantId }: { variantId: number }) {
           <MovementItem key={movement.id} movement={movement} />
         ))}
       </ul>
-      {isError ? (
-        <Alert variant="warning">Chưa tải thêm được. {error.message}</Alert>
-      ) : null}
+      {isError ? <Alert variant="warning">Chưa tải thêm được. {error.message}</Alert> : null}
       <div className="flex flex-col items-center gap-1">
         <p className="text-caption text-ink-muted" aria-live="polite">
           Đã hiện <span data-numeric>{formatNumber(movements.length)}</span> trên{" "}

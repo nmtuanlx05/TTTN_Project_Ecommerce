@@ -16,7 +16,6 @@ import { loginSchema, type LoginFormValues } from "../schemas"
 
 const LOGIN_FIELDS = ["email", "password"] as const
 
-
 /** Thông điệp riêng theo status; `null` thì dùng thông điệp chung từ server. */
 function statusMessage(error: ApiError): string | null {
   if (error.statusCode === 401) {
@@ -104,12 +103,7 @@ function LoginForm() {
         />
       </Field>
 
-      <Field
-        label="Mật khẩu"
-        htmlFor={`${id}-password`}
-        error={errors.password?.message}
-        required
-      >
+      <Field label="Mật khẩu" htmlFor={`${id}-password`} error={errors.password?.message} required>
         <PasswordInput autoComplete="current-password" {...register("password")} />
       </Field>
 

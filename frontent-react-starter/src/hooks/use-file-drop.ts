@@ -13,13 +13,7 @@ function hasFiles(event: DragEvent): boolean {
  * - Luôn `preventDefault` khi thả file, kể cả lúc `disabled`: nếu không, trình duyệt sẽ rời trang để mở file.
  * - `disabled` thì không gọi `onFiles` và con trỏ báo "không được thả".
  */
-export function useFileDrop({
-  disabled,
-  onFiles,
-}: {
-  disabled: boolean
-  onFiles: (files: File[]) => void
-}) {
+export function useFileDrop({ disabled, onFiles }: { disabled: boolean; onFiles: (files: File[]) => void }) {
   const [isDragging, setIsDragging] = useState(false)
   const depth = useRef(0)
 

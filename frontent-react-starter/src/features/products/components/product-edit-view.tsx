@@ -34,13 +34,7 @@ function ProductEditLoader({ id }: { id: number }) {
         <ProductBackLink />
         <Alert variant="danger" title="Không tải được sản phẩm">
           <p>{error.message}</p>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="mt-2"
-            loading={isFetching}
-            onClick={() => refetch()}
-          >
+          <Button variant="secondary" size="sm" className="mt-2" loading={isFetching} onClick={() => refetch()}>
             <RotateCw />
             Thử lại
           </Button>

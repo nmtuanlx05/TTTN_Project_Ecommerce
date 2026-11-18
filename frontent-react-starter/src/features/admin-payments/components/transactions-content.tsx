@@ -64,7 +64,10 @@ function TransactionsContent({
 
   return (
     <div className="flex flex-col gap-stack">
-      <div aria-busy={isPlaceholderData} className={isPlaceholderData ? "opacity-60 transition-opacity" : "transition-opacity"}>
+      <div
+        aria-busy={isPlaceholderData}
+        className={isPlaceholderData ? "opacity-60 transition-opacity" : "transition-opacity"}
+      >
         <TransactionsTable transactions={data.items} onConfirm={onConfirm} onResolve={onResolve} />
       </div>
       <TablePagination

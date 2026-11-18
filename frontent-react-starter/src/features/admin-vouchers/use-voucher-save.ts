@@ -31,11 +31,7 @@ export function useVoucherSave(voucher: Voucher | null, onClose: () => void) {
     if (mapped.close) onClose()
   }
 
-  function submit(
-    values: VoucherFormValues,
-    setError: UseFormSetError<VoucherFormValues>,
-    locked: boolean,
-  ) {
+  function submit(values: VoucherFormValues, setError: UseFormSetError<VoucherFormValues>, locked: boolean) {
     if (voucher) {
       const input = buildUpdateInput(voucher, values, locked)
       if (Object.keys(input).length === 0) {

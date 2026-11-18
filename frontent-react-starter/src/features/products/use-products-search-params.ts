@@ -27,8 +27,7 @@ export function useProductsSearchParams() {
   const q = (searchParams.get("q") ?? "").trim()
 
   const categoryParam = Number(searchParams.get("categoryId"))
-  const categoryId =
-    Number.isInteger(categoryParam) && categoryParam >= 1 ? categoryParam : undefined
+  const categoryId = Number.isInteger(categoryParam) && categoryParam >= 1 ? categoryParam : undefined
 
   const activeParam = searchParams.get("isActive")
   const isActive = activeParam === "true" ? true : activeParam === "false" ? false : undefined
@@ -36,8 +35,7 @@ export function useProductsSearchParams() {
   const sortParam = searchParams.get("sortBy")
   const sortBy = SORT_FIELDS.find((item) => item === sortParam) ?? DEFAULT_SORT.sortBy
   const orderParam = searchParams.get("order")
-  const order: SortOrder =
-    orderParam === "asc" || orderParam === "desc" ? orderParam : DEFAULT_SORT.order
+  const order: SortOrder = orderParam === "asc" || orderParam === "desc" ? orderParam : DEFAULT_SORT.order
 
   const pageParam = Number(searchParams.get("page"))
   const page = Number.isInteger(pageParam) && pageParam >= 1 ? pageParam : 1
@@ -83,17 +81,14 @@ export function useProductsSearchParams() {
     hasFilters,
 
     setQuery: (value: string) => update({ q: value.trim() }, { replace: true }),
-    setCategory: (value: number | undefined) =>
-      update({ categoryId: value === undefined ? undefined : String(value) }),
-    setActive: (value: boolean | undefined) =>
-      update({ isActive: value === undefined ? undefined : String(value) }),
+    setCategory: (value: number | undefined) => update({ categoryId: value === undefined ? undefined : String(value) }),
+    setActive: (value: boolean | undefined) => update({ isActive: value === undefined ? undefined : String(value) }),
     setPage: (value: number, replace = false) =>
       update({ page: value > 1 ? String(value) : undefined }, { resetPage: false, replace }),
 
     /** Bấm tiêu đề cột: đang sắp theo cột này thì đảo chiều, không thì sắp theo cột này. */
     toggleSort: (column: ProductSortBy) => {
-      const nextOrder: SortOrder =
-        column === sortBy ? (order === "asc" ? "desc" : "asc") : firstOrder(column)
+      const nextOrder: SortOrder = column === sortBy ? (order === "asc" ? "desc" : "asc") : firstOrder(column)
       const isDefault = column === DEFAULT_SORT.sortBy && nextOrder === DEFAULT_SORT.order
       update({
         sortBy: isDefault ? undefined : column,

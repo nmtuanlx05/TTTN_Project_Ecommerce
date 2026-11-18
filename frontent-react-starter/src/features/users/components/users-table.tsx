@@ -1,22 +1,9 @@
-import {
-  flexRender,
-  rowSortingFeature,
-  tableFeatures,
-  useTable,
-  type ColumnDef,
-} from "@tanstack/react-table"
+import { flexRender, rowSortingFeature, tableFeatures, useTable, type ColumnDef } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ArrowUpDown, Lock, LockOpen, Pencil } from "lucide-react"
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDateTime } from "@/lib/format"
 import type { SortOrder } from "@/types/api"
 import type { UserSortBy } from "../types"
@@ -165,9 +152,7 @@ function UsersTable({
               return (
                 <TableHead
                   key={header.id}
-                  aria-sort={
-                    sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined
-                  }
+                  aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
                 >
                   {sortable ? (
                     <button
@@ -176,10 +161,7 @@ function UsersTable({
                       className="-mx-1 inline-flex items-center gap-1 rounded-xs px-1 text-inherit outline-none hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                     >
                       {flexRender(header.column.columnDef.header, header.getContext())}
-                      <Icon
-                        className={sorted ? "size-3 text-ink" : "size-3"}
-                        aria-hidden="true"
-                      />
+                      <Icon className={sorted ? "size-3 text-ink" : "size-3"} aria-hidden="true" />
                     </button>
                   ) : (
                     flexRender(header.column.columnDef.header, header.getContext())
@@ -194,9 +176,7 @@ function UsersTable({
         {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id}>
             {row.getAllCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
+              <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
             ))}
           </TableRow>
         ))}
@@ -212,11 +192,9 @@ function UsersTableSkeleton() {
     <Table className="min-w-4xl" aria-busy="true">
       <TableHeader>
         <TableRow>
-          {["Họ tên", "Email", "Số điện thoại", "Vai trò", "Trạng thái", "Ngày tạo", ""].map(
-            (label, index) => (
-              <TableHead key={index}>{label}</TableHead>
-            ),
-          )}
+          {["Họ tên", "Email", "Số điện thoại", "Vai trò", "Trạng thái", "Ngày tạo", ""].map((label, index) => (
+            <TableHead key={index}>{label}</TableHead>
+          ))}
         </TableRow>
       </TableHeader>
       <TableBody>

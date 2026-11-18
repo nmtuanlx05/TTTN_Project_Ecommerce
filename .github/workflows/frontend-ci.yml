@@ -36,6 +36,7 @@ jobs:
           cache-dependency-path: frontent-react-starter/package-lock.json
       - run: npm ci
       - run: npm run lint
+      - run: npm run format:check
 
   test:
     runs-on: ubuntu-latest

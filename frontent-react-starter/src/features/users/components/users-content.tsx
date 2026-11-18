@@ -21,8 +21,7 @@ function UsersContent({
   onEdit: (user: User) => void
   onToggleStatus: (user: User) => void
 }) {
-  const { data, error, isPending, isError, isPlaceholderData, isFetching, refetch } =
-    useUsers(search.params)
+  const { data, error, isPending, isError, isPlaceholderData, isFetching, refetch } = useUsers(search.params)
 
   const { page, setPage } = search
   const totalPages = data?.meta.totalPages ?? 0
@@ -40,13 +39,7 @@ function UsersContent({
     return (
       <Alert variant="danger" title="Không tải được danh sách người dùng">
         <p>{error.message}</p>
-        <Button
-          variant="secondary"
-          size="sm"
-          className="mt-2"
-          loading={isFetching}
-          onClick={() => refetch()}
-        >
+        <Button variant="secondary" size="sm" className="mt-2" loading={isFetching} onClick={() => refetch()}>
           <RotateCw />
           Thử lại
         </Button>

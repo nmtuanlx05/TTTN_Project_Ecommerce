@@ -1,13 +1,7 @@
 import { X } from "lucide-react"
 import { SearchInput } from "@/components/admin/search-input"
 import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { Role } from "@/types/user"
 import { ROLE_LABEL, ROLES } from "../constants"
 
@@ -56,9 +50,7 @@ function UsersToolbar({
         <Select
           items={ROLE_ITEMS}
           value={role ?? ALL}
-          onValueChange={(next) =>
-            onRoleChange(next === ALL ? undefined : (next as Role))
-          }
+          onValueChange={(next) => onRoleChange(next === ALL ? undefined : (next as Role))}
         >
           <SelectTrigger aria-label="Lọc theo vai trò" className="sm:w-44">
             <SelectValue />
@@ -75,9 +67,7 @@ function UsersToolbar({
         <Select
           items={STATUS_ITEMS}
           value={isActive === undefined ? ALL : String(isActive)}
-          onValueChange={(next) =>
-            onActiveChange(next === ALL ? undefined : next === "true")
-          }
+          onValueChange={(next) => onActiveChange(next === ALL ? undefined : next === "true")}
         >
           <SelectTrigger aria-label="Lọc theo trạng thái" className="sm:w-44">
             <SelectValue />

@@ -8,7 +8,15 @@ import type { OrderActions } from "../use-order-actions"
 import { useCancelOrder } from "../queries"
 
 /** Form trong hộp thoại hủy; được dựng lại mỗi lần mở nên ô lý do luôn về mặc định. */
-function CancelForm({ code, awaitingPayment, onClose }: { code: string; awaitingPayment: boolean; onClose: () => void }) {
+function CancelForm({
+  code,
+  awaitingPayment,
+  onClose,
+}: {
+  code: string
+  awaitingPayment: boolean
+  onClose: () => void
+}) {
   const [reason, setReason] = useState(DEFAULT_CANCEL_REASON)
   const cancel = useCancelOrder()
   return (
@@ -21,8 +29,8 @@ function CancelForm({ code, awaitingPayment, onClose }: { code: string; awaiting
     >
       {awaitingPayment ? (
         <Alert variant="warning" title="Bạn đã chuyển khoản chưa?">
-          Nếu đã chuyển khoản, đừng hủy đơn: hãy chờ hệ thống xác nhận hoặc liên hệ cửa hàng kèm mã đơn. Hủy đơn sau khi chuyển khoản có thể
-          khiến tiền phải hoàn lại thủ công.
+          Nếu đã chuyển khoản, đừng hủy đơn: hãy chờ hệ thống xác nhận hoặc liên hệ cửa hàng kèm mã đơn. Hủy đơn sau khi
+          chuyển khoản có thể khiến tiền phải hoàn lại thủ công.
         </Alert>
       ) : null}
       <div className="flex flex-col gap-2">

@@ -10,10 +10,7 @@ function ProductVariantsCell({ active, total }: { active: number; total: number 
   return (
     <span
       data-numeric
-      className={cn(
-        "inline-flex items-center gap-1 whitespace-nowrap",
-        noneSelling && "text-warning-fg",
-      )}
+      className={cn("inline-flex items-center gap-1 whitespace-nowrap", noneSelling && "text-warning-fg")}
       title={noneSelling ? "Chưa có biến thể nào đang bán nên khách chưa thấy sản phẩm này" : undefined}
     >
       {noneSelling ? <TriangleAlert className="size-3.5" aria-hidden="true" /> : null}

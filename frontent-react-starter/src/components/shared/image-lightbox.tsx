@@ -49,8 +49,8 @@ function ImageLightbox({
         >
           <Dialog.Title className="sr-only">{title ?? `Xem ảnh lớn: ${alt}`}</Dialog.Title>
           <Dialog.Description className="sr-only">
-            Phóng to bằng nút + và −, bánh xe chuột hoặc hai ngón tay. Khi đã phóng to, kéo để di chuyển
-            ảnh. Nhấn Esc để đóng.
+            Phóng to bằng nút + và −, bánh xe chuột hoặc hai ngón tay. Khi đã phóng to, kéo để di chuyển ảnh. Nhấn Esc
+            để đóng.
           </Dialog.Description>
           <ImageLightboxViewer src={src} alt={alt} onClose={() => onOpenChange(false)} />
         </Dialog.Popup>

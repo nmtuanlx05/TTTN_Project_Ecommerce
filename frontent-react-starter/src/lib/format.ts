@@ -140,7 +140,6 @@ export function formatOrderTime(value: Date | string): string {
   const date = typeof value === "string" ? new Date(value) : value
   if (ymdVn.format(date) === todayVn()) return formatTime(date)
   // Ghép từ các phần để giữ đúng thứ tự dd/MM HH:mm (vi-VN mặc định đặt giờ trước ngày)
-  const part = (type: string) =>
-    dayMonthTimeVn.formatToParts(date).find((item) => item.type === type)?.value ?? ""
+  const part = (type: string) => dayMonthTimeVn.formatToParts(date).find((item) => item.type === type)?.value ?? ""
   return `${part("day")}/${part("month")} ${part("hour")}:${part("minute")}`
 }

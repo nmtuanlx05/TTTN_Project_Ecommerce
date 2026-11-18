@@ -134,11 +134,7 @@ function CategoryFormDialog({
       onOpenChange={handleOpenChange}
       busy={busy}
       title={mode === "create" ? "Thêm danh mục" : "Sửa danh mục"}
-      description={
-        mode === "create"
-          ? "Tạo danh mục mới để sắp xếp sản phẩm."
-          : "Cập nhật tên, danh mục cha và slug."
-      }
+      description={mode === "create" ? "Tạo danh mục mới để sắp xếp sản phẩm." : "Cập nhật tên, danh mục cha và slug."}
     >
       <CategoryForm
         category={category}

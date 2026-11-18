@@ -37,12 +37,7 @@ function VouchersPage() {
           onStatusChange={search.setStatus}
           onClear={search.clearFilters}
         />
-        <VouchersContent
-          search={search}
-          togglingId={status.togglingId}
-          onEdit={form.show}
-          onToggle={status.request}
-        />
+        <VouchersContent search={search} togglingId={status.togglingId} onEdit={form.show} onToggle={status.request} />
       </div>
 
       <VoucherFormDialog {...form.dialogProps} voucher={form.target} />

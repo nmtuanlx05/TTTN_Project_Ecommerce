@@ -28,8 +28,7 @@ export function useCatalogSearchParams() {
   const q = (searchParams.get("q") ?? "").trim()
 
   const sortParam = searchParams.get("sort")
-  const sort: CatalogSort =
-    SORT_OPTIONS.find((option) => option.value === sortParam)?.value ?? DEFAULT_SORT
+  const sort: CatalogSort = SORT_OPTIONS.find((option) => option.value === sortParam)?.value ?? DEFAULT_SORT
 
   let minPrice = readInt(searchParams.get("minPrice"), 0, PRICE_MAX)
   let maxPrice = readInt(searchParams.get("maxPrice"), 0, PRICE_MAX)
@@ -40,8 +39,7 @@ export function useCatalogSearchParams() {
 
   const page = readInt(searchParams.get("page"), 1, PRICE_MAX) ?? 1
 
-  const hasFilters =
-    Boolean(q) || categorySlug !== undefined || minPrice !== undefined || maxPrice !== undefined
+  const hasFilters = Boolean(q) || categorySlug !== undefined || minPrice !== undefined || maxPrice !== undefined
 
   /** Query gửi backend. `categoryId` do nơi gọi tra từ slug (backend không nhận slug). */
   function toListParams(categoryId?: number): CatalogListParams {
@@ -87,7 +85,10 @@ export function useCatalogSearchParams() {
       update({ sort: value === DEFAULT_SORT ? undefined : value }, { replace: true, resetPage: true }),
     setPriceRange: (min: number | undefined, max: number | undefined) =>
       update(
-        { minPrice: min === undefined ? undefined : String(min), maxPrice: max === undefined ? undefined : String(max) },
+        {
+          minPrice: min === undefined ? undefined : String(min),
+          maxPrice: max === undefined ? undefined : String(max),
+        },
         { replace: true, resetPage: true },
       ),
     clearQuery: () => update({ q: undefined }, { replace: true, resetPage: true }),

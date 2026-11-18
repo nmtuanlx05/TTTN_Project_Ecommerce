@@ -9,10 +9,7 @@ export type MergedPoint = {
 }
 
 /** Ghép kỳ trước theo chỉ số ngày (API trả hai mảng cùng độ dài; thiếu thì null). */
-export function mergeSeries(
-  series: DailyPoint[],
-  previousSeries: DailyPoint[],
-): MergedPoint[] {
+export function mergeSeries(series: DailyPoint[], previousSeries: DailyPoint[]): MergedPoint[] {
   return series.map((point, index) => {
     const previous = previousSeries[index] ?? null
     return {

@@ -41,9 +41,7 @@ function UserAvatar({
       shape="circle"
       preset="tiny"
       className={cn(SIZE[size].box, className)}
-      fallback={
-        <AvatarInitials name={name} email={email} decorative={decorative} className={SIZE[size].text} />
-      }
+      fallback={<AvatarInitials name={name} email={email} decorative={decorative} className={SIZE[size].text} />}
     />
   )
 }

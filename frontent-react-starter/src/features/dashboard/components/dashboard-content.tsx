@@ -6,13 +6,7 @@ import { TopProducts } from "./top-products"
 import { LowStock } from "./low-stock"
 import { RecentOrders } from "./recent-orders"
 
-function DashboardContent({
-  data,
-  isRefreshing,
-}: {
-  data: DashboardData
-  isRefreshing: boolean
-}) {
+function DashboardContent({ data, isRefreshing }: { data: DashboardData; isRefreshing: boolean }) {
   return (
     // Lần đổi khoảng sau đó giữ nguyên bản cũ ở độ mờ thấp thay vì nháy
     // skeleton — không có cú nhảy bố cục
@@ -28,10 +22,7 @@ function DashboardContent({
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
         <div className="min-w-0 xl:col-span-2">
-          <RevenueChart
-            series={data.series}
-            previousSeries={data.previousSeries}
-          />
+          <RevenueChart series={data.series} previousSeries={data.previousSeries} />
         </div>
         <div className="min-w-0">
           <StatusBreakdown statusCounts={data.statusCounts} range={data.range} />
@@ -43,10 +34,7 @@ function DashboardContent({
           <TopProducts products={data.topProducts} />
         </div>
         <div className="min-w-0">
-          <LowStock
-            total={data.lowStockVariants.total}
-            variants={data.lowStockVariants.items}
-          />
+          <LowStock total={data.lowStockVariants.total} variants={data.lowStockVariants.items} />
         </div>
       </div>
 

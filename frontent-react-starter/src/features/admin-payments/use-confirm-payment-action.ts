@@ -28,7 +28,9 @@ export function useConfirmPaymentAction({ onDone }: { onDone: () => void }) {
   const fail = (apiError: ApiError) => {
     const { statusCode, code } = apiError
     if (code === ERROR_CODE.notAwaitingPayment) {
-      closeWithToast("Đơn không còn chờ thanh toán (đã hết hạn, đã hủy hoặc đã được xác nhận). Dữ liệu đã được làm mới.")
+      closeWithToast(
+        "Đơn không còn chờ thanh toán (đã hết hạn, đã hủy hoặc đã được xác nhận). Dữ liệu đã được làm mới.",
+      )
     } else if (code === ERROR_CODE.txnNotReviewable || code === ERROR_CODE.txnAlreadyResolved) {
       closeWithToast("Giao dịch này đã được xử lý hoặc không còn trong danh sách cần xem lại.")
     } else if (statusCode === 404) {

@@ -77,11 +77,7 @@ export function buildVoucherColumns({
       header: "Bật/tắt",
       enableSorting: false,
       cell: ({ row }) => (
-        <VoucherActiveSwitch
-          voucher={row.original}
-          disabled={togglingId !== undefined}
-          onToggle={onToggle}
-        />
+        <VoucherActiveSwitch voucher={row.original} disabled={togglingId !== undefined} onToggle={onToggle} />
       ),
     },
     {

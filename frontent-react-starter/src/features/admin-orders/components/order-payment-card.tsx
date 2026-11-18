@@ -6,7 +6,10 @@ import type { AdminOrder } from "../types"
 /** Khối thanh toán: phương thức, trạng thái, thời điểm thanh toán (đơn COD được ghi đã thanh toán khi hoàn tất giao hàng). */
 function OrderPaymentCard({ order }: { order: AdminOrder }) {
   return (
-    <section aria-labelledby="order-payment" className="flex flex-col gap-stack rounded-md border border-border-subtle bg-surface p-card">
+    <section
+      aria-labelledby="order-payment"
+      className="flex flex-col gap-stack rounded-md border border-border-subtle bg-surface p-card"
+    >
       <h2 id="order-payment" className="font-display text-h3 text-ink">
         Thanh toán
       </h2>

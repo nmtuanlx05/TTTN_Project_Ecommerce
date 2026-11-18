@@ -46,20 +46,14 @@ function ConfirmDialog({
         <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 flex w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col gap-stack rounded-md border border-border-default bg-surface-raised p-card outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
           <div className="flex flex-col gap-1.5">
             <Dialog.Title className="font-display text-h3 text-ink">{title}</Dialog.Title>
-            <Dialog.Description className="text-body-sm text-ink-muted">
-              {description}
-            </Dialog.Description>
+            <Dialog.Description className="text-body-sm text-ink-muted">{description}</Dialog.Description>
           </div>
           {error ? <Alert variant="danger">{error}</Alert> : null}
           <div className="flex flex-col-reverse gap-inline sm:flex-row sm:justify-end">
             <Button variant="secondary" disabled={loading} onClick={() => onOpenChange(false)}>
               {cancelLabel}
             </Button>
-            <Button
-              variant={destructive ? "destructive" : "primary"}
-              loading={loading}
-              onClick={onConfirm}
-            >
+            <Button variant={destructive ? "destructive" : "primary"} loading={loading} onClick={onConfirm}>
               {confirmLabel}
             </Button>
           </div>

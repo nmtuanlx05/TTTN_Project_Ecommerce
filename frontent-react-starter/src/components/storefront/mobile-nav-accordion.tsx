@@ -41,7 +41,10 @@ function MobileNavAccordion({
         <span className={cn(ancestorActive && "underline decoration-1 underline-offset-8")}>{item.label}</span>
         <ChevronDown
           aria-hidden="true"
-          className={cn("size-4 text-ink-muted transition-transform duration-(--motion-fast) ease-smooth", expanded && "rotate-180")}
+          className={cn(
+            "size-4 text-ink-muted transition-transform duration-(--motion-fast) ease-smooth",
+            expanded && "rotate-180",
+          )}
         />
       </button>
       <div

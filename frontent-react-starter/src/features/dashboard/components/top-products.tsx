@@ -1,12 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ImagePreview } from "@/components/shared/image-preview"
 import { EmptyState } from "@/components/ui/empty-state"
 import { PackageSearch } from "lucide-react"
@@ -23,9 +16,7 @@ function TopProducts({ products }: { products: TopProduct[] }) {
         <h2 id="top-products-title" className="font-display text-h3 text-ink">
           Top 5 bán chạy
         </h2>
-        <p className="mt-0.5 text-caption text-ink-muted">
-          Xếp theo số lượng bán, đơn hoàn thành trong kỳ
-        </p>
+        <p className="mt-0.5 text-caption text-ink-muted">Xếp theo số lượng bán, đơn hoàn thành trong kỳ</p>
       </div>
 
       {products.length === 0 ? (
@@ -48,12 +39,7 @@ function TopProducts({ products }: { products: TopProduct[] }) {
               <TableRow key={product.id}>
                 <TableCell>
                   <div className="flex items-center gap-inline">
-                    <ImagePreview
-                      src={product.imageUrl}
-                      alt={product.name}
-                      shape="portrait"
-                      className="w-9 shrink-0"
-                    />
+                    <ImagePreview src={product.imageUrl} alt={product.name} shape="portrait" className="w-9 shrink-0" />
                     <span className="text-ink">{product.name}</span>
                   </div>
                 </TableCell>

@@ -28,7 +28,12 @@ function HeroControls({
   onNext: () => void
 }) {
   return (
-    <div className={cn("absolute inset-x-0 bottom-5 flex items-center gap-4 px-gutter lg:right-auto lg:bottom-8 lg:pr-12 lg:pl-(--container-inset)", HERO_TEXT_WIDTH_CLASS)}>
+    <div
+      className={cn(
+        "absolute inset-x-0 bottom-5 flex items-center gap-4 px-gutter lg:right-auto lg:bottom-8 lg:pr-12 lg:pl-(--container-inset)",
+        HERO_TEXT_WIDTH_CLASS,
+      )}
+    >
       <p className="text-body-sm font-semibold text-ink tabular-nums">
         {pad(index + 1)} / {pad(titles.length)}
       </p>

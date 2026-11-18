@@ -59,6 +59,14 @@ export function useQuickAdd(slug: string) {
   return {
     start: () => requireLogin(() => void run()),
     loading,
-    dialog: { product: detail, open, onOpenChange: setOpen, pending: adding, onAdd: addFromDialog, onOpenChangeComplete, finalFocus: () => !added.current },
+    dialog: {
+      product: detail,
+      open,
+      onOpenChange: setOpen,
+      pending: adding,
+      onAdd: addFromDialog,
+      onOpenChangeComplete,
+      finalFocus: () => !added.current,
+    },
   }
 }

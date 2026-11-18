@@ -6,7 +6,12 @@ import type { VoucherFieldsProps } from "./voucher-form-types"
 
 /** Đơn tối thiểu và giới hạn lượt dùng. Khi đã có người dùng, giới hạn lượt không được thấp hơn `usedCount`. */
 function VoucherLimitFields({ form, id, usedCount }: VoucherFieldsProps) {
-  const { register, control, clearErrors, formState: { errors } } = form
+  const {
+    register,
+    control,
+    clearErrors,
+    formState: { errors },
+  } = form
   const unlimited = useWatch({ control, name: "unlimited" })
 
   return (
@@ -48,9 +53,7 @@ function VoucherLimitFields({ form, id, usedCount }: VoucherFieldsProps) {
             required
             error={errors.usageLimit?.message}
             description={
-              usedCount > 0
-                ? `Tối thiểu ${usedCount} (số lượt đã dùng).`
-                : "Tổng số lần mã được dùng, từ 1 trở lên."
+              usedCount > 0 ? `Tối thiểu ${usedCount} (số lượt đã dùng).` : "Tổng số lần mã được dùng, từ 1 trở lên."
             }
           >
             <Input inputMode="numeric" autoComplete="off" {...register("usageLimit")} />

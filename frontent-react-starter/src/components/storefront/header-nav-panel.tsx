@@ -65,7 +65,10 @@ function HeaderNavPanel({
         <ul
           key={item.key}
           aria-label={item.label}
-          className={cn("w-max min-w-64 py-4 transition-none motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-(--motion-fast)", LIST_ALIGN)}
+          className={cn(
+            "w-max min-w-64 py-4 transition-none motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-(--motion-fast)",
+            LIST_ALIGN,
+          )}
         >
           <li>
             <Link

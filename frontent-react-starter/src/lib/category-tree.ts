@@ -20,8 +20,7 @@ export function buildCategoryTree(categories: PublicCategory[]): CategoryTree {
   const ids = new Set(categories.map((category) => category.id))
   const childrenOf = new Map<number | null, PublicCategory[]>()
   for (const category of categories) {
-    const parentKey =
-      category.parentId !== null && ids.has(category.parentId) ? category.parentId : null
+    const parentKey = category.parentId !== null && ids.has(category.parentId) ? category.parentId : null
     const siblings = childrenOf.get(parentKey) ?? []
     siblings.push(category)
     childrenOf.set(parentKey, siblings)
@@ -31,9 +30,7 @@ export function buildCategoryTree(categories: PublicCategory[]): CategoryTree {
   const byId = new Map<number, CategoryNode>()
 
   function build(parentKey: number | null, depth: number): CategoryNode[] {
-    const siblings = [...(childrenOf.get(parentKey) ?? [])].sort((a, b) =>
-      a.name.localeCompare(b.name, "vi"),
-    )
+    const siblings = [...(childrenOf.get(parentKey) ?? [])].sort((a, b) => a.name.localeCompare(b.name, "vi"))
     return siblings.flatMap((category) => {
       if (byId.has(category.id)) return []
       const node: CategoryNode = { ...category, children: [], depth }

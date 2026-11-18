@@ -24,11 +24,7 @@ function ProductPriceField({ id }: { id: string }) {
             htmlFor={id}
             required
             error={fieldState.error?.message}
-            description={
-              parsed === null
-                ? "Số nguyên VND, ví dụ 199000."
-                : `Hiển thị cho khách: ${formatVnd(parsed)}`
-            }
+            description={parsed === null ? "Số nguyên VND, ví dụ 199000." : `Hiển thị cho khách: ${formatVnd(parsed)}`}
           >
             <Input
               ref={field.ref}

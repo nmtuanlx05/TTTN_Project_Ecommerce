@@ -36,8 +36,7 @@ export function useUsersSearchParams() {
   const sortParam = searchParams.get("sortBy")
   const sortBy = SORTABLE_COLUMNS.find((item) => item === sortParam) ?? DEFAULT_SORT.sortBy
   const orderParam = searchParams.get("order")
-  const order: SortOrder =
-    orderParam === "asc" || orderParam === "desc" ? orderParam : DEFAULT_SORT.order
+  const order: SortOrder = orderParam === "asc" || orderParam === "desc" ? orderParam : DEFAULT_SORT.order
 
   const pageParam = Number(searchParams.get("page"))
   const page = Number.isInteger(pageParam) && pageParam >= 1 ? pageParam : 1
@@ -84,15 +83,13 @@ export function useUsersSearchParams() {
 
     setQuery: (value: string) => update({ q: value.trim() }, { replace: true }),
     setRole: (value: Role | undefined) => update({ role: value }),
-    setActive: (value: boolean | undefined) =>
-      update({ isActive: value === undefined ? undefined : String(value) }),
+    setActive: (value: boolean | undefined) => update({ isActive: value === undefined ? undefined : String(value) }),
     setPage: (value: number, replace = false) =>
       update({ page: value > 1 ? String(value) : undefined }, { resetPage: false, replace }),
 
     /** Bấm tiêu đề cột: đang sắp theo cột này thì đảo chiều, không thì sắp theo cột này. */
     toggleSort: (column: UserSortBy) => {
-      const nextOrder: SortOrder =
-        column === sortBy ? (order === "asc" ? "desc" : "asc") : firstOrder(column)
+      const nextOrder: SortOrder = column === sortBy ? (order === "asc" ? "desc" : "asc") : firstOrder(column)
       const isDefault = column === DEFAULT_SORT.sortBy && nextOrder === DEFAULT_SORT.order
       update({
         sortBy: isDefault ? undefined : column,

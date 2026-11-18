@@ -18,11 +18,7 @@ function ImageUploadProgress({ progress }: { progress: number | null }) {
         </div>
       ) : null}
       <p className="text-caption text-ink-muted" data-numeric>
-        {progress === null
-          ? "Đang tải lên…"
-          : progress < 100
-            ? `Đang tải lên… ${progress}%`
-            : "Đang xử lý ảnh…"}
+        {progress === null ? "Đang tải lên…" : progress < 100 ? `Đang tải lên… ${progress}%` : "Đang xử lý ảnh…"}
       </p>
     </div>
   )

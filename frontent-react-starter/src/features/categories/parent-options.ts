@@ -9,10 +9,7 @@ export interface ParentOption {
 const PATH_SEPARATOR = " › "
 
 /** id của `rootId` và toàn bộ con cháu (đi theo `parentId`). */
-function collectSelfAndDescendants(
-  categories: PublicCategory[],
-  rootId: number,
-): Set<number> {
+function collectSelfAndDescendants(categories: PublicCategory[], rootId: number): Set<number> {
   const childrenOf = new Map<number, number[]>()
   for (const category of categories) {
     if (category.parentId === null) continue
@@ -39,13 +36,9 @@ function collectSelfAndDescendants(
  * Các danh mục có thể chọn làm cha, sắp theo đường dẫn. Khi sửa danh mục `editingId` thì
  * loại chính nó và con cháu của nó (chọn chúng làm cha sẽ tạo vòng lặp; backend cũng chặn, 400).
  */
-export function buildParentOptions(
-  categories: PublicCategory[],
-  editingId?: number,
-): ParentOption[] {
+export function buildParentOptions(categories: PublicCategory[], editingId?: number): ParentOption[] {
   const byId = new Map(categories.map((category) => [category.id, category]))
-  const excluded =
-    editingId === undefined ? new Set<number>() : collectSelfAndDescendants(categories, editingId)
+  const excluded = editingId === undefined ? new Set<number>() : collectSelfAndDescendants(categories, editingId)
 
   function pathOf(category: PublicCategory): string {
     const names = [category.name]

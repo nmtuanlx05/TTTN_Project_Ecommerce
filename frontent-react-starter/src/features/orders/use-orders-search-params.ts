@@ -15,7 +15,8 @@ export function useOrdersSearchParams() {
   const group = ORDER_GROUPS.find((item) => item === searchParams.get("status"))
   const q = (searchParams.get("q") ?? "").trim().slice(0, MAX_QUERY_LENGTH)
   const pageParam = searchParams.get("page") ?? ""
-  const page = /^\d+$/.test(pageParam) && Number(pageParam) >= 1 && Number.isSafeInteger(Number(pageParam)) ? Number(pageParam) : 1
+  const page =
+    /^\d+$/.test(pageParam) && Number(pageParam) >= 1 && Number.isSafeInteger(Number(pageParam)) ? Number(pageParam) : 1
 
   /** Query gửi backend; nhóm → `status=A,B`. */
   const params: MyOrdersParams = {

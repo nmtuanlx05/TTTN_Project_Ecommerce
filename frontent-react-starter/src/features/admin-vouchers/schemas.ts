@@ -47,8 +47,7 @@ export function makeVoucherSchema({ mode, locked, usedCount, today }: VoucherSch
 
       const value = parseInteger(values.discountValue)
       if (values.discountType === "PERCENT") {
-        if (!isInt(value, 1) || value > 100)
-          fail("discountValue", "Phần trăm giảm phải là số nguyên từ 1 đến 100.")
+        if (!isInt(value, 1) || value > 100) fail("discountValue", "Phần trăm giảm phải là số nguyên từ 1 đến 100.")
         if (values.maxDiscount.trim() && !isInt(parseInteger(values.maxDiscount), 1))
           fail("maxDiscount", "Mức giảm tối đa phải là số nguyên lớn hơn 0, hoặc để trống nếu không giới hạn.")
       } else if (!isInt(value, 1)) {
@@ -64,10 +63,8 @@ export function makeVoucherSchema({ mode, locked, usedCount, today }: VoucherSch
 
     if (!values.unlimited) {
       const limit = parseInteger(values.usageLimit)
-      if (!isInt(limit, 1))
-        fail("usageLimit", 'Nhập số lượt dùng từ 1 trở lên, hoặc bật "Không giới hạn".')
-      else if (limit < usedCount)
-        fail("usageLimit", `Không được thấp hơn số lượt đã dùng (${usedCount}).`)
+      if (!isInt(limit, 1)) fail("usageLimit", 'Nhập số lượt dùng từ 1 trở lên, hoặc bật "Không giới hạn".')
+      else if (limit < usedCount) fail("usageLimit", `Không được thấp hơn số lượt đã dùng (${usedCount}).`)
     }
 
     const validStart = YMD_REGEX.test(values.startsAtDate)

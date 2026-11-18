@@ -65,9 +65,7 @@ function InventoryRowActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="px-3 py-2 text-caption text-ink-muted">
-              Thao tác khác
-            </DropdownMenuLabel>
+            <DropdownMenuLabel className="px-3 py-2 text-caption text-ink-muted">Thao tác khác</DropdownMenuLabel>
             <DropdownMenuItem className={MENU_ITEM} onClick={() => onOpen("export", item, moreRef.current)}>
               <PackageMinus />
               Xuất kho

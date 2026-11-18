@@ -45,7 +45,13 @@ function CartLine({
           >
             {item.name}
           </Link>
-          <span className={cn("shrink-0 font-semibold", sellable ? "text-ink" : "text-ink-muted", large ? "text-body" : "text-body-sm")}>
+          <span
+            className={cn(
+              "shrink-0 font-semibold",
+              sellable ? "text-ink" : "text-ink-muted",
+              large ? "text-body" : "text-body-sm",
+            )}
+          >
             {formatVnd(item.lineTotal)}
           </span>
         </div>

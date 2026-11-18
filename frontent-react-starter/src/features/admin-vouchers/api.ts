@@ -1,19 +1,10 @@
 import { apiGet, apiGetPage, apiSend } from "@/lib/api-client"
 import type { Paginated } from "@/types/api"
-import type {
-  CreateVoucherInput,
-  UpdateVoucherInput,
-  Voucher,
-  VoucherDetail,
-  VoucherListParams,
-} from "./types"
+import type { CreateVoucherInput, UpdateVoucherInput, Voucher, VoucherDetail, VoucherListParams } from "./types"
 
 /** Gọi API /admin/vouchers (docs/api/vouchers.md). Chỉ `queries.ts` được import file này. */
 
-export function listVouchers(
-  params: VoucherListParams,
-  signal?: AbortSignal,
-): Promise<Paginated<Voucher>> {
+export function listVouchers(params: VoucherListParams, signal?: AbortSignal): Promise<Paginated<Voucher>> {
   return apiGetPage<Voucher>("/admin/vouchers", { params, signal })
 }
 

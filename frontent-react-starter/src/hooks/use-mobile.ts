@@ -6,9 +6,7 @@ const QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`
 export function useIsMobile() {
   // Đọc ngay trong initializer thay vì gán lại trong effect, tránh một vòng
   // render thừa và tránh chớp sai bề rộng ở lần vẽ đầu.
-  const [isMobile, setIsMobile] = React.useState(
-    () => window.matchMedia(QUERY).matches,
-  )
+  const [isMobile, setIsMobile] = React.useState(() => window.matchMedia(QUERY).matches)
 
   React.useEffect(() => {
     const mql = window.matchMedia(QUERY)

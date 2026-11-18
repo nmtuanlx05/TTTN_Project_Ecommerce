@@ -3,13 +3,7 @@ import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/ui/empty-state"
 
 /** Hiện khi không khôi phục được phiên vì mạng hoặc máy chủ lỗi (khác với "chưa đăng nhập"). */
-function SessionErrorScreen({
-  message,
-  onRetry,
-}: {
-  message: string
-  onRetry: () => void
-}) {
+function SessionErrorScreen({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="grid min-h-dvh place-items-center bg-canvas px-gutter">
       <EmptyState

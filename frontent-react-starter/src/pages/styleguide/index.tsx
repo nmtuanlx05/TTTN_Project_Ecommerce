@@ -31,22 +31,9 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { ToastProvider, ToastViewport, useToast } from "@/components/ui/toast"
 import { formatDateTime, formatVnd } from "@/lib/format"
@@ -76,9 +63,7 @@ function Section({
   return (
     <section id={id} className="scroll-mt-20 border-t border-border-subtle pt-8">
       <h2 className="font-display text-h2 text-ink">{title}</h2>
-      {lead ? (
-        <p className="mt-2 max-w-prose text-body-sm text-ink-muted">{lead}</p>
-      ) : null}
+      {lead ? <p className="mt-2 max-w-prose text-body-sm text-ink-muted">{lead}</p> : null}
       <div className="mt-stack">{children}</div>
     </section>
   )
@@ -88,10 +73,7 @@ function Ratio({ value }: { value: number | null }) {
   if (value === null) return <span className="text-ink-subtle">—</span>
   const pass = value >= 4.5
   return (
-    <span
-      data-numeric
-      className={pass ? "text-ink" : "text-danger-fg font-semibold"}
-    >
+    <span data-numeric className={pass ? "text-ink" : "text-danger-fg font-semibold"}>
       {value.toFixed(2)}
     </span>
   )
@@ -115,9 +97,7 @@ function ColorSection() {
                 style={{ background: swatch.light }}
               />
               <div className="min-w-0">
-                <p className="truncate font-mono text-caption text-ink">
-                  {swatch.token}
-                </p>
+                <p className="truncate font-mono text-caption text-ink">{swatch.token}</p>
                 <p className="text-caption text-ink-muted">
                   <span data-numeric>{swatch.light}</span>
                   {swatch.note ? ` · ${swatch.note}` : null}
@@ -131,8 +111,7 @@ function ColorSection() {
       <div>
         <h3 className="font-display text-h3 text-ink">Tỉ lệ tương phản</h3>
         <p className="mt-2 max-w-prose text-body-sm text-ink-muted">
-          Tính bằng công thức WCAG 2.x. Ngưỡng cho chữ là 4.5, cho ranh giới
-          control là 3.0.
+          Tính bằng công thức WCAG 2.x. Ngưỡng cho chữ là 4.5, cho ranh giới control là 3.0.
         </p>
         <div className="mt-stack density-admin">
           <Table>
@@ -177,8 +156,7 @@ function ColorSection() {
             >
               <p className="text-body-sm font-semibold">{tone.label}</p>
               <p className="mt-1 font-mono text-caption">
-                {tone.lightFg} · tương phản{" "}
-                {tone.lightRatio.toFixed(2)}
+                {tone.lightFg} · tương phản {tone.lightRatio.toFixed(2)}
               </p>
             </div>
           ))}
@@ -194,33 +172,23 @@ function TypeSection() {
   return (
     <div className="flex flex-col gap-section">
       <Alert variant="info" title="Kiểm chứng dấu tiếng Việt">
-        Chuỗi dưới đây có dấu mũ chồng dấu thanh ở cả cỡ lớn nhất và nhỏ nhất.
-        Nếu dấu bị cắt ngọn hoặc chạm dòng trên thì thang chữ sai.
+        Chuỗi dưới đây có dấu mũ chồng dấu thanh ở cả cỡ lớn nhất và nhỏ nhất. Nếu dấu bị cắt ngọn hoặc chạm dòng trên
+        thì thang chữ sai.
       </Alert>
 
       <div className="rounded-md border border-border-subtle bg-surface p-card">
-        <p className="font-display text-display uppercase text-ink">
-          {DIACRITIC_PROBE}
-        </p>
-        <p className="mt-stack text-overline uppercase text-ink-muted">
-          {DIACRITIC_PROBE}
-        </p>
+        <p className="font-display text-display uppercase text-ink">{DIACRITIC_PROBE}</p>
+        <p className="mt-stack text-overline uppercase text-ink-muted">{DIACRITIC_PROBE}</p>
       </div>
 
       <div className="flex flex-col gap-6">
         {TYPE_SCALE.map((step) => (
-          <div
-            key={step.name}
-            className="border-t border-border-subtle pt-4 first:border-t-0 first:pt-0"
-          >
+          <div key={step.name} className="border-t border-border-subtle pt-4 first:border-t-0 first:pt-0">
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <code className="font-mono text-caption font-semibold text-ink">
-                {step.name}
-              </code>
+              <code className="font-mono text-caption font-semibold text-ink">{step.name}</code>
               <span className="text-caption text-ink-muted">
-                storefront {step.storefront} · admin {step.admin} · line-height{" "}
-                {step.lineHeight} · letter-spacing {step.letterSpacing} · weight{" "}
-                {step.weight}
+                storefront {step.storefront} · admin {step.admin} · line-height {step.lineHeight} · letter-spacing{" "}
+                {step.letterSpacing} · weight {step.weight}
               </span>
             </div>
             <p className={`mt-2 text-ink ${step.className}`}>{step.sample}</p>
@@ -279,9 +247,8 @@ function ButtonSection() {
       </Table>
 
       <p className="mt-stack text-body-sm text-ink-muted">
-        Hover và active không chụp lại được trong bảng — rê chuột lên từng nút để
-        xem. Nhấn Tab để kiểm tra vòng focus: viền 2px, cách mép 2px, hiện rõ cả
-        trên nền sáng lẫn trong vùng tối cố định.
+        Hover và active không chụp lại được trong bảng — rê chuột lên từng nút để xem. Nhấn Tab để kiểm tra vòng focus:
+        viền 2px, cách mép 2px, hiện rõ cả trên nền sáng lẫn trong vùng tối cố định.
       </p>
     </div>
   )
@@ -328,9 +295,8 @@ function BadgeSection() {
       </div>
 
       <Alert variant="info" title="Vì sao badge đậm dần">
-        Độ đậm của mực tăng theo tiến độ đơn hàng, nên sáu trạng thái phân biệt
-        được cả khi in đen trắng chứ không chỉ khác nhau về sắc độ. Hai nhánh phụ
-        tách khỏi thang bằng hình thức: đơn đã hủy là badge rỗng, chỉ có viền.
+        Độ đậm của mực tăng theo tiến độ đơn hàng, nên sáu trạng thái phân biệt được cả khi in đen trắng chứ không chỉ
+        khác nhau về sắc độ. Hai nhánh phụ tách khỏi thang bằng hình thức: đơn đã hủy là badge rỗng, chỉ có viền.
       </Alert>
 
       <div className="density-admin">
@@ -376,15 +342,10 @@ const voucherSchema = z.object({
     .string()
     .min(3, "Mã giảm giá phải có ít nhất 3 ký tự")
     .regex(/^[A-Z0-9]+$/, "Mã chỉ gồm chữ in hoa không dấu và số"),
-  discount: z.coerce
-    .number()
-    .int("Số tiền giảm phải là số nguyên")
-    .positive("Số tiền giảm phải lớn hơn 0"),
+  discount: z.coerce.number().int("Số tiền giảm phải là số nguyên").positive("Số tiền giảm phải lớn hơn 0"),
   scope: z.string().min(1, "Chọn phạm vi áp dụng"),
   note: z.string().max(200, "Ghi chú tối đa 200 ký tự").optional(),
-  confirmed: z
-    .boolean()
-    .refine((value) => value, "Bạn phải xác nhận trước khi lưu"),
+  confirmed: z.boolean().refine((value) => value, "Bạn phải xác nhận trước khi lưu"),
 })
 
 type VoucherForm = z.input<typeof voucherSchema>
@@ -442,17 +403,10 @@ function FormSection() {
         <Input type="number" inputMode="numeric" {...register("discount")} />
       </Field>
 
-      <Field
-        label="Phạm vi áp dụng"
-        htmlFor="scope"
-        required
-        error={errors.scope?.message}
-      >
+      <Field label="Phạm vi áp dụng" htmlFor="scope" required error={errors.scope?.message}>
         <Select
           value={scope}
-          onValueChange={(value) =>
-            setValue("scope", String(value ?? ""), { shouldValidate: true })
-          }
+          onValueChange={(value) => setValue("scope", String(value ?? ""), { shouldValidate: true })}
         >
           <SelectTrigger id="scope" aria-invalid={errors.scope ? true : undefined}>
             <SelectValue placeholder="Chọn phạm vi" />
@@ -465,12 +419,7 @@ function FormSection() {
         </Select>
       </Field>
 
-      <Field
-        label="Ghi chú nội bộ"
-        htmlFor="note"
-        description="Chỉ nhân viên nhìn thấy."
-        error={errors.note?.message}
-      >
+      <Field label="Ghi chú nội bộ" htmlFor="note" description="Chỉ nhân viên nhìn thấy." error={errors.note?.message}>
         <Textarea placeholder="Áp dụng cho chiến dịch cuối năm…" {...register("note")} />
       </Field>
 
@@ -479,9 +428,7 @@ function FormSection() {
           <Checkbox
             id="confirmed"
             checked={Boolean(confirmed)}
-            onCheckedChange={(value) =>
-              setValue("confirmed", value, { shouldValidate: true })
-            }
+            onCheckedChange={(value) => setValue("confirmed", value, { shouldValidate: true })}
             aria-invalid={errors.confirmed ? true : undefined}
             aria-describedby={errors.confirmed ? "confirmed-error" : undefined}
           />
@@ -503,9 +450,7 @@ function FormSection() {
         </Button>
       </div>
 
-      <p className="text-caption text-ink-muted">
-        Bấm Lưu khi đang để trống để xem toàn bộ trạng thái lỗi.
-      </p>
+      <p className="text-caption text-ink-muted">Bấm Lưu khi đang để trống để xem toàn bộ trạng thái lỗi.</p>
     </form>
   )
 }
@@ -653,20 +598,14 @@ function TableSection() {
               {group.headers.map((header) => {
                 const sortable = header.column.getCanSort()
                 return (
-                  <TableHead
-                    key={header.id}
-                    className={header.column.id === "total" ? "text-right" : undefined}
-                  >
+                  <TableHead key={header.id} className={header.column.id === "total" ? "text-right" : undefined}>
                     {sortable ? (
                       <button
                         type="button"
                         onClick={header.column.getToggleSortingHandler()}
                         className="inline-flex items-center gap-1 rounded-xs text-inherit outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring hover:text-ink"
                       >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        {flexRender(header.column.columnDef.header, header.getContext())}
                         <ArrowUpDown className="size-3" aria-hidden="true" />
                       </button>
                     ) : (
@@ -682,9 +621,7 @@ function TableSection() {
           {table.getRowModel().rows.map((row) => (
             <TableRow key={row.id}>
               {row.getAllCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
+                <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
               ))}
             </TableRow>
           ))}
@@ -699,9 +636,8 @@ function TableSection() {
         />
       </div>
       <p className="mt-stack text-caption text-ink-muted">
-        Mật độ admin: dòng cao 8px đệm dọc, chữ 13–14px. Cùng component này đặt
-        ngoài <code className="font-mono">.density-admin</code> sẽ tự giãn ra theo
-        mật độ storefront.
+        Mật độ admin: dòng cao 8px đệm dọc, chữ 13–14px. Cùng component này đặt ngoài{" "}
+        <code className="font-mono">.density-admin</code> sẽ tự giãn ra theo mật độ storefront.
       </p>
     </div>
   )
@@ -824,10 +760,7 @@ function StyleguideContent() {
             <p className="font-display text-h3 text-ink">Thời trang — nội bộ</p>
           </div>
         </div>
-        <nav
-          aria-label="Mục lục"
-          className="mx-auto flex max-w-6xl gap-4 overflow-x-auto px-gutter pb-3"
-        >
+        <nav aria-label="Mục lục" className="mx-auto flex max-w-6xl gap-4 overflow-x-auto px-gutter pb-3">
           {NAV.map((item) => (
             <a
               key={item.id}
@@ -842,13 +775,10 @@ function StyleguideContent() {
 
       <main className="mx-auto flex max-w-6xl flex-col gap-section px-gutter py-section">
         <div>
-          <h1 className="font-display text-display uppercase text-ink">
-            Kiểm kê kho
-          </h1>
+          <h1 className="font-display text-display uppercase text-ink">Kiểm kê kho</h1>
           <p className="mt-stack max-w-prose text-body-lg text-ink-muted">
-            Trang này trình bày toàn bộ token của hệ thống để duyệt trước khi dựng
-            trang nghiệp vụ. Mọi màu, cỡ chữ và khoảng cách trên đây đều đọc từ
-            token, không có giá trị rời nào viết thẳng trong component.
+            Trang này trình bày toàn bộ token của hệ thống để duyệt trước khi dựng trang nghiệp vụ. Mọi màu, cỡ chữ và
+            khoảng cách trên đây đều đọc từ token, không có giá trị rời nào viết thẳng trong component.
           </p>
         </div>
 
@@ -868,35 +798,19 @@ function StyleguideContent() {
           <TypeSection />
         </Section>
 
-        <Section
-          id="nut"
-          title="Nút"
-          lead="Bốn cấp, vẫn đơn sắc. Mỗi màn chỉ có một nút primary."
-        >
+        <Section id="nut" title="Nút" lead="Bốn cấp, vẫn đơn sắc. Mỗi màn chỉ có một nút primary.">
           <ButtonSection />
         </Section>
 
-        <Section
-          id="badge"
-          title="Badge trạng thái"
-          lead="Bảy trạng thái đơn và ba trạng thái thanh toán."
-        >
+        <Section id="badge" title="Badge trạng thái" lead="Bảy trạng thái đơn và ba trạng thái thanh toán.">
           <BadgeSection />
         </Section>
 
-        <Section
-          id="form"
-          title="Form"
-          lead="react-hook-form + zod. Chữ báo lỗi nói rõ sai ở đâu và sửa thế nào."
-        >
+        <Section id="form" title="Form" lead="react-hook-form + zod. Chữ báo lỗi nói rõ sai ở đâu và sửa thế nào.">
           <FormSection />
         </Section>
 
-        <Section
-          id="bang"
-          title="Bảng ở mật độ admin"
-          lead="Cùng component Table, chỉ khác lớp bọc .density-admin."
-        >
+        <Section id="bang" title="Bảng ở mật độ admin" lead="Cùng component Table, chỉ khác lớp bọc .density-admin.">
           <TableSection />
         </Section>
 
@@ -911,9 +825,7 @@ function StyleguideContent() {
 
       <footer className="border-t border-border-subtle">
         <div className="mx-auto max-w-6xl px-gutter py-8">
-          <p className="text-caption text-ink-muted">
-            Tiền VND · ngày giờ GMT+7 · giao diện tiếng Việt
-          </p>
+          <p className="text-caption text-ink-muted">Tiền VND · ngày giờ GMT+7 · giao diện tiếng Việt</p>
         </div>
       </footer>
 

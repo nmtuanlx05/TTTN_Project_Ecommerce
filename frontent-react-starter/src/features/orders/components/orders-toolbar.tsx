@@ -35,7 +35,10 @@ function OrderSearch({ value, onSearch }: { value: string; onSearch: (value: str
       }}
       className="relative min-w-0 lg:w-64"
     >
-      <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-ink-muted" />
+      <Search
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-ink-muted"
+      />
       <Input
         type="search"
         value={text}

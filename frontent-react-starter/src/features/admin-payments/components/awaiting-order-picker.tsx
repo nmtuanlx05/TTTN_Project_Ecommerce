@@ -22,7 +22,12 @@ function AwaitingOrderPicker({
   return (
     <div className="flex flex-col gap-2">
       <p className="text-body-sm font-medium text-ink">Chọn đơn đang chờ thanh toán</p>
-      <SearchInput value={q} onSearch={setQ} placeholder="Mã đơn, số điện thoại hoặc tên khách" label="Tìm đơn chờ thanh toán" />
+      <SearchInput
+        value={q}
+        onSearch={setQ}
+        placeholder="Mã đơn, số điện thoại hoặc tên khách"
+        label="Tìm đơn chờ thanh toán"
+      />
       {q.length < 2 ? (
         <p className="text-caption text-ink-muted">Nhập ít nhất 2 ký tự để tìm.</p>
       ) : search.isPending ? (
@@ -46,7 +51,9 @@ function AwaitingOrderPicker({
                 className={cn(
                   "flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-body-sm",
                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                  picked?.id === order.id ? "border-ink bg-surface-sunken" : "border-border-subtle hover:bg-surface-hover",
+                  picked?.id === order.id
+                    ? "border-ink bg-surface-sunken"
+                    : "border-border-subtle hover:bg-surface-hover",
                 )}
               >
                 <span className="flex min-w-0 flex-col">

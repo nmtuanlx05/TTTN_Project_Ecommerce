@@ -7,13 +7,7 @@ import { useListPath } from "../list-link"
 function ProductBackLink() {
   const listPath = useListPath()
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="w-fit"
-      nativeButton={false}
-      render={<Link to={listPath} />}
-    >
+    <Button variant="ghost" size="sm" className="w-fit" nativeButton={false} render={<Link to={listPath} />}>
       <ArrowLeft />
       Danh sách sản phẩm
     </Button>

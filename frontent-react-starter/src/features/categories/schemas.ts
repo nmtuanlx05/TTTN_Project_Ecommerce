@@ -17,8 +17,7 @@ const slug = z
   .trim()
   .max(SLUG_MAX_LENGTH, `Slug tối đa ${SLUG_MAX_LENGTH} ký tự. Rút gọn slug lại.`)
   .refine((value) => value === "" || SLUG_REGEX.test(value), {
-    message:
-      "Slug chỉ gồm chữ thường không dấu, số và dấu gạch ngang, ví dụ ao-thun-nam.",
+    message: "Slug chỉ gồm chữ thường không dấu, số và dấu gạch ngang, ví dụ ao-thun-nam.",
   })
 
 export const createCategorySchema = z.object({

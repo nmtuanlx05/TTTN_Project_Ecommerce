@@ -1,11 +1,5 @@
 import { useSearchParams } from "react-router-dom"
-import {
-  isRangePreset,
-  parseCustomRange,
-  resolveRange,
-  type DateRange,
-  type RangePreset,
-} from "@/lib/date-range"
+import { isRangePreset, parseCustomRange, resolveRange, type DateRange, type RangePreset } from "@/lib/date-range"
 
 /**
  * Khoảng thời gian nằm trên URL (`?range=30d`, hoặc `?range=custom&from=YYYY-MM-DD&to=YYYY-MM-DD`)

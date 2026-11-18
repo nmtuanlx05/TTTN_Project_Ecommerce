@@ -45,7 +45,11 @@ function InventorySummaryCards({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div role="group" aria-label="Lọc nhanh theo trạng thái tồn" className="grid grid-cols-2 gap-inline lg:grid-cols-4">
+      <div
+        role="group"
+        aria-label="Lọc nhanh theo trạng thái tồn"
+        className="grid grid-cols-2 gap-inline lg:grid-cols-4"
+      >
         <InventorySummaryCard
           label="Tổng biến thể"
           value={data?.total}

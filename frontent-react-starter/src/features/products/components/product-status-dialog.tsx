@@ -26,9 +26,9 @@ function ProductStatusDialog({
         product ? (
           <>
             <strong className="font-semibold text-ink">{product.name}</strong>{" "}
-            <span className="text-ink-muted">({product.slug})</span> sẽ biến mất khỏi cửa hàng và khách
-            không mở được trang sản phẩm. Dữ liệu, biến thể và đơn hàng cũ vẫn được giữ; bạn vẫn xem và
-            sửa được ở đây, và có thể hiện lại bất cứ lúc nào.
+            <span className="text-ink-muted">({product.slug})</span> sẽ biến mất khỏi cửa hàng và khách không mở được
+            trang sản phẩm. Dữ liệu, biến thể và đơn hàng cũ vẫn được giữ; bạn vẫn xem và sửa được ở đây, và có thể hiện
+            lại bất cứ lúc nào.
           </>
         ) : null
       }

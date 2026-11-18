@@ -3,9 +3,7 @@ import { formatYmd } from "@/lib/ymd"
 import type { Voucher, VoucherStatus } from "./types"
 
 /** "Giảm 10%, tối đa 50.000 ₫" / "Giảm 30.000 ₫". */
-export function discountText(
-  voucher: Pick<Voucher, "discountType" | "discountValue" | "maxDiscount">,
-): string {
+export function discountText(voucher: Pick<Voucher, "discountType" | "discountValue" | "maxDiscount">): string {
   if (voucher.discountType === "FIXED") return `Giảm ${formatVnd(voucher.discountValue)}`
   const base = `Giảm ${voucher.discountValue}%`
   return voucher.maxDiscount ? `${base}, tối đa ${formatVnd(voucher.maxDiscount)}` : base

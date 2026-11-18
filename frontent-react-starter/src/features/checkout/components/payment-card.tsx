@@ -34,7 +34,11 @@ function PaymentCard({
           checked={onlineChosen}
           unavailable={!online.enabled}
           title="Thanh toán online"
-          description={online.enabled ? ONLINE_DESCRIPTION : (online.reason ?? "Thanh toán online hiện chưa khả dụng, vui lòng chọn COD.")}
+          description={
+            online.enabled
+              ? ONLINE_DESCRIPTION
+              : (online.reason ?? "Thanh toán online hiện chưa khả dụng, vui lòng chọn COD.")
+          }
           icon={<CreditCard className="size-5" aria-hidden="true" />}
           onSelect={() => (online.enabled ? onChange("ONLINE") : undefined)}
         />

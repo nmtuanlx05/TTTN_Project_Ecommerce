@@ -18,8 +18,6 @@ export function listLinkState(search: string): ListLinkState {
 export function useListPath(): string {
   const state: unknown = useLocation().state
   const search =
-    typeof state === "object" && state !== null && "listSearch" in state
-      ? (state as ListLinkState).listSearch
-      : ""
+    typeof state === "object" && state !== null && "listSearch" in state ? (state as ListLinkState).listSearch : ""
   return typeof search === "string" && search.startsWith("?") ? `${LIST_PATH}${search}` : LIST_PATH
 }

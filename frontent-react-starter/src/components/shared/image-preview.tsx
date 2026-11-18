@@ -99,11 +99,7 @@ function ImagePreview({
         fallback
       ) : (
         <div className="flex flex-col items-center gap-1 px-1 text-center text-ink-muted">
-          <ImageOff
-            className="size-4"
-            role="img"
-            aria-label={fallbackText}
-          />
+          <ImageOff className="size-4" role="img" aria-label={fallbackText} />
           {showFallbackText ? <span className="text-caption">{fallbackText}</span> : null}
         </div>
       )}

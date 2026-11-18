@@ -1,13 +1,7 @@
 import { X } from "lucide-react"
 import { SearchInput } from "@/components/admin/search-input"
 import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { STATUS_LABEL, STATUSES } from "../constants"
 import type { VoucherStatus } from "../types"
 
@@ -35,12 +29,7 @@ function VouchersToolbar({
 }) {
   return (
     <div className="flex flex-col gap-inline md:flex-row md:items-center">
-      <SearchInput
-        value={q}
-        onSearch={onSearch}
-        placeholder="Tìm theo mã voucher"
-        label="Tìm voucher theo mã"
-      />
+      <SearchInput value={q} onSearch={onSearch} placeholder="Tìm theo mã voucher" label="Tìm voucher theo mã" />
 
       <div className="flex flex-col gap-inline sm:flex-row sm:items-center">
         <Select

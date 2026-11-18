@@ -30,7 +30,11 @@ export function useResolveAction({ onDone }: { onDone: () => void }) {
       toast.add({ title: toastMessage, data: { tone: "danger" } })
       return
     }
-    setError(apiError.isNetworkError ? "Chưa rõ thao tác đã được ghi hay chưa vì mất kết nối. Dữ liệu đang được làm mới, hãy kiểm tra lại trước khi thử." : apiError.message)
+    setError(
+      apiError.isNetworkError
+        ? "Chưa rõ thao tác đã được ghi hay chưa vì mất kết nối. Dữ liệu đang được làm mới, hãy kiểm tra lại trước khi thử."
+        : apiError.message,
+    )
   }
 
   const submit = (id: number, note: string) => {
