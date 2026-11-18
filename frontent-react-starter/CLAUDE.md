@@ -47,6 +47,8 @@ Ngoại lệ duy nhất: trang `/styleguide` được phép dùng `style={{ back
 npm run dev      # vite dev server
 npm run build    # tsc -b && vite build
 npm run lint     # eslint .
+npm run format   # prettier --write src/**/*.{ts,tsx,css}: ghi đè file, chạy trước khi báo xong (CI sẽ đỏ nếu còn file lệch)
+npm run format:check  # prettier --check, chỉ kiểm không sửa; là lệnh CI dùng (job lint, sau eslint)
 npm test         # vitest run (môi trường Node, chỉ logic thuần túy: *.test.ts cạnh file nguồn)
 ```
 
@@ -511,7 +513,7 @@ một module, và cập nhật `/styleguide` nếu có thêm token hoặc compon
   - File trên ~150 dòng chưa tách: `features/users/components/user-form-dialog.tsx` (372), `features/dashboard/components/revenue-chart.tsx` (288), `users-table.tsx` (244), `categories-table.tsx` (205), `products-table.tsx` (186), `features/products/form-mapping.ts` (177), `features/products/schemas.ts` (171), `components/shared/image-upload-field.tsx` (167). Giữ nguyên có chủ ý: `components/storefront/header-nav.tsx` (165), `lib/api-client.ts` (214), `lib/home-content.ts` (dữ liệu), `pages/styleguide` và `features/dashboard/mock.ts`.
   - Trùng lặp trong admin chưa gom (jscpd): `categories-table`/`users-table`, `inventory-sort-header`/`product-sort-header`, ba hook `use-*-search-params`, các `*-content`, bốn hộp thoại kho.
   - Storefront: `mx-auto w-full max-w-7xl px-gutter` còn được viết lại ở header, footer, `header-nav-panel`, `search-panel` (chủ ý, xem `page-container.tsx`); skeleton `shimmer aspect-[3/4]` lặp ở vài nơi (giữ).
-  - Phong cách: repo chưa có Prettier; một số file admin/auth còn dấu `;` cuối dòng (`user-form-dialog`, `admin-topbar`, `auth-store`, `pages/admin/users`).
+  - Phong cách: repo đã có Prettier (`.prettierrc`, `.prettierignore`); toàn bộ `src/**/*.{ts,tsx,css}` đã được format (trừ `src/components/ui` và `src/generated`, nằm trong `.prettierignore`), và CI chạy `npm run format:check` nên file lệch sẽ làm CI đỏ. Sửa code xong chạy `npm run format`.
   - Ảnh `public/home/*.webp` vượt ngân sách dung lượng (xem `docs/storefront-design.md` mục 7), cần nén.
 
 
@@ -521,7 +523,7 @@ một module, và cập nhật `/styleguide` nếu có thêm token hoặc compon
 Người dùng tự mở giao diện và xem bằng mắt. Vì vậy:
 
 1. KHÔNG tự dựng harness trình duyệt (puppeteer/playwright), KHÔNG chụp ảnh hàng loạt, KHÔNG so ảnh trước/sau, KHÔNG so computed style, KHÔNG dùng git archive để dựng bản "trước", trừ khi người dùng yêu cầu rõ trong prompt.
-2. Kiểm tra tự động chỉ gồm: `npx tsc -b`, `npm run lint`, `npm test`, `npm run build` — chạy MỘT lần ở cuối. Có thể thêm 1 lệnh grep/tìm kiếm cho các việc kiểu "còn chỗ nào dùng X không".
+2. Kiểm tra tự động chỉ gồm: `npx tsc -b`, `npm run lint`, `npm run format:check`, `npm test`, `npm run build` — chạy MỘT lần ở cuối. Có thể thêm 1 lệnh grep/tìm kiếm cho các việc kiểu "còn chỗ nào dùng X không".
 3. Ngoại lệ được phép làm thêm (nêu một dòng lý do trước khi làm): khi sửa file dùng chung ảnh hưởng admin/auth (ví dụ ui/button.tsx, ui/input.tsx, global.css phần token chung) — khi đó chỉ cần chụp 2–3 trang admin tiêu biểu ở 1 cỡ màn, không quét toàn bộ.
 4. Không mở tiến trình nền kéo dài. Nếu lỡ mở thì tắt trước khi báo cáo.
 5. Không lặp vòng "chạy – sửa harness – chạy lại". Nếu một công cụ kiểm thử lỗi, bỏ nó, ghi vào báo cáo mục "chưa kiểm chứng", rồi dừng.
