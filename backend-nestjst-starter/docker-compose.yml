@@ -19,11 +19,45 @@ services:
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro # script chạy một lần khi khởi tạo volume
     healthcheck:
       # $$ để biến được đọc bên trong container thay vì bị compose thay thế
-      test: ['CMD-SHELL', 'mysqladmin ping -h localhost -u root -p"$$MYSQL_ROOT_PASSWORD" --silent']
+      test:
+        [
+          'CMD-SHELL',
+          'mysqladmin ping -h localhost -u root -p"$$MYSQL_ROOT_PASSWORD" --silent',
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
 
+  # Redis cho hàng đợi BullMQ (bắt buộc: thiếu Redis thì app không khởi động). Không đặt mật khẩu vì chỉ nghe 127.0.0.1;
+  # nếu cần mật khẩu thì thêm --requirepass và khai báo REDIS_PASSWORD ở .env.development.
+  redis:
+    image: redis:7-alpine
+    container_name: ecommerce_redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - noeviction # hết bộ nhớ thì từ chối ghi, KHÔNG tự xóa key: không bao giờ mất job âm thầm
+      - --appendonly
+      - 'yes' # bật AOF để job còn nguyên sau khi Redis khởi động lại
+      - --appendfsync
+      - everysec # ghi đĩa mỗi giây: tối đa mất ~1 giây dữ liệu khi sập nguồn
+      - --requirepass
+      - ${REDIS_PASSWORD}
+    ports:
+      - '127.0.0.1:6379:6379' # host:container
+    volumes:
+      - redis_data:/data # giữ file AOF khi tắt/xóa container
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
 volumes:
   mysql_data:
+  redis_data:

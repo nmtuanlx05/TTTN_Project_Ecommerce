@@ -5,6 +5,7 @@ const BASE = {
   JWT_ACCESS_EXPIRES_IN: '15m',
   JWT_REFRESH_SECRET: 'b',
   JWT_REFRESH_EXPIRES_IN: '7d',
+  REDIS_URL: 'redis://127.0.0.1:6379',
 };
 
 describe('validateEnv', () => {
@@ -15,5 +16,57 @@ describe('validateEnv', () => {
 
   it('thiếu biến Cloudinary KHÔNG làm dừng app (chỉ tắt tải ảnh)', () => {
     expect(() => validateEnv({ ...BASE })).not.toThrow();
+  });
+
+  it('thiếu JWT thì dừng và nêu tên biến', () => {
+    expect(() =>
+      validateEnv({ ...BASE, JWT_ACCESS_SECRET: undefined }),
+    ).toThrow(/JWT_ACCESS_SECRET/);
+  });
+
+  describe('Redis (bắt buộc)', () => {
+    it('thiếu REDIS_URL thì dừng, nói cách sửa', () => {
+      const missing = { ...BASE, REDIS_URL: undefined };
+      expect(() => validateEnv(missing)).toThrow(/REDIS_URL/);
+      expect(() => validateEnv(missing)).toThrow(/npm run db:up/);
+    });
+
+    it('REDIS_URL rỗng hoặc sai thì dừng', () => {
+      expect(() => validateEnv({ ...BASE, REDIS_URL: '' })).toThrow(
+        /REDIS_URL/,
+      );
+      expect(() => validateEnv({ ...BASE, REDIS_URL: 'http://x:1' })).toThrow(
+        /REDIS_URL/,
+      );
+    });
+
+    it('REDIS_PASSWORD, QUEUE_PREFIX, QUEUE_WORKER_ENABLED là tùy chọn', () => {
+      expect(() => validateEnv({ ...BASE })).not.toThrow();
+      expect(() =>
+        validateEnv({
+          ...BASE,
+          REDIS_PASSWORD: 'pw',
+          QUEUE_PREFIX: 'x',
+          QUEUE_WORKER_ENABLED: 'false',
+        }),
+      ).not.toThrow();
+    });
+
+    it('QUEUE_WORKER_ENABLED giá trị lạ thì dừng', () => {
+      expect(() =>
+        validateEnv({ ...BASE, QUEUE_WORKER_ENABLED: 'False' }),
+      ).toThrow(/QUEUE_WORKER_ENABLED/);
+    });
+
+    it('lỗi không lộ mật khẩu trong REDIS_URL', () => {
+      let message = '';
+      try {
+        validateEnv({ ...BASE, REDIS_URL: 'ftp://u:hunter2@h:1' });
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      expect(message).toContain('REDIS_URL');
+      expect(message).not.toContain('hunter2');
+    });
   });
 });

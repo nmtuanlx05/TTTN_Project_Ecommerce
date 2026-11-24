@@ -4,6 +4,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { QueueModule } from './queue/queue.module';
+import { QueueWorkerModule } from './queue/queue-worker.module';
+import { parseWorkerEnabled } from './queue/queue.config';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
@@ -34,6 +37,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     // Một nơi duy nhất nạp bộ lập lịch cho mọi tác vụ định kỳ (thanh toán hết hạn, dọn ảnh)
     ScheduleModule.forRoot(),
     PrismaModule,
+    // Hàng đợi (Redis bắt buộc). Worker xử lý job chạy chung tiến trình, tắt bằng QUEUE_WORKER_ENABLED=false.
+    QueueModule,
     UsersModule,
     AuthModule,
     CategoriesModule,
@@ -49,6 +54,11 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     PaymentsModule,
     PaymentsSchedulerModule,
     MediaSchedulerModule,
+    // Phần tử mảng được tính theo thứ tự, nên dòng này chạy SAU ConfigModule.forRoot() ở đầu mảng
+    // (forRoot đã nạp file .env vào process.env). Điều kiện là tĩnh: quyết định lúc nạp file, không đổi khi chạy.
+    ...(parseWorkerEnabled(process.env.QUEUE_WORKER_ENABLED)
+      ? [QueueWorkerModule]
+      : []),
   ],
   controllers: [AppController],
   providers: [

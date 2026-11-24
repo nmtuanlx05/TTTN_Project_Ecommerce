@@ -7,6 +7,14 @@ import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { PaymentExpiryCron } from '../src/payments/payment-expiry.cron';
 import { MediaCleanupCron } from '../src/media/media-cleanup.cron';
+import { EmailQueueService } from '../src/queue/email-queue.service';
+import { QueueModule } from '../src/queue/queue.module';
+import { QueueWorkerModule } from '../src/queue/queue-worker.module';
+import {
+  FakeEmailQueueService,
+  FakeQueueModule,
+  NoopQueueWorkerModule,
+} from './shims/fake-queue.module';
 
 // Smoke test nạp AppModule THẬT nhưng KHÔNG chạm database:
 //  1) biến môi trường giả, đặt TRƯỚC khi nạp AppModule (ép ghi đè, không phụ thuộc shell/.env);
@@ -16,6 +24,10 @@ import { MediaCleanupCron } from '../src/media/media-cleanup.cron';
 const JWT_SECRET = 'test-access-secret';
 Object.assign(process.env, {
   DATABASE_URL: 'mysql://test:test@127.0.0.1:1/unreachable',
+  // REDIS_URL bắt buộc để qua validateEnv; cổng 1 không ai nghe (KHÔNG dùng 6379 để lỡ nối nhầm Redis thật)
+  REDIS_URL: 'redis://127.0.0.1:1',
+  // Không chạy worker hàng đợi trong test (ngoài ra QueueModule còn bị thay bằng bản giả ở dưới)
+  QUEUE_WORKER_ENABLED: 'false',
   JWT_ACCESS_SECRET: JWT_SECRET,
   JWT_ACCESS_EXPIRES_IN: '15m',
   JWT_REFRESH_SECRET: 'test-refresh-secret',
@@ -41,6 +53,11 @@ describe('AppController (e2e, Prisma giả)', () => {
       .useValue({})
       .overrideProvider(MediaCleanupCron)
       .useValue({})
+      // Hàng đợi giả: không mở kết nối Redis nào. overrideModule(QueueWorkerModule) là lớp dự phòng cho QUEUE_WORKER_ENABLED=false
+      .overrideModule(QueueModule)
+      .useModule(FakeQueueModule)
+      .overrideModule(QueueWorkerModule)
+      .useModule(NoopQueueWorkerModule)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -54,6 +71,11 @@ describe('AppController (e2e, Prisma giả)', () => {
 
   it('PrismaService là bản giả (không kết nối database)', () => {
     expect(app.get(PrismaService)).toBe(fakePrisma);
+  });
+
+  // TEST BẢO VỆ THƯỜNG TRỰC: nếu override hỏng, app test sẽ lặng lẽ nối vào Redis thật (hoặc treo vì ioredis tự nối lại).
+  it('EmailQueueService trong app test là bản giả (không nối Redis)', () => {
+    expect(app.get(EmailQueueService)).toBeInstanceOf(FakeEmailQueueService);
   });
 
   it('GET / không có token → 401 (JwtAuthGuard toàn cục)', async () => {
