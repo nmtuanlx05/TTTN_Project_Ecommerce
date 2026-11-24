@@ -16,6 +16,8 @@ import { MediaCleanupCron } from '../src/media/media-cleanup.cron';
 const JWT_SECRET = 'test-access-secret';
 Object.assign(process.env, {
   DATABASE_URL: 'mysql://test:test@127.0.0.1:1/unreachable',
+  // REDIS_URL bắt buộc để qua validateEnv; cổng 1 không ai nghe (KHÔNG dùng 6379 để lỡ nối nhầm Redis thật)
+  REDIS_URL: 'redis://127.0.0.1:1',
   JWT_ACCESS_SECRET: JWT_SECRET,
   JWT_ACCESS_EXPIRES_IN: '15m',
   JWT_REFRESH_SECRET: 'test-refresh-secret',

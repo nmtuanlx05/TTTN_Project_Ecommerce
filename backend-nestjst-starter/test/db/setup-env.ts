@@ -9,4 +9,6 @@ Object.assign(process.env, {
   JWT_ACCESS_EXPIRES_IN: '15m',
   JWT_REFRESH_SECRET: 'db-test-refresh-secret',
   JWT_REFRESH_EXPIRES_IN: '7d',
+  // REDIS_URL bắt buộc để qua validateEnv; cổng 1 không ai nghe (KHÔNG dùng 6379 để lỡ nối nhầm Redis thật)
+  REDIS_URL: 'redis://127.0.0.1:1',
 });

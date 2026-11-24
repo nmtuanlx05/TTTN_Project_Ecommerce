@@ -1,4 +1,8 @@
+import { assertWorkerFlag, parseRedisUrl } from '../queue/queue.config';
 import { ENV_FILE } from './env-file';
+
+const asString = (value: unknown) =>
+  typeof value === 'string' ? value : undefined;
 
 // Các biến bắt buộc cho Auth; thiếu biến nào thì app dừng ngay khi khởi động và nói rõ thiếu biến nào.
 const REQUIRED_AUTH_ENV = [
@@ -26,6 +30,11 @@ export function validateEnv(
   if (config.JWT_ACCESS_SECRET === config.JWT_REFRESH_SECRET) {
     throw new Error('JWT_ACCESS_SECRET và JWT_REFRESH_SECRET phải khác nhau.');
   }
+
+  // Redis là bắt buộc (hàng đợi): thiếu hoặc sai REDIS_URL thì dừng ngay, thông báo nói rõ cách sửa.
+  // Chỉ AppModule gọi hàm này; script không dùng Redis (MediaCliModule, seed...) không bị ép có REDIS_URL.
+  parseRedisUrl(asString(config.REDIS_URL), asString(config.REDIS_PASSWORD));
+  assertWorkerFlag(asString(config.QUEUE_WORKER_ENABLED));
 
   // Biến Cloudinary đều tùy chọn: thiếu khóa KHÔNG làm dừng app, chỉ tắt tải ảnh (503 STORAGE_NOT_CONFIGURED).
 
