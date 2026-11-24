@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { QueueModule } from '../queue/queue.module';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -15,6 +16,8 @@ import { LocalStrategy } from './strategies/local.strategy';
 @Module({
   imports: [
     UsersModule,
+    // Đặt job mail chào mừng sau đăng ký (EmailQueueService)
+    QueueModule,
     PassportModule,
     // Secret và thời hạn truyền riêng cho từng loại token trong AuthService
     JwtModule.register({}),
