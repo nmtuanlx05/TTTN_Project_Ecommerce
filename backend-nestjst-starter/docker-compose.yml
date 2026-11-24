@@ -58,6 +58,19 @@ services:
       retries: 10
       start_period: 5s
 
+  # Mailpit: SMTP giả cho dev. Nhận mọi thư rồi chỉ giữ trong bộ nhớ để xem ở giao diện web, KHÔNG gửi ra Internet.
+  # MAIL_HOST=127.0.0.1, MAIL_PORT=1025, để trống MAIL_USER/MAIL_PASSWORD. Xem thư ở http://127.0.0.1:8025.
+  # Chỉ bind 127.0.0.1 (không ai trong mạng LAN đọc được thư dev). Dữ liệu không lưu bền: tắt container là mất thư, đúng ý.
+  mailpit:
+    image: axllent/mailpit:latest # dev-only; cần cố định phiên bản thì đổi sang tag cụ thể
+    container_name: ecommerce_mailpit
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: 500 # giữ tối đa 500 thư, thư cũ tự bị xóa
+    ports:
+      - '127.0.0.1:1025:1025' # SMTP: host:container
+      - '127.0.0.1:8025:8025' # giao diện web
+
 volumes:
   mysql_data:
   redis_data:
