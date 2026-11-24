@@ -11,4 +11,6 @@ Object.assign(process.env, {
   JWT_REFRESH_EXPIRES_IN: '7d',
   // REDIS_URL bắt buộc để qua validateEnv; cổng 1 không ai nghe (KHÔNG dùng 6379 để lỡ nối nhầm Redis thật)
   REDIS_URL: 'redis://127.0.0.1:1',
+  // Không chạy worker hàng đợi trong test
+  QUEUE_WORKER_ENABLED: 'false',
 });

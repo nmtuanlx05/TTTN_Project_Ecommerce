@@ -6,6 +6,14 @@ import { AppModule } from '../../../src/app.module';
 import { configureApp } from '../../../src/app.setup';
 import { MediaCleanupCron } from '../../../src/media/media-cleanup.cron';
 import { PaymentExpiryCron } from '../../../src/payments/payment-expiry.cron';
+import { EmailQueueService } from '../../../src/queue/email-queue.service';
+import { QueueModule } from '../../../src/queue/queue.module';
+import { QueueWorkerModule } from '../../../src/queue/queue-worker.module';
+import {
+  FakeEmailQueueService,
+  FakeQueueModule,
+  NoopQueueWorkerModule,
+} from '../../shims/fake-queue.module';
 import { createTokenSigner, TestRole } from './auth';
 import { getTestDatabaseUrl } from './prisma-client';
 
@@ -28,7 +36,19 @@ export async function startTestApp(): Promise<TestApp> {
     .useValue({})
     .overrideProvider(MediaCleanupCron)
     .useValue({})
+    // Hàng đợi giả: test:db không cần Redis. overrideModule(QueueWorkerModule) dự phòng cho QUEUE_WORKER_ENABLED=false (setup-env.ts)
+    .overrideModule(QueueModule)
+    .useModule(FakeQueueModule)
+    .overrideModule(QueueWorkerModule)
+    .useModule(NoopQueueWorkerModule)
     .compile();
+
+  // Chốt chặn thường trực: override hỏng thì dừng ngay, không để test lặng lẽ nối Redis thật
+  if (!(moduleRef.get(EmailQueueService) instanceof FakeEmailQueueService)) {
+    throw new Error(
+      'EmailQueueService trong test:db phải là FakeEmailQueueService',
+    );
+  }
 
   const app = moduleRef.createNestApplication();
   configureApp(app);
