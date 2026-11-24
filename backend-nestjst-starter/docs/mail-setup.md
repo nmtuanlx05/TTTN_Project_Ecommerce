@@ -1,6 +1,6 @@
 # Gửi mail (SMTP): cấu hình và cách thử
 
-Hiện mới có **hạ tầng gửi mail**: `MailService` (nodemailer) và lệnh thử `npm run mail:test`. Chưa có tính năng nào gọi nó (mail chào mừng sau khi đăng ký thêm ở chặng sau, qua hàng đợi `email`, xem `docs/queue-redis-setup.md`).
+Có **hạ tầng gửi mail** (`MailService` dùng nodemailer, lệnh thử `npm run mail:test`) và **một mail nghiệp vụ**: mail chào mừng sau khi đăng ký, gửi qua hàng đợi `email` (xem `docs/queue-redis-setup.md`).
 
 Cùng một code chạy với **Mailpit** (dev, thư không ra khỏi máy) và **Gmail SMTP** (demo thật) chỉ bằng đổi biến môi trường.
 
@@ -93,12 +93,64 @@ In ra cấu hình **không bí mật** (host:cổng, `secure`, `requireTLS`, có
 - Thời gian chờ: nối 10 giây, lời chào SMTP 10 giây, socket im lặng 20 giây; hàng rào ngoài 30 giây cho cả lần gửi.
 - Test tự động không bao giờ gửi mail thật: `nodemailer` bị thay bằng bản giả, và các test nạp `AppModule` chỉ có `MAIL_PORT=1` (không ai nghe).
 
-## 6. Hạn chế đã biết
+## 6. Mail chào mừng sau đăng ký
 
-- **Có thể gửi trùng** khi job bị ném lại sau hơn 1 giờ: hàng đợi chỉ nhớ job đã xong 1 giờ, sau đó `jobId` cố định không còn chặn được. Cũng có thể trùng khi SMTP đã nhận thư nhưng lần gửi bị coi là lỗi (quá hạn trước khi nhận phản hồi) rồi thử lại.
+**Luồng**
+
+1. `POST /auth/register` tạo user ([auth.service.ts](../src/auth/auth.service.ts)), **sau khi đã lưu DB** thì đặt job `welcome` vào hàng đợi rồi trả 201 ngay (kiểu "bắn rồi quên"). Lỗi hàng đợi/Redis chỉ ghi log (mã lỗi), **không làm hỏng đăng ký**.
+2. Chỉ đăng ký công khai mới gửi. **Admin tạo user bằng `POST /users` không gửi mail** (không hook ở `UsersService.create`).
+3. Job chỉ chứa `{ userId }`, `jobId = welcome-<userId>`. Email/tên không nằm trong Redis.
+4. Worker (`EmailProcessor`, chạy chung tiến trình khi `QUEUE_WORKER_ENABLED` khác `false`):
+   - `userId` sai kiểu → bỏ qua (`{ skipped: 'INVALID_DATA' }`).
+   - User không còn hoặc `isActive = false` → bỏ qua (`{ skipped: 'USER_GONE' }`), **không throw**.
+   - Đọc voucher `MONO10` từ DB. Còn dùng được (bật, đúng khoảng thời gian, còn lượt; dùng lại `getVoucherStatus` của `src/orders/vouchers.rules.ts`) thì thư có khối voucher; **không tồn tại/không dùng được thì vẫn gửi, chỉ bỏ khối này**.
+   - Dựng thư bằng hàm thuần `renderWelcome` (`src/mail/templates/welcome.template.ts`), gửi qua `MailService`.
+   - Lỗi DB hoặc lỗi gửi mail → **throw**, BullMQ thử lại theo cấu hình có sẵn (3 lần, giãn cách 5s rồi 10s); hết lần thì job vào `failed` (giữ 7 ngày).
+   - Kết quả job chỉ có cờ (`{ sent: true, voucherShown }`), không chứa email.
+
+**Nội dung thư:** chỉ nói điều hệ thống làm thật. Ngưỡng miễn phí vận chuyển lấy từ `FREE_SHIPPING_THRESHOLD` (`src/orders/orders.constants.ts`). Thanh toán: COD hoặc chuyển khoản QR. Link dùng `FRONTEND_URL`: nút "Khám phá bộ sưu tập" và "Sản phẩm" → `/products`, "Đơn hàng của tôi" → `/tai-khoan/don-hang`. Lời chào: tên trống hoặc trùng phần trước `@` của email (BE tự đặt tên đó khi khách không nhập) thì "Xin chào bạn."; tên bị escape và cắt tối đa 60 ký tự. Mẫu gốc để tham chiếu thiết kế: `docs/mail-templates/welcome.design.html` (không sửa).
+
+**Hằng số nội dung** (`src/mail/templates/mail-assets.ts`): `WELCOME_VOUCHER_CODE = 'MONO10'`, `HERO_IMAGE_URL = ''`.
+
+> `MONO10` là voucher mẫu tạo bởi `prisma/seed.ts`; DB nào chưa seed thì thư không có khối voucher (không lỗi). Đây là **mã công khai dùng chung**, nên thư không ghi "quà riêng"/"đơn đầu tiên".
+
+### Thêm ảnh hero từ Cloudinary
+
+Mặc định không có ảnh hero. Muốn thêm:
+
+1. Tải ảnh lên Cloudinary (kèm `https://res.cloudinary.com/<cloud>/image/upload/v<số>/<đường dẫn>.<đuôi>`).
+2. Chèn đoạn biến đổi ngay sau `/upload/`: `f_jpg,q_auto,c_fill,w_1040,h_600/`, ví dụ `https://res.cloudinary.com/<cloud>/image/upload/f_jpg,q_auto,c_fill,w_1040,h_600/v<số>/<đường dẫn>.jpg`.
+3. Dán URL đó vào `HERO_IMAGE_URL`.
+
+Lưu ý: **không dùng `f_auto`, webp hay avif** (nhiều ứng dụng mail không hiển thị). Chỉ nhận URL `https`; giá trị khác bị bỏ và thư không có ảnh. Ảnh tĩnh ở `frontent-react-starter/public/home/` là webp và chỉ truy cập được khi `FRONTEND_URL` là địa chỉ công khai, nên không dùng cho mail.
+
+### Thí nghiệm tay
+
+Chuẩn bị: `npm run db:up` (Redis, MySQL, Mailpit), `.env.development` có `MAIL_*`, `FRONTEND_URL`, `REDIS_URL`, rồi `npm run dev`. Voucher `MONO10` cần có trong DB (`npx prisma db seed` nếu chưa; chạy lại an toàn). Xem thư ở <http://127.0.0.1:8025>.
+
+| Thí nghiệm                                                                                                 | Kết quả mong đợi                                                                                                                                                                                      |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Đăng ký tài khoản mới (qua giao diện hoặc `POST /auth/register`)                                           | 201 ngay; vài giây sau có thư "Chào mừng bạn đến với MONO STUDIO" ở Mailpit; có khối mã `MONO10`; log worker `Đã gửi mail chào mừng userId=...`                                                       |
+| Đăng ký với tên để trống                                                                                   | Thư "Xin chào bạn."                                                                                                                                                                                   |
+| Dừng Mailpit (`docker stop ecommerce_mailpit`) rồi đăng ký                                                 | Vẫn 201. Worker log `Gửi mail thất bại qua 127.0.0.1:1025 (code=...)`, thử lại (5s rồi 10s), sau 3 lần job vào `failed`. `docker start ecommerce_mailpit` trước khi hết lần thử thì thư tới ở lần sau |
+| Dừng Redis (`docker stop ecommerce_redis`) rồi đăng ký                                                     | Vẫn 201. Log cảnh báo `Không đặt được job mail chào mừng ... (code=...)`. **Không có thư** (job không được đặt). Kết nối Redis chập chờn thì thư có thể đến chậm                                      |
+| Admin tạo user bằng `POST /users`                                                                          | Không có thư                                                                                                                                                                                          |
+| Tắt `MONO10` (`PATCH /admin/vouchers/:id/status` `{ "isActive": false }`) hoặc đặt hạn đã qua, rồi đăng ký | Có thư nhưng **không có khối voucher**. Bật lại thì thư mới có khối                                                                                                                                   |
+
+Xem job trong Redis: `docker exec -it ecommerce_redis redis-cli -a "$REDIS_PASSWORD" hgetall ecommerce:email:welcome-<userId>` (có `returnvalue` là đã xử lý).
+
+## 7. Hạn chế đã biết
+
+- **`MONO10` là mã công khai dùng chung**, ai cũng dùng được nhiều lần tới khi hết lượt (hệ thống chưa có voucher riêng theo user, chưa có "đơn đầu tiên"); mã còn hiện ở `GET /vouchers/available` cho mọi khách.
+- **Không có hủy nhận email**: chưa có mail quảng cáo nên thư chào mừng không có liên kết hủy. Làm thật cần cột lưu đồng ý, endpoint công khai nhận token ký có hạn, và trang FE.
+- **Không xác minh email, không giới hạn tốc độ đăng ký** (`/auth/register`): ai cũng có thể làm hệ thống gửi thư tới một địa chỉ bất kỳ. Thư chào mừng không chứa liên kết kích hoạt hay mật khẩu để giảm tác hại.
+- **Có thể gửi trùng** khi job bị ném lại sau hơn 1 giờ (hàng đợi chỉ nhớ job đã xong 1 giờ, sau đó `jobId` cố định không còn chặn được), hoặc khi SMTP đã nhận thư nhưng lần gửi bị coi là lỗi (quá hạn trước khi nhận phản hồi) rồi thử lại.
 - **Không có sổ tra cứu** thư đã gửi: chỉ biết qua log và Redis (job xong giữ 1 giờ, job lỗi 7 ngày).
-- **Chưa giới hạn tốc độ đăng ký** (`/auth/register`) và chưa xác minh email: ai cũng có thể làm hệ thống gửi thư tới một địa chỉ bất kỳ. Thư chào mừng không chứa liên kết kích hoạt hay mật khẩu để giảm tác hại.
+- Mất job khi Redis chết đúng lúc đăng ký (lỗi chỉ ghi log): người dùng không nhận thư chào mừng.
 - Chưa giới hạn tốc độ gửi theo hạn mức của nhà cung cấp.
-- Mất job khi Redis chết đúng lúc đăng ký (job được đặt kiểu "không chờ", lỗi chỉ ghi log): người dùng không nhận thư chào mừng.
+- Đổi trả, hỗ trợ khách, địa chỉ cửa hàng không có trong thư vì hệ thống chưa làm thật (trang chính sách ở FE chưa có nội dung).
+- **`FRONTEND_URL` là `localhost`** thì link trong thư chỉ mở được trên máy dev.
+- **CORS đang gắn cứng `http://localhost:5173`** ([main.ts:14](../src/main.ts#L14)), chưa đọc `FRONTEND_URL`: đổi `FRONTEND_URL` sang địa chỉ khác thì phải sửa cả CORS.
+- Chưa kiểm chứng với Gmail thật và với các ứng dụng mail thật (hiển thị phông chữ, ảnh): xem mục 3.
 
-**Hướng phát triển:** bảng `email_logs` (loại thư, đối tượng, trạng thái, `messageId`, `UNIQUE(type, referenceId)`) để chống gửi trùng bền vững và tra cứu; giới hạn tốc độ đăng ký; xác minh email.
+**Hướng phát triển:** bảng `email_logs` (loại thư, đối tượng, trạng thái, `messageId`, `UNIQUE(type, referenceId)`) để chống gửi trùng bền vững và tra cứu; hủy nhận email; voucher riêng theo user (cần cột `perUserLimit`/gắn user); giới hạn tốc độ đăng ký và xác minh email; trang chính sách ở FE.
