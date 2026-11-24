@@ -7,6 +7,7 @@ import {
   EMAIL_QUEUE,
   REDIS_ERROR_LOG_INTERVAL_MS,
   REDIS_STARTUP_TIMEOUT_MS,
+  type WelcomeJobData,
 } from './queue.constants';
 import { readQueueConfig } from './queue.config';
 import { ThrottledErrorLogger } from './throttled-error-logger';
@@ -70,6 +71,17 @@ export class EmailQueueService implements OnModuleInit {
   async addPing(): Promise<string | undefined> {
     const job = await this.queue.add(EMAIL_JOB.PING, {
       requestedAt: new Date().toISOString(),
+    });
+    return job.id;
+  }
+
+  // Mail chào mừng sau đăng ký. Chỉ đặt userId; jobId cố định "welcome-<id>" nên đặt hai lần khi job cũ còn tồn tại
+  // (đang chờ/đang chạy/mới xong trong 1 giờ) thì BullMQ bỏ qua lần sau. Job xong bị dọn sau 1 giờ nên đây KHÔNG phải
+  // chống gửi trùng vĩnh viễn (xem "Hạn chế đã biết" ở docs/mail-setup.md).
+  async addWelcome(userId: number): Promise<string | undefined> {
+    const data: WelcomeJobData = { userId };
+    const job = await this.queue.add(EMAIL_JOB.WELCOME, data, {
+      jobId: `welcome-${userId}`,
     });
     return job.id;
   }

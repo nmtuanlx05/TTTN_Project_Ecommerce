@@ -32,6 +32,11 @@ Object.assign(process.env, {
   JWT_ACCESS_EXPIRES_IN: '15m',
   JWT_REFRESH_SECRET: 'test-refresh-secret',
   JWT_REFRESH_EXPIRES_IN: '7d',
+  // Mail: giá trị giả, trỏ cổng 1 (không ai nghe) nên lỡ có gọi gửi cũng không ra ngoài được
+  MAIL_HOST: '127.0.0.1',
+  MAIL_PORT: '1',
+  MAIL_FROM: 'no-reply@example.com',
+  FRONTEND_URL: 'http://localhost:5173',
 });
 
 describe('AppController (e2e, Prisma giả)', () => {

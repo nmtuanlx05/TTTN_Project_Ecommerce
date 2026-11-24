@@ -140,6 +140,12 @@ COMPLETED` (không có bước đóng gói; đã bỏ `PACKING`), với `CANCELL
   **Không xóa asset còn được `product_images.assetId`, `users.avatarAssetId` hoặc `order_items.imagePublicId` tham chiếu**; `orders.service` chụp `imagePublicId` khi đặt đơn. Dọn ảnh mồ côi (ACTIVE chưa gắn > 24 giờ)
   chạy bằng `MediaCleanupCron` (`MEDIA_CLEANUP_ENABLED`, mỗi giờ; `ScheduleModule.forRoot()` chỉ nạp ở `AppModule`) và `npm run media:cleanup -- --dry-run`. Frontend dựng URL biến đổi từ URL gốc (mốc 160/320/640/960/1280, không `dpr_auto`).
   Đã chạy tay tải ảnh lên Cloudinary thật; chưa kiểm chứng giới hạn gói miễn phí và chưa kiểm chứng trên MySQL thật.
+- **Gửi mail (SMTP)** (`src/mail/`, cấu hình ở `docs/mail-setup.md`): `MailService` (nodemailer) là cửa duy nhất gửi thư. Biến `MAIL_HOST`/`MAIL_PORT`/`MAIL_FROM` và `FRONTEND_URL` (URL trang web, KHÔNG phải backend; thay `APP_PUBLIC_URL` cũ) **bắt buộc**
+  (`validateEnv`); `MAIL_USER`/`MAIL_PASSWORD` tùy chọn nhưng đi cùng nhau. Không có `MAIL_SECURE`: cổng 465 → `secure`, cổng khác STARTTLS; host không phải máy cục bộ → `requireTLS`. Mailpit (dev) nằm trong `docker-compose.yml` (SMTP 1025, web 8025).
+  `MailService.send` ném `MailSendError` **câu cố định, không giữ lỗi gốc** (BullMQ lưu `failedReason`/stack vào Redis 7 ngày) và chỉ log `host:cổng` + `code`/`responseCode`/`command` đã lọc; KHÔNG log message thô của nodemailer, mật khẩu hay địa chỉ email. Thử bằng `npm run mail:test -- <địa chỉ>`.
+  Test không bao giờ gửi mail thật (`nodemailer` giả; test nạp `AppModule` đặt `MAIL_PORT=1`).
+  **Mail chào mừng**: `AuthService.register` (CHỈ ở đây, không ở `UsersService.create` vì Admin tạo user cũng gọi hàm đó) sau khi lưu user thì `queueWelcomeMail` (`void ... .catch` chỉ log mã lỗi; lỗi hàng đợi không làm hỏng đăng ký) đặt job `welcome` qua `EmailQueueService.addWelcome` (data chỉ `userId`, `jobId` `welcome-<id>`).
+  `EmailProcessor` (nạp `MailModule` qua `QueueWorkerModule`): user không còn/bị khóa → `return { skipped }` (không throw); đọc voucher `WELCOME_VOUCHER_CODE` (`MONO10`, `src/mail/templates/mail-assets.ts`) từ DB và dùng `getVoucherStatus` — không dùng được thì vẫn gửi, bỏ khối voucher; lỗi DB/gửi mail → throw để BullMQ thử lại. Mẫu là hàm thuần `renderWelcome` (`src/mail/templates/`, escape mọi giá trị, chỉ nói điều hệ thống làm thật, ngưỡng ship lấy từ `orders.constants`, ảnh hero `HERO_IMAGE_URL` mặc định rỗng). Hạn chế đã biết (gửi trùng sau >1 giờ, không sổ tra cứu, không hủy nhận email, không xác minh email/rate limit đăng ký, CORS cố định localhost:5173) ở `docs/mail-setup.md` mục 7. Chưa kiểm chứng với Gmail thật.
 - **Wishlist** (`src/wishlist/`, API ở `docs/api/wishlist.md`): chỉ `CUSTOMER` (ADMIN/STAFF 403 qua `@RolesMessage`), theo **sản phẩm** không theo biến thể, tối đa 100/khách (`WISHLIST_MAX_ITEMS`, 409 `WISHLIST_FULL`). `GET /wishlist` tái dùng `publicProductListSelect`/`toPublicListItem` + `addedAt` + `isListed` (bật và có biến thể bán = trang chi tiết xem được) + `isAvailable` (isListed và còn hàng; sản phẩm đã tắt vẫn hiện); `GET /wishlist/ids` cho frontend tô tim (không thêm `isFavorite` vào API sản phẩm). `POST`/`DELETE /wishlist/:productId` idempotent (200 `{productId, added|removed}`); POST chỉ nhận sản phẩm bật và có biến thể bán (không thì 404 không mã), khóa dòng `users` `FOR UPDATE` để giữ trần. Chưa chạy thật trên MySQL.
 - Xóa mềm bằng `isActive` cho `Product`/`ProductVariant`/`User`/`Voucher`; `Order` và `OrderItem`
   không bao giờ xóa cứng (hủy đơn bằng `CANCELLED`).
@@ -364,7 +370,7 @@ Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy tr�
   - Lint kiểm tra bằng `npx eslint "{src,apps,libs,test}/**/*.ts"` (không `--fix`). `npm run lint` có `--fix` nên tự sửa
     file; nếu chạy thì xem lại `git status` và `git diff` sau đó.
   - `npm run build` và `npm test`; e2e chỉ chạy cho module đang sửa (có logic tiền/tồn kho).
-  - Hiện không còn lỗi có sẵn: ESLint sạch (`src/generated/**` đã nằm trong `ignores`), e2e qua hết 18 suite. Mọi lỗi lint/test
+  - Hiện không còn lỗi có sẵn: ESLint sạch (`src/generated/**` đã nằm trong `ignores`), e2e qua hết 20 suite. Mọi lỗi lint/test
     phát sinh đều do thay đổi hiện tại.
 
 ## Việc tồn đọng
@@ -390,5 +396,5 @@ Quy ước đầy đủ ở `docs/git-workflow.md` (commit, tên nhánh, quy tr�
 - **Thanh toán VietQR chưa kiểm chứng thật**: khóa dòng/đua (xác nhận ↔ hết hạn, hai webhook cùng id) chỉ được bảo vệ bằng thiết kế và test Prisma giả; chưa thử với MySQL thật, webhook SePay thật, hay quét QR bằng app ngân hàng (xem danh sách ở `docs/api/payments.md`). Bảng BIN ngân hàng chỉ MB (970422) đã kiểm chứng.
 - **Chưa có**: hoàn tiền tự động và luồng "Staff tạo yêu cầu hủy, Admin duyệt" cho đơn đã thanh toán, cổng VNPay, hoàn hàng `RETURNED`, giới hạn voucher theo khách, guest checkout, email.
 - **Chưa giới hạn số lần đăng nhập sai** (chưa có rate limit/lockout) cho `/auth/login`.
-- **Số test hiện tại**: 756 unit, 579 e2e (18 suite e2e), đều chạy với Prisma giả. Ngoài ra bộ `test:db` chạy trên MySQL thật (không tính vào hai con số trên): `guard`, `schema-migrations`, `checkout-overselling`
+- **Số test hiện tại**: 964 unit, 591 e2e (20 suite e2e), đều chạy với Prisma giả. Ngoài ra bộ `test:db` chạy trên MySQL thật (không tính vào hai con số trên): `guard`, `schema-migrations`, `checkout-overselling`
   `checkout-voucher`, `checkout-idempotency`, `transaction-isolation` đã chạy thật và qua; `constraints` có phát hiện `đ` ≠ `d` ở trên, đã tách thành ca hoa/thường, ca khác dấu và ca ghi nhận hành vi (xem số lượng và kết quả bằng `npm run test:db`).

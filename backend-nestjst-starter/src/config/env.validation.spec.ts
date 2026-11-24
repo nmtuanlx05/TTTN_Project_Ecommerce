@@ -6,12 +6,15 @@ const BASE = {
   JWT_REFRESH_SECRET: 'b',
   JWT_REFRESH_EXPIRES_IN: '7d',
   REDIS_URL: 'redis://127.0.0.1:6379',
+  MAIL_HOST: '127.0.0.1',
+  MAIL_PORT: '1025',
+  MAIL_FROM: 'no-reply@example.com',
+  FRONTEND_URL: 'http://localhost:5173',
 };
 
 describe('validateEnv', () => {
   it('không lỗi khi thiếu biến tùy chọn (Cloudinary, MEDIA_*)', () => {
     expect(() => validateEnv(BASE)).not.toThrow();
-    expect(() => validateEnv({ ...BASE, APP_PUBLIC_URL: '' })).not.toThrow();
   });
 
   it('thiếu biến Cloudinary KHÔNG làm dừng app (chỉ tắt tải ảnh)', () => {
@@ -66,6 +69,52 @@ describe('validateEnv', () => {
         message = (error as Error).message;
       }
       expect(message).toContain('REDIS_URL');
+      expect(message).not.toContain('hunter2');
+    });
+  });
+
+  describe('Mail và FRONTEND_URL (bắt buộc)', () => {
+    it('thiếu MAIL_HOST/MAIL_PORT/MAIL_FROM thì dừng và nêu tên biến', () => {
+      for (const key of ['MAIL_HOST', 'MAIL_PORT', 'MAIL_FROM']) {
+        expect(() => validateEnv({ ...BASE, [key]: undefined })).toThrow(
+          new RegExp(key),
+        );
+      }
+    });
+
+    it('thiếu hoặc sai FRONTEND_URL thì dừng', () => {
+      expect(() => validateEnv({ ...BASE, FRONTEND_URL: undefined })).toThrow(
+        /FRONTEND_URL/,
+      );
+      expect(() => validateEnv({ ...BASE, FRONTEND_URL: '' })).toThrow(
+        /FRONTEND_URL/,
+      );
+      expect(() =>
+        validateEnv({ ...BASE, FRONTEND_URL: 'ftp://x.com' }),
+      ).toThrow(/FRONTEND_URL/);
+    });
+
+    it('MAIL_USER và MAIL_PASSWORD tùy chọn nhưng phải đi cùng nhau', () => {
+      expect(() => validateEnv({ ...BASE })).not.toThrow();
+      expect(() =>
+        validateEnv({ ...BASE, MAIL_USER: ' ', MAIL_PASSWORD: '' }),
+      ).not.toThrow();
+      expect(() =>
+        validateEnv({ ...BASE, MAIL_USER: 'u@gmail.com', MAIL_PASSWORD: 'pw' }),
+      ).not.toThrow();
+      expect(() => validateEnv({ ...BASE, MAIL_USER: 'u@gmail.com' })).toThrow(
+        /MAIL_PASSWORD/,
+      );
+    });
+
+    it('lỗi không lộ MAIL_PASSWORD hay MAIL_USER', () => {
+      let message = '';
+      try {
+        validateEnv({ ...BASE, MAIL_PASSWORD: 'hunter2' });
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      expect(message).toContain('MAIL_USER');
       expect(message).not.toContain('hunter2');
     });
   });

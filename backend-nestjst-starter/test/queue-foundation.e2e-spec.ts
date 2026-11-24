@@ -54,6 +54,10 @@ describe('Nền hàng đợi (không cần Redis)', () => {
         JWT_REFRESH_SECRET: 'b',
         JWT_REFRESH_EXPIRES_IN: '7d',
         REDIS_URL: 'redis://127.0.0.1:1',
+        MAIL_HOST: '127.0.0.1',
+        MAIL_PORT: '1025',
+        MAIL_FROM: 'no-reply@example.com',
+        FRONTEND_URL: 'http://localhost:5173',
       });
 
       const { Test: FreshTest } = await import('@nestjs/testing');

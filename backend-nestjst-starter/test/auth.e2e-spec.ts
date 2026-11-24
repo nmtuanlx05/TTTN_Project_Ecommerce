@@ -21,7 +21,11 @@ import { JwtStrategy } from '../src/auth/strategies/jwt.strategy';
 import { LocalStrategy } from '../src/auth/strategies/local.strategy';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { MediaService } from '../src/media/media.service';
+import { UsersController } from '../src/users/users.controller';
 import { UsersService } from '../src/users/users.service';
+import { RolesGuard } from '../src/auth/guards/roles.guard';
+import { EmailQueueService } from '../src/queue/email-queue.service';
+import { FakeEmailQueueService } from './shims/fake-queue.module';
 
 // @nestjs/config và @nestjs/mapped-types chỉ có bản ESM nên Jest không nạp được; spec mock chúng lại.
 jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
@@ -113,12 +117,16 @@ describe('Auth API (e2e, Prisma giả)', () => {
     prisma = createFakePrisma();
     const moduleRef = await Test.createTestingModule({
       imports: [PassportModule, JwtModule.register({})],
-      controllers: [AuthController],
+      controllers: [AuthController, UsersController],
       providers: [
         AuthService,
         UsersService,
         // UsersService cần MediaService (ảnh đại diện); auth không dùng tới nên dùng bản giả
         { provide: MediaService, useValue: {} },
+        // Hàng đợi giả: chỉ ghi lại việc được yêu cầu, không có Redis
+        FakeEmailQueueService,
+        { provide: EmailQueueService, useExisting: FakeEmailQueueService },
+        RolesGuard,
         LocalStrategy,
         JwtStrategy,
         JwtRefreshStrategy,
@@ -151,6 +159,16 @@ describe('Auth API (e2e, Prisma giả)', () => {
         select: { id: true },
       });
     }
+    await prisma.user.create({
+      data: { email: 'admin@gmail.com', password: hash, role: 'ADMIN' },
+      select: { id: true },
+    });
+  });
+
+  // Hàng đợi giả dùng chung cả suite: xóa các việc đã ghi trước mỗi test
+  const queue = () => app.get(FakeEmailQueueService);
+  beforeEach(() => {
+    queue().jobs.length = 0;
   });
 
   afterAll(async () => {
@@ -172,6 +190,64 @@ describe('Auth API (e2e, Prisma giả)', () => {
     expect(res.body.data).not.toHaveProperty('password');
     expect(res.body).not.toHaveProperty('data.accessToken');
     expect(prisma.users.at(-1)!.password).not.toBe('123456'); // đã băm
+  });
+
+  it('POST /auth/register thành công: đặt đúng MỘT job welcome chỉ có userId của user vừa tạo', async () => {
+    const res = await request(server())
+      .post('/auth/register')
+      .send({ email: 'welcome.me@gmail.com', password: '123456' })
+      .expect(201);
+
+    expect(queue().jobs).toEqual([
+      { type: 'welcome', data: { userId: res.body.data.id } },
+    ]);
+  });
+
+  it('POST /auth/register trùng email (409) hoặc dữ liệu sai (400): KHÔNG có job', async () => {
+    await request(server())
+      .post('/auth/register')
+      .send({ email: 'ACTIVE@gmail.com', password: '123456' })
+      .expect(409);
+    await request(server())
+      .post('/auth/register')
+      .send({ email: 'khong-phai-email', password: '123456' })
+      .expect(400);
+
+    expect(queue().jobs).toEqual([]);
+  });
+
+  it('POST /auth/register: hàng đợi lỗi (Redis chết) thì đăng ký VẪN 201', async () => {
+    const spy = jest
+      .spyOn(queue(), 'addWelcome')
+      .mockRejectedValueOnce(
+        Object.assign(new Error('redis down'), { code: 'ECONNREFUSED' }),
+      );
+
+    await request(server())
+      .post('/auth/register')
+      .send({ email: 'redis.down@gmail.com', password: '123456' })
+      .expect(201);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockRestore();
+  });
+
+  it('Admin tạo user bằng POST /users: KHÔNG có job welcome (chỉ đăng ký công khai mới gửi)', async () => {
+    const adminLogin = await login('admin@gmail.com', '123456').expect(200);
+    const token = adminLogin.body.data.accessToken;
+
+    await request(server())
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        email: 'nhan.vien@gmail.com',
+        password: '123456',
+        name: 'Nhân viên',
+        role: 'STAFF',
+      })
+      .expect(201);
+
+    expect(queue().jobs).toEqual([]);
   });
 
   it('POST /auth/register: gửi role bị từ chối 400; trùng email 409', async () => {

@@ -1,12 +1,14 @@
 import {
   ForbiddenException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { Role } from '../generated/prisma/enums';
+import { EmailQueueService } from '../queue/email-queue.service';
 import { UsersService } from '../users/users.service';
 import { MSG_ACCOUNT_LOCKED, MSG_INVALID_CREDENTIALS } from './auth.constants';
 import type {
@@ -25,6 +27,8 @@ export interface IssuedTokens {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   // Hash giả (cùng cost 10 với lúc tạo user) để vẫn tốn thời gian so sánh khi email không tồn tại,
   // tránh lộ email nào có trong hệ thống qua thời gian phản hồi.
   private readonly dummyHash = bcrypt.hashSync('dummy-password-for-timing', 10);
@@ -33,17 +37,45 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly emailQueue: EmailQueueService,
   ) {}
 
   // Đăng ký luôn tạo CUSTOMER; băm mật khẩu và kiểm tra trùng email (409) do UsersService.create đảm nhiệm.
-  register(dto: RegisterDto) {
-    return this.usersService.create({
+  async register(dto: RegisterDto) {
+    const user = await this.usersService.create({
       email: dto.email,
       password: dto.password,
       name: dto.name ?? dto.email.split('@')[0],
       phone: dto.phone,
       role: Role.CUSTOMER,
     });
+    this.queueWelcomeMail(user.id);
+    return user;
+  }
+
+  // Mail chào mừng: đặt job SAU khi user đã lưu DB, kiểu "bắn rồi quên". Lỗi hàng đợi/Redis chỉ được ghi log (mã lỗi),
+  // KHÔNG được làm hỏng đăng ký. Cố ý chỉ hook ở đây, không hook ở UsersService.create (Admin tạo user cũng gọi hàm đó).
+  private queueWelcomeMail(userId: number) {
+    try {
+      void this.emailQueue
+        .addWelcome(userId)
+        .catch((error: unknown) => this.logWelcomeFailure(userId, error));
+    } catch (error) {
+      // addWelcome ném lỗi đồng bộ (không phải promise reject)
+      this.logWelcomeFailure(userId, error);
+    }
+  }
+
+  // Chỉ ghi mã lỗi đã lọc, không ghi message thô (có thể chứa địa chỉ máy chủ hay mật khẩu) và không ghi email
+  private logWelcomeFailure(userId: number, error: unknown) {
+    const code = (error as { code?: unknown } | null)?.code;
+    const safeCode =
+      typeof code === 'string' && /^[A-Z][A-Z0-9_]{1,30}$/.test(code)
+        ? code
+        : 'UNKNOWN';
+    this.logger.warn(
+      `Không đặt được job mail chào mừng cho userId=${userId} (code=${safeCode}); đăng ký vẫn thành công`,
+    );
   }
 
   async validateUser(email: string, password: string): Promise<AuthUser> {

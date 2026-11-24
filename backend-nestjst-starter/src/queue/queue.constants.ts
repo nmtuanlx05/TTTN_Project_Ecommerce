@@ -3,10 +3,16 @@ import type { DefaultJobOptions } from 'bullmq';
 // Tên hàng đợi email. Tên thật trong Redis còn có tiền tố QUEUE_PREFIX (mặc định "ecommerce"): ecommerce:email:*
 export const EMAIL_QUEUE = 'email';
 
-// Tên các loại job của hàng đợi email. Chặng nền chỉ có "ping" (job thử nghiệm, không gửi mail).
+// Tên các loại job của hàng đợi email. "ping" là job thử nghiệm (không gửi mail); "welcome" gửi mail chào mừng sau đăng ký.
 export const EMAIL_JOB = {
   PING: 'ping',
+  WELCOME: 'welcome',
 } as const;
+
+// Dữ liệu của job "welcome": CHỈ userId. Email/tên đọc lại từ DB lúc xử lý (không để dữ liệu cá nhân nằm trong Redis).
+export interface WelcomeJobData {
+  userId: number;
+}
 
 // Thời gian chờ tối đa khi kiểm Redis lúc khởi động; quá hạn thì app dừng với thông báo cách sửa
 export const REDIS_STARTUP_TIMEOUT_MS = 5000;
