@@ -13,4 +13,9 @@ Object.assign(process.env, {
   REDIS_URL: 'redis://127.0.0.1:1',
   // Không chạy worker hàng đợi trong test
   QUEUE_WORKER_ENABLED: 'false',
+  // Mail giả để qua validateEnv; cổng 1 không ai nghe nên không thể gửi mail thật
+  MAIL_HOST: '127.0.0.1',
+  MAIL_PORT: '1',
+  MAIL_FROM: 'no-reply@example.com',
+  FRONTEND_URL: 'http://localhost:5173',
 });

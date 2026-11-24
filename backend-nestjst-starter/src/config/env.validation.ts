@@ -1,3 +1,4 @@
+import { parseFrontendUrl, readMailConfig } from '../mail/mail.config';
 import { assertWorkerFlag, parseRedisUrl } from '../queue/queue.config';
 import { ENV_FILE } from './env-file';
 
@@ -35,6 +36,11 @@ export function validateEnv(
   // Chỉ AppModule gọi hàm này; script không dùng Redis (MediaCliModule, seed...) không bị ép có REDIS_URL.
   parseRedisUrl(asString(config.REDIS_URL), asString(config.REDIS_PASSWORD));
   assertWorkerFlag(asString(config.QUEUE_WORKER_ENABLED));
+
+  // Mail (SMTP) + địa chỉ trang web dùng làm link trong mail: bắt buộc, thiếu hoặc sai thì dừng ngay.
+  // Thông báo lỗi chỉ nêu TÊN biến, không lộ MAIL_PASSWORD/MAIL_USER/MAIL_FROM.
+  readMailConfig((key) => asString(config[key]));
+  parseFrontendUrl(asString(config.FRONTEND_URL));
 
   // Biến Cloudinary đều tùy chọn: thiếu khóa KHÔNG làm dừng app, chỉ tắt tải ảnh (503 STORAGE_NOT_CONFIGURED).
 
