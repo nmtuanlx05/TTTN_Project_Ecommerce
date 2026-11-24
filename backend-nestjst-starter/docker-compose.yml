@@ -19,7 +19,11 @@ services:
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro # script chạy một lần khi khởi tạo volume
     healthcheck:
       # $$ để biến được đọc bên trong container thay vì bị compose thay thế
-      test: ['CMD-SHELL', 'mysqladmin ping -h localhost -u root -p"$$MYSQL_ROOT_PASSWORD" --silent']
+      test:
+        [
+          'CMD-SHELL',
+          'mysqladmin ping -h localhost -u root -p"$$MYSQL_ROOT_PASSWORD" --silent',
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -41,6 +45,8 @@ services:
       - 'yes' # bật AOF để job còn nguyên sau khi Redis khởi động lại
       - --appendfsync
       - everysec # ghi đĩa mỗi giây: tối đa mất ~1 giây dữ liệu khi sập nguồn
+      - --requirepass
+      - ${REDIS_PASSWORD}
     ports:
       - '127.0.0.1:6379:6379' # host:container
     volumes:
