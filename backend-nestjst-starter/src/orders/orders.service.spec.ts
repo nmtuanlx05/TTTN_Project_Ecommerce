@@ -1,6 +1,6 @@
 // Mock của Jest có kiểu any nên test đọc calls/giá trị trả về cần tắt các rule unsafe-* cho file này.
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
-import { HttpException } from '@nestjs/common';
+import { HttpException, Logger } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { DiscountType, OrderStatus } from '../generated/prisma/enums';
 import { LOCATION_INDEX } from '../locations/locations.data';
@@ -11,6 +11,8 @@ import { OrdersService } from './orders.service';
 import type { CreateOrderDto } from './dto/create-order.dto';
 
 jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
+// @nestjs/bullmq chỉ có bản ESM (EmailQueueService import nó); chỉ cần làm decorator InjectQueue
+jest.mock('@nestjs/bullmq', () => ({ InjectQueue: () => () => undefined }));
 jest.mock('../prisma/prisma.service', () => ({ PrismaService: class {} }));
 jest.mock('../inventory/inventory.service', () => ({
   InventoryService: class {},
@@ -118,6 +120,16 @@ interface Setup {
   paymentOnline?: Record<string, unknown>;
 }
 
+// Hàng đợi email giả: chỉ ghi lại lời gọi (mặc định thành công)
+function fakeEmailQueue() {
+  return {
+    addOrderConfirmation: jest.fn<
+      Promise<string | undefined>,
+      [number, string]
+    >(() => Promise.resolve('job-id')),
+  };
+}
+
 function setup(opts: Setup = {}) {
   const db = {
     cartItems: opts.cartItems ?? [
@@ -137,6 +149,7 @@ function setup(opts: Setup = {}) {
   const reserveFailsFor = new Set<number>();
   let nextOrderId = 1;
   let createFailures: unknown[] = [];
+  let cartClearFailures = 0;
 
   const tx = {
     $queryRaw: jest.fn((sql: any) => {
@@ -198,6 +211,16 @@ function setup(opts: Setup = {}) {
         ),
       ),
       deleteMany: jest.fn(() => {
+        // Lỗi P2034 SAU khi đã tạo đơn trong cùng transaction: transaction rollback và chạy lại
+        if (cartClearFailures > 0) {
+          cartClearFailures--;
+          return Promise.reject(
+            new Prisma.PrismaClientKnownRequestError('deadlock', {
+              code: 'P2034',
+              clientVersion: 'test',
+            }),
+          );
+        }
         log.push('cart:clear');
         db.cartItems = [];
         return Promise.resolve({ count: 1 });
@@ -290,6 +313,7 @@ function setup(opts: Setup = {}) {
   };
   const locations = new LocationsService();
   const workflow = { transition: jest.fn() } as unknown as OrderWorkflowService;
+  const emailQueue = fakeEmailQueue();
   const service = new OrdersService(
     prisma as never,
     locations,
@@ -297,6 +321,7 @@ function setup(opts: Setup = {}) {
     {} as never,
     paymentConfig as never,
     {} as never,
+    emailQueue as never,
   );
   return {
     service,
@@ -309,6 +334,8 @@ function setup(opts: Setup = {}) {
     failOrderCreate: (...errors: unknown[]) => (createFailures = errors),
     forceVoucherAffected: (n: number) => (voucherAffectedOverride = n),
     failReserveFor: (id: number) => reserveFailsFor.add(id),
+    failCartClear: (n: number) => (cartClearFailures = n),
+    emailQueue,
   };
 }
 
@@ -1022,6 +1049,178 @@ describe('OrdersService.create', () => {
       const e = await errorOf(service.create(USER, dto()));
       expect(e).toMatchObject({ status: 409, code: 'SYSTEM_BUSY' });
       expect(prisma.$transaction).toHaveBeenCalledTimes(3);
+    });
+  });
+});
+
+describe('OrdersService.create: thư xác nhận đơn (đặt job sau commit)', () => {
+  const KEY = 'checkout-key-0001';
+  let warn: jest.SpyInstance;
+
+  beforeEach(() => {
+    jest.useFakeTimers({
+      now: NOW_OK,
+      doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask'],
+    });
+    warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  // Chờ các promise "bắn rồi quên" (.catch của hook) chạy xong
+  const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+  it('đơn mới: đặt job ĐÚNG 1 lần với (id, mã) của đơn vừa tạo', async () => {
+    const { service, db, emailQueue } = setup();
+    const order = await service.create(USER, dto());
+
+    expect(emailQueue.addOrderConfirmation).toHaveBeenCalledTimes(1);
+    expect(emailQueue.addOrderConfirmation).toHaveBeenCalledWith(
+      db.orders[0].id,
+      order.code,
+    );
+  });
+
+  it('đặt job SAU khi transaction xong (đơn đã có, giỏ đã xóa)', async () => {
+    const { service, db, emailQueue, prisma } = setup();
+    emailQueue.addOrderConfirmation.mockImplementation(() => {
+      expect(db.orders).toHaveLength(1);
+      expect(db.cartItems).toHaveLength(0);
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      return Promise.resolve('job-id');
+    });
+    await service.create(USER, dto());
+    expect(emailQueue.addOrderConfirmation).toHaveBeenCalledTimes(1);
+  });
+
+  it('replay cùng Idempotency-Key (trả đơn cũ trong transaction): KHÔNG đặt job lần hai', async () => {
+    const { service, emailQueue } = setup();
+    const first = await service.create(USER, dto(), KEY);
+    const second = await service.create(USER, dto(), KEY);
+
+    expect(second.code).toBe(first.code);
+    expect(emailQueue.addOrderConfirmation).toHaveBeenCalledTimes(1);
+  });
+
+  it('cùng key chạy song song: đúng 1 job', async () => {
+    const { service, emailQueue } = setup();
+    await Promise.all([
+      service.create(USER, dto(), KEY),
+      service.create(USER, dto(), KEY),
+      service.create(USER, dto(), KEY),
+    ]);
+    expect(emailQueue.addOrderConfirmation).toHaveBeenCalledTimes(1);
+  });
+
+  it('lưới an toàn P2002 (trả đơn đã có ngoài transaction): KHÔNG đặt job', async () => {
+    const existing = setup();
+    await existing.service.create(USER, dto(), KEY);
+    const row = existing.db.orders[0];
+
+    const { service, prisma, failOrderCreate, emailQueue } = setup();
+    failOrderCreate(
+      new Prisma.PrismaClientKnownRequestError('dup', {
+        code: 'P2002',
+        clientVersion: 'test',
+        meta: { target: 'orders_userId_idempotencyKey_key' },
+      }),
+    );
+    prisma.order.findFirst.mockResolvedValue(row);
+
+    const order = await service.create(USER, dto(), KEY);
+    expect(order.code).toBe(row.code);
+    expect(emailQueue.addOrderConfirmation).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['chưa có giỏ', { hasCart: false }],
+    ['giỏ rỗng', { cartItems: [] }],
+    [
+      'hết hàng',
+      { variants: { 3: variant({ stock: 0 }), 5: variant({ stock: 0 }) } },
+    ],
+  ])('lỗi trong transaction (%s): KHÔNG đặt job', async (_label, opts) => {
+    const { service, emailQueue } = setup(opts);
+    await expect(service.create(USER, dto())).rejects.toBeInstanceOf(
+      HttpException,
+    );
+    expect(emailQueue.addOrderConfirmation).not.toHaveBeenCalled();
+  });
+
+  it('P2034 khi transaction chạy lại: đúng 1 job', async () => {
+    const { service, prisma, failTx, emailQueue } = setup();
+    failTx(2);
+    await service.create(USER, dto());
+    expect(prisma.$transaction).toHaveBeenCalledTimes(3);
+    expect(emailQueue.addOrderConfirmation).toHaveBeenCalledTimes(1);
+  });
+
+  it('P2034 SAU khi đã tạo đơn trong transaction (rollback, chạy lại): đúng 1 job', async () => {
+    const { service, prisma, failCartClear, emailQueue, db } = setup();
+    failCartClear(1);
+    await service.create(USER, dto());
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(db.orders).toHaveLength(1);
+    expect(emailQueue.addOrderConfirmation).toHaveBeenCalledTimes(1);
+  });
+
+  describe('lỗi hàng đợi không làm hỏng đặt hàng', () => {
+    const expectSafeWarn = (orderId: number) => {
+      expect(warn).toHaveBeenCalledTimes(1);
+      const message = String(warn.mock.calls[0][0]);
+      expect(message).toContain(`orderId=${orderId}`);
+      expect(message).toContain('code=ECONNREFUSED');
+      for (const secret of [
+        USER.email,
+        'Nguyễn Văn A',
+        '0912345678',
+        '12 Lê Lợi',
+        'redis://',
+      ]) {
+        expect(message).not.toContain(secret);
+      }
+    };
+    const redisError = () =>
+      Object.assign(new Error('connect redis://u:p@10.0.0.1 failed'), {
+        code: 'ECONNREFUSED',
+      });
+
+    it('hàng đợi reject: create vẫn trả đơn, log có orderId và mã lỗi, không có dữ liệu cá nhân', async () => {
+      const { service, db, emailQueue } = setup();
+      emailQueue.addOrderConfirmation.mockRejectedValue(redisError());
+
+      const order = await service.create(USER, dto());
+      await flush();
+
+      const orderId: number = db.orders[0].id;
+      expect(order.code).toBe(db.orders[0].code);
+      expectSafeWarn(orderId);
+    });
+
+    it('hàng đợi ném lỗi đồng bộ: create vẫn trả đơn, log an toàn', async () => {
+      const { service, db, emailQueue } = setup();
+      emailQueue.addOrderConfirmation.mockImplementation(() => {
+        throw redisError();
+      });
+
+      const order = await service.create(USER, dto());
+      await flush();
+
+      const orderId: number = db.orders[0].id;
+      expect(order.code).toBe(db.orders[0].code);
+      expectSafeWarn(orderId);
+    });
+
+    it('lỗi không có mã hợp lệ: ghi code=UNKNOWN', async () => {
+      const { service, emailQueue } = setup();
+      emailQueue.addOrderConfirmation.mockRejectedValue(new Error('boom'));
+      await service.create(USER, dto());
+      await flush();
+      expect(String(warn.mock.calls[0][0])).toContain('code=UNKNOWN');
     });
   });
 });

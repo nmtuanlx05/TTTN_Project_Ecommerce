@@ -4,6 +4,7 @@ import { CartModule } from '../cart/cart.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { LocationsModule } from '../locations/locations.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { QueueModule } from '../queue/queue.module';
 import { AdminOrdersController } from './admin-orders.controller';
 import { AdminOrdersService } from './admin-orders.service';
 import { OrderWorkflowService } from './order-workflow.service';
@@ -11,7 +12,14 @@ import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 
 @Module({
-  imports: [CartModule, InventoryModule, LocationsModule, PaymentsModule],
+  // QueueModule: đặt job thư "Đã nhận đơn hàng" (EmailQueueService)
+  imports: [
+    CartModule,
+    InventoryModule,
+    LocationsModule,
+    PaymentsModule,
+    QueueModule,
+  ],
   controllers: [OrdersController, AdminOrdersController],
   providers: [
     OrdersService,
