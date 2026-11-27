@@ -1,12 +1,14 @@
 // Mock của Jest có kiểu any nên test đọc calls/giá trị trả về cần tắt các rule unsafe-* cho file này.
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
-import { HttpException } from '@nestjs/common';
+import { HttpException, Logger } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { OrderStatus } from '../generated/prisma/enums';
 import { PaymentsService } from './payments.service';
 import type { AuthUser } from '../auth/auth.types';
 
 jest.mock('@nestjs/config', () => ({ ConfigService: class {} }));
+// @nestjs/bullmq chỉ có bản ESM (EmailQueueService import nó); chỉ cần làm decorator InjectQueue
+jest.mock('@nestjs/bullmq', () => ({ InjectQueue: () => () => undefined }));
 jest.mock('../prisma/prisma.service', () => ({ PrismaService: class {} }));
 jest.mock('../inventory/inventory.service', () => ({
   InventoryService: class {},
@@ -61,6 +63,8 @@ function setup(
   const log: string[] = [];
   let nextId = 100;
   let createError: unknown = null;
+  // Số lần "commit thất bại": thân transaction chạy xong rồi rollback và ném P2034 (runWithRetry chạy lại)
+  let commitFailures = 0;
 
   const findTxn = (where: any) => {
     if (where.id !== undefined)
@@ -133,7 +137,15 @@ function setup(
       if (Array.isArray(arg)) return Promise.all(arg);
       const before = structuredClone(db);
       try {
-        return await arg(tx);
+        const result = await arg(tx);
+        if (commitFailures > 0) {
+          commitFailures--;
+          throw new Prisma.PrismaClientKnownRequestError('write conflict', {
+            code: 'P2034',
+            clientVersion: 'test',
+          });
+        }
+        return result;
       } catch (error) {
         db.orders = before.orders;
         db.txns = before.txns;
@@ -163,10 +175,17 @@ function setup(
     },
   };
 
+  // Hàng đợi email giả: chỉ ghi lại lời gọi (mặc định thành công)
+  const emailQueue = {
+    addPaymentReceived: jest.fn<Promise<string | undefined>, [number, string]>(
+      () => Promise.resolve('job-id'),
+    ),
+  };
   const service = new PaymentsService(
     prisma as never,
     { online } as never,
     workflow as never,
+    emailQueue as never,
   );
   return {
     service,
@@ -175,7 +194,9 @@ function setup(
     workflow,
     db,
     log,
+    emailQueue,
     failNextCreateWith: (e: unknown) => (createError = e),
+    failCommit: (n: number) => (commitFailures = n),
   };
 }
 
@@ -662,5 +683,170 @@ describe('PaymentsService.getOrderPayment', () => {
       code: 'PAYMENT_METHOD_NOT_SUPPORTED',
     });
     expect(e.message).not.toContain('VIETQR');
+  });
+});
+
+describe('PaymentsService.confirmBankTransfer: thư đã nhận thanh toán (đặt job sau commit)', () => {
+  let warn: jest.SpyInstance;
+  beforeEach(() => {
+    warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  // Chờ các promise "bắn rồi quên" (.catch của hook) chạy xong
+  const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+  it('webhook đủ tiền (CONFIRMED): đặt job ĐÚNG 1 lần với (id, mã) của đơn', async () => {
+    const { service, emailQueue } = setup();
+    const result = await service.confirmBankTransfer(webhook());
+
+    expect(result.result).toBe('CONFIRMED');
+    expect(emailQueue.addPaymentReceived).toHaveBeenCalledTimes(1);
+    expect(emailQueue.addPaymentReceived).toHaveBeenCalledWith(10, CODE);
+  });
+
+  it('webhook thừa tiền (CONFIRMED, overpaid): đặt job ĐÚNG 1 lần', async () => {
+    const { service, emailQueue } = setup();
+    const result = await service.confirmBankTransfer(
+      webhook({ amount: 400_000 }),
+    );
+
+    expect(result).toMatchObject({ result: 'CONFIRMED', overpaid: true });
+    expect(emailQueue.addPaymentReceived).toHaveBeenCalledTimes(1);
+    expect(emailQueue.addPaymentReceived).toHaveBeenCalledWith(10, CODE);
+  });
+
+  it('admin xác nhận thủ công: đặt job ĐÚNG 1 lần', async () => {
+    const { service, emailQueue } = setup();
+    await service.confirmManually(10, { note: 'Đã thấy tiền về' }, ADMIN);
+    expect(emailQueue.addPaymentReceived).toHaveBeenCalledTimes(1);
+    expect(emailQueue.addPaymentReceived).toHaveBeenCalledWith(10, CODE);
+  });
+
+  it('đặt job SAU khi transaction xong (đơn đã PAID, giao dịch đã ghi)', async () => {
+    const { service, emailQueue, db, prisma } = setup();
+    emailQueue.addPaymentReceived.mockImplementation(() => {
+      expect(db.orders[0].paymentStatus).toBe('PAID');
+      expect(db.txns).toHaveLength(1);
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      return Promise.resolve('job-id');
+    });
+    await service.confirmBankTransfer(webhook());
+    expect(emailQueue.addPaymentReceived).toHaveBeenCalledTimes(1);
+  });
+
+  it('commit lỗi P2034 rồi chạy lại thành công: đúng 1 job', async () => {
+    const { service, emailQueue, prisma, failCommit } = setup();
+    failCommit(1);
+    const result = await service.confirmBankTransfer(webhook());
+    expect(result.result).toBe('CONFIRMED');
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(emailQueue.addPaymentReceived).toHaveBeenCalledTimes(1);
+  });
+
+  describe('không đổi trạng thái thì KHÔNG đặt job', () => {
+    it('webhook trùng providerTxnId (DUPLICATE): chỉ 1 job cho lần đầu', async () => {
+      const { service, emailQueue } = setup();
+      await service.confirmBankTransfer(webhook());
+      const again = await service.confirmBankTransfer(webhook());
+      expect(again.result).toBe('DUPLICATE');
+      expect(emailQueue.addPaymentReceived).toHaveBeenCalledTimes(1);
+    });
+
+    it('webhook khác id cho đơn đã PAID (DUPLICATE_PAID): không job mới', async () => {
+      const { service, emailQueue } = setup();
+      await service.confirmBankTransfer(webhook());
+      const again = await service.confirmBankTransfer(
+        webhook({ providerTxnId: '9002', rawPayload: { id: 9002 } }),
+      );
+      expect(again).toMatchObject({
+        result: 'NEEDS_REVIEW',
+        reviewReason: 'DUPLICATE_PAID',
+      });
+      expect(emailQueue.addPaymentReceived).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      ['UNDERPAID', [order()], webhook({ amount: 100_000 })],
+      ['ORDER_CLOSED', [order({ status: OrderStatus.CANCELLED })], webhook()],
+      [
+        'UNMATCHED (không có mã đơn)',
+        [order()],
+        webhook({ content: 'CHUYEN TIEN' }),
+      ],
+      ['UNMATCHED (đơn COD)', [order({ paymentMethod: 'COD' })], webhook()],
+    ])('%s: 0 job', async (_label, orders, input) => {
+      const { service, emailQueue } = setup(orders);
+      const result = await service.confirmBankTransfer(input);
+      expect(result.result).toBe('NEEDS_REVIEW');
+      expect(emailQueue.addPaymentReceived).not.toHaveBeenCalled();
+    });
+
+    it('admin xác nhận đơn đã PAID (409): 0 job', async () => {
+      const { service, emailQueue } = setup([order({ paymentStatus: 'PAID' })]);
+      const e = await errorOf(
+        service.confirmManually(10, { note: 'Lần hai' }, ADMIN),
+      );
+      expect(e).toMatchObject({
+        status: 409,
+        code: 'ORDER_NOT_AWAITING_PAYMENT',
+      });
+      expect(emailQueue.addPaymentReceived).not.toHaveBeenCalled();
+    });
+  });
+
+  it('ConfirmResult giữ nguyên: không lộ orderId hay trường mới', async () => {
+    const { service, db } = setup();
+    const result = await service.confirmBankTransfer(webhook());
+    expect(result).toEqual({
+      result: 'CONFIRMED',
+      transactionId: db.txns[0].id,
+      orderCode: CODE,
+      overpaid: false,
+    });
+  });
+
+  describe('lỗi hàng đợi không làm hỏng xác nhận thanh toán', () => {
+    const redisError = () =>
+      Object.assign(new Error('connect redis://u:p@10.0.0.1 failed'), {
+        code: 'ECONNREFUSED',
+      });
+    const expectSafeWarn = () => {
+      expect(warn).toHaveBeenCalledTimes(1);
+      const message = String(warn.mock.calls[0][0]);
+      expect(message).toContain('orderId=10');
+      expect(message).toContain('code=ECONNREFUSED');
+      expect(message).not.toContain('redis://');
+      expect(message).not.toContain('MS261105PKGA');
+    };
+
+    it('hàng đợi reject: vẫn trả CONFIRMED như cũ, đơn vẫn PAID, log an toàn', async () => {
+      const { service, emailQueue, db } = setup();
+      emailQueue.addPaymentReceived.mockRejectedValue(redisError());
+      const result = await service.confirmBankTransfer(webhook());
+      await flush();
+      expect(result).toEqual({
+        result: 'CONFIRMED',
+        transactionId: db.txns[0].id,
+        orderCode: CODE,
+        overpaid: false,
+      });
+      expect(db.orders[0].paymentStatus).toBe('PAID');
+      expectSafeWarn();
+    });
+
+    it('hàng đợi ném lỗi đồng bộ: vẫn trả CONFIRMED như cũ, log an toàn', async () => {
+      const { service, emailQueue } = setup();
+      emailQueue.addPaymentReceived.mockImplementation(() => {
+        throw redisError();
+      });
+      const result = await service.confirmBankTransfer(webhook());
+      await flush();
+      expect(result.result).toBe('CONFIRMED');
+      expectSafeWarn();
+    });
   });
 });
