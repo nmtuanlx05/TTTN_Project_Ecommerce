@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { badRequest, conflict, notFound } from '../common/errors/coded-errors';
 import { Paginated } from '../common/paginated';
 import { Prisma } from '../generated/prisma/client';
@@ -27,6 +27,8 @@ import { OrderWorkflowService } from './order-workflow.service';
 import { PaymentConfigService } from '../payments/payment-config.service';
 import { PaymentsService } from '../payments/payments.service';
 import { PAYMENT_ERROR } from '../payments/payments.constants';
+import { EmailQueueService } from '../queue/email-queue.service';
+import { safeErrorCode } from '../queue/safe-error-code';
 import {
   DEFAULT_CUSTOMER_CANCEL_REASON,
   IDEMPOTENCY_KEY_REGEX,
@@ -138,6 +140,8 @@ export function parseIdempotencyKey(raw: unknown): string | undefined {
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly locations: LocationsService,
@@ -145,6 +149,7 @@ export class OrdersService {
     private readonly cart: CartService,
     private readonly paymentConfig: PaymentConfigService,
     private readonly payments: PaymentsService,
+    private readonly emailQueue: EmailQueueService,
   ) {}
 
   // Thông báo cho KHÁCH khi ONLINE đang tắt: không nêu tên biến môi trường (lý do chi tiết chỉ nằm ở log khởi động)
@@ -258,15 +263,18 @@ export class OrdersService {
     try {
       // Đề nghị READ COMMITTED để các lần đọc thường thấy giá mới nhất. Thiết kế KHÔNG phụ thuộc vào đây: tồn lấy từ
       // câu khóa, lượt voucher do UPDATE có điều kiện quyết định (chưa xác minh adapter áp dụng đúng mức này).
-      const order = await runWithRetry(
+      const { order, created } = await runWithRetry(
         this.prisma,
         (tx) =>
           this.createInTransaction(tx, user, dto, address, now, idempotencyKey),
         { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
       );
+      // Transaction đã commit. Chỉ đơn VỪA tạo mới đặt job (replay Idempotency-Key thì không); đặt ở đây chứ không trong
+      // transaction vì runWithRetry chạy lại cả transaction khi gặp P2034.
+      if (created) this.queueOrderConfirmation(order.id, order.code);
       return toCustomerOrder(order);
     } catch (error) {
-      // Lưới an toàn: khóa giỏ đã tuần tự hóa nên thường không tới đây
+      // Lưới an toàn: khóa giỏ đã tuần tự hóa nên thường không tới đây. Trả đơn đã có nên KHÔNG đặt job thư.
       if (idempotencyKey && isPrismaCode(error, 'P2002')) {
         const existing = await this.prisma.order.findFirst({
           where: { userId: user.id, idempotencyKey },
@@ -301,7 +309,7 @@ export class OrdersService {
         where: { userId, idempotencyKey },
         select: customerOrderSelect,
       });
-      if (existing) return existing;
+      if (existing) return { order: existing, created: false };
     }
 
     const cartItems = await tx.cartItem.findMany({
@@ -521,7 +529,25 @@ export class OrdersService {
 
     // Dọn đúng các dòng đã đặt (mọi dòng đều đặt được nếu tới được đây)
     await tx.cartItem.deleteMany({ where: { cartId } });
-    return order;
+    return { order, created: true };
+  }
+
+  // Thư "Đã nhận đơn hàng", kiểu "bắn rồi quên" như mail chào mừng: lỗi hàng đợi/Redis (đồng bộ hay reject) chỉ ghi log
+  // orderId + mã lỗi đã lọc, KHÔNG làm hỏng đặt hàng. Không log email, tên, địa chỉ, SĐT hay message thô của lỗi.
+  private queueOrderConfirmation(orderId: number, code: string) {
+    try {
+      void this.emailQueue
+        .addOrderConfirmation(orderId, code)
+        .catch((error: unknown) => this.logOrderMailFailure(orderId, error));
+    } catch (error) {
+      this.logOrderMailFailure(orderId, error);
+    }
+  }
+
+  private logOrderMailFailure(orderId: number, error: unknown) {
+    this.logger.warn(
+      `Không đặt được job thư xác nhận đơn cho orderId=${orderId} (code=${safeErrorCode(error)}); đơn vẫn được tạo`,
+    );
   }
 
   // Mã đơn ngẫu nhiên: trùng (P2002 trên cột code) thì sinh lại, tối đa MAX_ORDER_CODE_ATTEMPTS lần

@@ -1,4 +1,4 @@
-import { formatVnd, formatVnDate } from './mail-format';
+import { formatVnd, formatVnDate, formatVnDateTime } from './mail-format';
 
 describe('formatVnd', () => {
   it.each([
@@ -37,6 +37,38 @@ describe('formatVnDate (giờ Việt Nam)', () => {
   it('đệm số 0 cho ngày/tháng', () => {
     expect(formatVnDate(new Date('2027-03-05T12:00:00+07:00'))).toBe(
       '05/03/2027',
+    );
+  });
+});
+
+describe('formatVnDateTime (giờ Việt Nam, dd/MM/yyyy HH:mm)', () => {
+  it('16:59Z là 23:59 cùng ngày giờ VN', () => {
+    expect(formatVnDateTime(new Date('2026-11-26T16:59:00Z'))).toBe(
+      '26/11/2026 23:59',
+    );
+  });
+
+  it('17:00Z là 00:00 ngày hôm sau giờ VN', () => {
+    expect(formatVnDateTime(new Date('2026-11-26T17:00:00Z'))).toBe(
+      '27/11/2026 00:00',
+    );
+  });
+
+  it('17:00Z ngày 31/12 là 00:00 ngày 01/01 năm sau giờ VN', () => {
+    expect(formatVnDateTime(new Date('2026-12-31T17:00:00Z'))).toBe(
+      '01/01/2027 00:00',
+    );
+  });
+
+  it('đệm số 0 cho giờ và phút', () => {
+    expect(formatVnDateTime(new Date('2027-03-05T08:05:00+07:00'))).toBe(
+      '05/03/2027 08:05',
+    );
+  });
+
+  it('bỏ giây (không làm tròn lên phút sau)', () => {
+    expect(formatVnDateTime(new Date('2026-11-27T14:30:59+07:00'))).toBe(
+      '27/11/2026 14:30',
     );
   });
 });

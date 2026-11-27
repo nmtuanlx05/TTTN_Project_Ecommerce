@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="vi" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
+<title>Email xác nhận thanh toán — MONO STUDIO</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600&family=Newsreader:ital,wght@1,400&display=swap">
+<style>
+body { margin: 0; padding: 0; background: #EFEBE3; -webkit-text-size-adjust: 100%; }
+table { border-spacing: 0; }
+img { -ms-interpolation-mode: bicubic; }
+
+.em-btn:hover { opacity: 0.86; }
+@media only screen and (max-width: 620px) {
+  .em-wrap { width: 100% !important; }
+  .em-px { padding-left: 22px !important; padding-right: 22px !important; }
+  .em-h1 { font-size: 28px !important; }
+  .em-stack { display: block !important; width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; }
+  .em-gap-b { padding-bottom: 18px !important; }
+  .em-gap { display: none !important; }
+  .em-tile { padding-bottom: 20px !important; }
+  .em-fluid { width: 100% !important; height: auto !important; }
+}
+</style>
+</head>
+<body style="margin:0;padding:0;background:#EFEBE3">
+<!--
+  MONO STUDIO · Email xác nhận thanh toán
+  Tiêu đề gợi ý: MONO STUDIO · Đã nhận thanh toán cho đơn hàng #{{ma_don}}
+  Cú pháp biến: Handlebars-style {{biến}}, {{#if}}, {{#each}} — đổi sang engine của bạn nếu cần.
+  Biến: ten_khach, ma_don, ma_giao_dich, phuong_thuc, thoi_gian_thanh_toan, so_tien, du_kien_giao, items[{name,variant,qty,price}], tam_tinh, ma_giam_gia, giam_gia, phi_van_chuyen, url_orders, url_shop, url_web_view, url_unsubscribe, dia_chi_cong_ty
+-->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;font-size:1px;line-height:1px;color:#EFEBE3">Đã nhận thanh toán {{so_tien}} cho đơn hàng #{{ma_don}}.&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#EFEBE3" style="background:#EFEBE3"><tr><td align="center" style="padding:24px 12px 44px">
+<table role="presentation" class="em-wrap" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:0 0 16px;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11.5px;line-height:1.4;color:#6B6760">Không xem được email? <a href="{{url_web_view}}" style="color:#6B6760;text-decoration:underline">Xem trên trình duyệt</a></td></tr></table>
+<table role="presentation" class="em-wrap" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#FBF9F5" style="width:600px;max-width:600px;background:#FBF9F5;border-collapse:separate;border-radius:24px;overflow:hidden">
+<tr><td align="center" bgcolor="#242120" style="padding:11px 20px;font-family:'Archivo','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:10.5px;line-height:1.4;letter-spacing:0.14em;text-transform:uppercase;color:#E9E4DA">Miễn phí vận chuyển từ 500.000₫ &nbsp;&bull;&nbsp; Đổi trả trong 30 ngày</td></tr>
+<tr><td align="center" style="padding:36px 40px 10px"><a href="{{url_shop}}" style="font-family:'Archivo','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:19px;line-height:1;letter-spacing:0.28em;color:#1A1A1A;text-decoration:none">MONO STUDIO</a></td></tr>
+<tr><td align="center" style="padding:10px 40px 34px;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:500;font-size:11px;line-height:1.4;letter-spacing:0.16em;text-transform:uppercase;color:#6B6760"><a href="{{url_shop}}" style="color:#6B6760;text-decoration:none">Áo</a> &nbsp;&middot;&nbsp; <a href="{{url_shop}}" style="color:#6B6760;text-decoration:none">Quần</a> &nbsp;&middot;&nbsp; <a href="{{url_shop}}" style="color:#6B6760;text-decoration:none">Phụ kiện</a> &nbsp;&middot;&nbsp; <a href="{{url_shop}}" style="color:#6B6760;text-decoration:none">Quà tặng</a></td></tr>
+<tr><td class="em-px"  style="padding:0 40px"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" valign="middle" width="64" height="64" bgcolor="#E7EFE5" style="width:64px;height:64px;border-radius:50%;background:#E7EFE5;font-family:'Archivo','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:28px;line-height:64px;color:#4F6F4B">&#10003;</td></tr></table></td></tr>
+<tr><td height="24" style="height:24px;font-size:0;line-height:0">&nbsp;</td></tr>
+<tr><td class="em-px"  style="padding:0 40px"><p style="margin:0 0 14px;font-family:'Newsreader',Georgia,'Times New Roman',serif;font-style:italic;font-size:17px;line-height:1.4;color:#8C6A45">Thanh toán thành công</p><h1 class="em-h1" style="margin:0;font-family:'Archivo','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:32px;line-height:1.06;letter-spacing:-0.02em;text-transform:uppercase;color:#1A1A1A">Chúng mình đã nhận<br>được thanh toán</h1></td></tr>
+<tr><td height="18" style="height:18px;font-size:0;line-height:0">&nbsp;</td></tr>
+<tr><td class="em-px"  style="padding:0 40px"><p style="margin:0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:400;font-size:15px;line-height:1.75;color:#4A4742;">Cảm ơn {{ten_khach}}! Khoản thanh toán cho đơn hàng <strong style="color:#1A1A1A">#{{ma_don}}</strong> đã được ghi nhận. Chúng mình sẽ đóng gói và bàn giao cho đơn vị vận chuyển trong 1&ndash;2 ngày làm việc.</p></td></tr>
+<tr><td height="32" style="height:32px;font-size:0;line-height:0">&nbsp;</td></tr>
+<tr><td class="em-px"  style="padding:0 40px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td height="4" style="height:4px;font-size:0;line-height:0;background:#242120;border-radius:4px">&nbsp;</td><td width="6" style="width:6px;font-size:0">&nbsp;</td><td height="4" style="height:4px;font-size:0;line-height:0;background:#242120;border-radius:4px">&nbsp;</td><td width="6" style="width:6px;font-size:0">&nbsp;</td><td height="4" style="height:4px;font-size:0;line-height:0;background:#E0DACE;border-radius:4px">&nbsp;</td><td width="6" style="width:6px;font-size:0">&nbsp;</td><td height="4" style="height:4px;font-size:0;line-height:0;background:#E0DACE;border-radius:4px">&nbsp;</td></tr>
+<tr><td valign="top" style="padding-top:10px;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:11px;line-height:1.4;color:#1A1A1A">Đã đặt hàng</td><td width="6" style="width:6px;font-size:0">&nbsp;</td><td valign="top" style="padding-top:10px;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:11px;line-height:1.4;color:#1A1A1A">Đã thanh toán</td><td width="6" style="width:6px;font-size:0">&nbsp;</td><td valign="top" style="padding-top:10px;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:400;font-size:11px;line-height:1.4;color:#6B6760">Đang giao</td><td width="6" style="width:6px;font-size:0">&nbsp;</td><td valign="top" style="padding-top:10px;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:400;font-size:11px;line-height:1.4;color:#6B6760">Hoàn thành</td></tr></table></td></tr>
+<tr><td height="32" style="height:32px;font-size:0;line-height:0">&nbsp;</td></tr>
+<tr><td class="em-px"  style="padding:0 40px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#E7EFE5" style="background:#E7EFE5;border-radius:24px;border-collapse:separate"><tr><td align="center" style="padding:32px 24px">
+<p style="margin:0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:10.5px;line-height:1.4;letter-spacing:0.16em;text-transform:uppercase;color:#4F6F4B">Số tiền đã thanh toán</p>
+<p style="margin:10px 0 0;font-family:'Archivo','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:44px;line-height:1.1;letter-spacing:-0.02em;color:#1A1A1A">{{so_tien}}</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:16px auto 0;border-collapse:separate"><tr><td align="center" bgcolor="#FBF9F5" style="padding:6px 16px;border-radius:999px;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:12px;line-height:1.4;color:#3F5B3C"><span style="color:#6F8F6B;font-size:13px">&#9679;</span>&nbsp; Đã thanh toán</td></tr></table>
+</td></tr></table></td></tr>
+<tr><td height="32" style="height:32px;font-size:0;line-height:0">&nbsp;</td></tr>
+<tr><td class="em-px"  style="padding:0 40px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F3EFE8" style="background:#F3EFE8;border-radius:24px;border-collapse:separate"><tr><td style="padding:26px 28px 14px"><p style="margin:0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:10.5px;line-height:1.4;letter-spacing:0.16em;text-transform:uppercase;color:#8C6A45">Chi tiết giao dịch</p></td></tr>
+<tr><td style="padding:0 28px 14px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td valign="top" style="padding:13px 0;border-bottom:1px solid #E0DACE;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13.5px;line-height:1.5;color:#6B6760">Mã đơn hàng</td><td valign="top" align="right" style="padding:13px 0 13px 16px;border-bottom:1px solid #E0DACE;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:13.5px;line-height:1.5;color:#1A1A1A">#{{ma_don}}</td></tr>
+<tr><td valign="top" style="padding:13px 0;border-bottom:1px solid #E0DACE;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13.5px;line-height:1.5;color:#6B6760">Mã giao dịch</td><td valign="top" align="right" style="padding:13px 0 13px 16px;border-bottom:1px solid #E0DACE;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:13.5px;line-height:1.5;color:#1A1A1A">{{ma_giao_dich}}</td></tr>
+<tr><td valign="top" style="padding:13px 0;border-bottom:1px solid #E0DACE;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13.5px;line-height:1.5;color:#6B6760">Phương thức</td><td valign="top" align="right" style="padding:13px 0 13px 16px;border-bottom:1px solid #E0DACE;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:13.5px;line-height:1.5;color:#1A1A1A">{{phuong_thuc}}</td></tr>
+<tr><td valign="top" style="padding:13px 0;border-bottom:1px solid #E0DACE;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13.5px;line-height:1.5;color:#6B6760">Thời gian</td><td valign="top" align="right" style="padding:13px 0 13px 16px;border-bottom:1px solid #E0DACE;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:13.5px;line-height:1.5;color:#1A1A1A">{{thoi_gian_thanh_toan}}</td></tr>
+<tr><td valign="top" style="padding:13px 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13.5px;line-height:1.5;color:#6B6760">Dự kiến giao</td><td valign="top" align="right" style="padding:13px 0 13px 16px;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:13.5px;line-height:1.5;color:#1A1A1A">{{du_kien_giao}}</td></tr>
+</table></td></tr></table></td></tr>
+<tr><td height="36" style="height:36px;font-size:0;line-height:0">&nbsp;</td></tr>
+<tr><td class="em-px"  style="padding:0 40px"><p style="margin:0 0 8px;font-family:'Archivo','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:700;font-size:15px;letter-spacing:0.12em;text-transform:uppercase;color:#1A1A1A">Tóm tắt đơn hàng</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">{{#each items}}<tr><td style="padding:9px 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#4A4742">{{name}} <span style="color:#6B6760">&middot; {{variant}} &times; {{qty}}</span></td><td align="right" valign="top" style="padding:9px 0 9px 16px;white-space:nowrap;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#1A1A1A">{{price}}</td></tr>{{/each}}</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;border-top:1px solid #E6E1D8">
+<tr><td style="padding:6px 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#4A4742;">Tạm tính</td><td align="right" style="padding:6px 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#4A4742;">{{tam_tinh}}</td></tr>
+{{#if giam_gia}}<tr><td style="padding:6px 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#4A4742;">Giảm giá ({{ma_giam_gia}})</td><td align="right" style="padding:6px 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#4A4742;color:#4F6F4B;font-weight:600;">{{giam_gia}}</td></tr>{{/if}}
+<tr><td style="padding:6px 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#4A4742;">Vận chuyển</td><td align="right" style="padding:6px 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#4A4742;font-weight:600;">{{phi_van_chuyen}}</td></tr>
+<tr><td style="padding:6px 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#1A1A1A;font-weight:600;font-size:15px;">Đã thanh toán</td><td align="right" style="padding:6px 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#1A1A1A;">{{so_tien}}</td></tr>
+</table></td></tr>
+<tr><td height="38" style="height:38px;font-size:0;line-height:0">&nbsp;</td></tr>
+<tr><td class="em-px"  style="padding:0 40px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate"><tr>
+<td align="center" bgcolor="#242120" style="border-radius:999px;border:1.5px solid #242120">
+<a class="em-btn" href="{{url_orders}}" style="display:inline-block;padding:17px 34px;font-family:'Archivo','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:700;font-size:12.5px;line-height:1;letter-spacing:0.14em;text-transform:uppercase;color:#FBF9F5;text-decoration:none;border-radius:999px">Xem đơn hàng</a>
+</td></tr></table></td></tr>
+<tr><td height="22" style="height:22px;font-size:0;line-height:0">&nbsp;</td></tr>
+<tr><td class="em-px"  style="padding:0 40px"><p style="margin:0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:400;font-size:15px;line-height:1.75;color:#4A4742;font-size:13px;color:#6B6760">Email này là xác nhận thanh toán, không phải hóa đơn VAT. Nếu có điều gì chưa đúng, hãy trả lời email này để chúng mình hỗ trợ ngay.</p></td></tr>
+<tr><td height="48" style="height:48px;font-size:0;line-height:0">&nbsp;</td></tr>
+<tr><td class="em-px" align="center" bgcolor="#242120" style="padding:48px 40px 40px">
+<p style="margin:0;font-family:'Archivo','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:16px;line-height:1;letter-spacing:0.28em;color:#FBF9F5">MONO STUDIO</p>
+<p style="margin:14px 0 0;font-family:'Newsreader',Georgia,'Times New Roman',serif;font-style:italic;font-size:17px;line-height:1.5;color:#C9B79C">Thời trang tối giản cho cuộc sống hiện đại.</p>
+<p style="margin:26px 0 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:500;font-size:11px;line-height:1.4;letter-spacing:0.16em;text-transform:uppercase;color:#E9E4DA"><a href="{{url_shop}}" style="color:#E9E4DA;text-decoration:none">Sản phẩm</a> &nbsp;&middot;&nbsp; <a href="{{url_shop}}" style="color:#E9E4DA;text-decoration:none">Đơn hàng của tôi</a> &nbsp;&middot;&nbsp; <a href="{{url_shop}}" style="color:#E9E4DA;text-decoration:none">Hỗ trợ</a></p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:30px"><tr><td height="1" style="height:1px;font-size:0;line-height:0;background:#3A3532">&nbsp;</td></tr></table>
+<p style="margin:26px 0 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:400;font-size:12px;line-height:1.8;color:#A8A196">Email này được gửi tự động vì bạn vừa thanh toán đơn hàng tại MONO STUDIO.</p>
+<p style="margin:10px 0 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:400;font-size:12px;line-height:1.8;color:#A8A196">{{dia_chi_cong_ty}}</p>
+<p style="margin:10px 0 0;font-family:'Be Vietnam Pro','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:400;font-size:12px;line-height:1.8;color:#A8A196">Bản quyền &copy; 2026 MONO STUDIO.</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>

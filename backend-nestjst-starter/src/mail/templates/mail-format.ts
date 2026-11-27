@@ -19,3 +19,11 @@ export function formatVnDate(date: Date): string {
   const mm = String(shifted.getUTCMonth() + 1).padStart(2, '0');
   return `${dd}/${mm}/${shifted.getUTCFullYear()}`;
 }
+
+// dd/MM/yyyy HH:mm theo giờ Việt Nam (24 giờ, bỏ giây). Ví dụ 2026-11-26T17:00:00Z => "27/11/2026 00:00".
+export function formatVnDateTime(date: Date): string {
+  const shifted = new Date(date.getTime() + VN_UTC_OFFSET_MS);
+  const hh = String(shifted.getUTCHours()).padStart(2, '0');
+  const mi = String(shifted.getUTCMinutes()).padStart(2, '0');
+  return `${formatVnDate(date)} ${hh}:${mi}`;
+}

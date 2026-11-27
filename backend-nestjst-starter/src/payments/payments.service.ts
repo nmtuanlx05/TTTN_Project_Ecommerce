@@ -17,6 +17,8 @@ import {
 } from '../orders/orders.constants';
 import { isPrismaCode, runWithRetry } from '../orders/orders.tx';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailQueueService } from '../queue/email-queue.service';
+import { safeErrorCode } from '../queue/safe-error-code';
 import type { AuthUser } from '../auth/auth.types';
 import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 import { QueryPaymentTransactionsDto } from './dto/query-payment-transactions.dto';
@@ -63,6 +65,13 @@ export type ConfirmResult =
     }
   | { result: 'DUPLICATE'; transactionId: number };
 
+// Kết quả NỘI BỘ của transaction: kết quả công khai (không đổi, trả ra webhook/admin) + đơn vừa được xác nhận.
+// confirmedOrder chỉ khác null khi transaction vừa chuyển đơn PENDING_PAYMENT → PENDING (PAID), kể cả thừa tiền.
+interface ConfirmOutcome {
+  outcome: ConfirmResult;
+  confirmedOrder: { id: number; code: string } | null;
+}
+
 interface LockedPaymentOrder {
   id: number;
   code: string;
@@ -92,6 +101,7 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly paymentConfig: PaymentConfigService,
     private readonly workflow: OrderWorkflowService,
+    private readonly emailQueue: EmailQueueService,
   ) {}
 
   // ===== Thông tin thanh toán cho khách =====
@@ -181,11 +191,18 @@ export class PaymentsService {
 
     const now = new Date();
     try {
-      return await runWithRetry(
+      const { outcome, confirmedOrder } = await runWithRetry(
         this.prisma,
         (tx) => this.confirmInTransaction(tx, input, now),
         { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
       );
+      // Transaction đã commit. Chỉ khi đơn VỪA chuyển sang đã thanh toán mới đặt job thư (DUPLICATE, NEEDS_REVIEW thì không).
+      // Đặt ở đây chứ không trong transaction vì runWithRetry chạy lại cả transaction khi gặp P2034.
+      // Không dựa vào paymentStatus: đơn COD hoàn tất cũng thành PAID nhưng không đi qua hàm này.
+      if (confirmedOrder) {
+        this.queuePaymentReceived(confirmedOrder.id, confirmedOrder.code);
+      }
+      return outcome;
     } catch (error) {
       // Hai webhook cùng id tới đồng thời: ràng buộc duy nhất ở DB chặn lần hai
       if (input.providerTxnId && isPrismaCode(error, 'P2002')) {
@@ -208,11 +225,29 @@ export class PaymentsService {
     });
   }
 
+  // Thư "Đã nhận thanh toán", kiểu "bắn rồi quên" như thư xác nhận đơn: lỗi hàng đợi (đồng bộ hay reject) chỉ ghi log orderId
+  // + mã lỗi đã lọc, KHÔNG làm hỏng webhook hay thao tác của admin. Không log mã đơn, email, nội dung chuyển khoản.
+  private queuePaymentReceived(orderId: number, code: string) {
+    try {
+      void this.emailQueue
+        .addPaymentReceived(orderId, code)
+        .catch((error: unknown) => this.logPaymentMailFailure(orderId, error));
+    } catch (error) {
+      this.logPaymentMailFailure(orderId, error);
+    }
+  }
+
+  private logPaymentMailFailure(orderId: number, error: unknown) {
+    this.logger.warn(
+      `Không đặt được job thư đã nhận thanh toán cho orderId=${orderId} (code=${safeErrorCode(error)}); thanh toán vẫn được xác nhận`,
+    );
+  }
+
   private async confirmInTransaction(
     tx: Prisma.TransactionClient,
     input: ConfirmBankTransferInput,
     now: Date,
-  ): Promise<ConfirmResult> {
+  ): Promise<ConfirmOutcome> {
     const manual = input.source === PAYMENT_PROVIDER.MANUAL;
 
     // Xác định đơn: MANUAL theo id, còn lại theo mã đơn rút ra từ nội dung chuyển khoản gốc
@@ -254,10 +289,13 @@ export class PaymentsService {
         select: { id: true },
       });
       return {
-        result: 'NEEDS_REVIEW',
-        transactionId: row.id,
-        orderCode: null,
-        reviewReason: PaymentReviewReason.UNMATCHED,
+        outcome: {
+          result: 'NEEDS_REVIEW',
+          transactionId: row.id,
+          orderCode: null,
+          reviewReason: PaymentReviewReason.UNMATCHED,
+        },
+        confirmedOrder: null,
       };
     }
 
@@ -300,10 +338,13 @@ export class PaymentsService {
         select: { id: true },
       });
       return {
-        result: 'NEEDS_REVIEW',
-        transactionId: row.id,
-        orderCode: order.code,
-        reviewReason,
+        outcome: {
+          result: 'NEEDS_REVIEW',
+          transactionId: row.id,
+          orderCode: order.code,
+          reviewReason,
+        },
+        confirmedOrder: null,
       };
     }
 
@@ -334,10 +375,13 @@ export class PaymentsService {
       paymentRef,
     });
     return {
-      result: 'CONFIRMED',
-      transactionId: row.id,
-      orderCode: order.code,
-      overpaid: reviewReason === PaymentReviewReason.OVERPAID,
+      outcome: {
+        result: 'CONFIRMED',
+        transactionId: row.id,
+        orderCode: order.code,
+        overpaid: reviewReason === PaymentReviewReason.OVERPAID,
+      },
+      confirmedOrder: { id: order.id, code: order.code },
     };
   }
 
