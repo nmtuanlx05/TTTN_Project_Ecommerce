@@ -1,5 +1,11 @@
 import type { PrismaClient } from '../../../src/generated/prisma/client';
-import { DiscountType, Role } from '../../../src/generated/prisma/enums';
+import {
+  DiscountType,
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
+  Role,
+} from '../../../src/generated/prisma/enums';
 
 // Dựng dữ liệu bằng PrismaClient THẬT. Mỗi bản ghi có hậu tố ngẫu nhiên (email, slug, sku, code là UNIQUE)
 // nên các lần gọi không đụng nhau.
@@ -149,6 +155,66 @@ export async function createVoucher(
       // Đang hiệu lực: bắt đầu từ hôm qua, hết hạn ngày mai
       startsAt: overrides.startsAt ?? new Date(Date.now() - day),
       expiresAt: overrides.expiresAt ?? new Date(Date.now() + day),
+    },
+  });
+}
+
+// Đơn ONLINE đang chờ chuyển khoản, ghi THẲNG bằng Prisma: test:db không cấu hình VIETQR_* nên không đặt được đơn ONLINE
+// qua HTTP (xác nhận thanh toán không kiểm cấu hình ONLINE). Dữ liệu nhất quán như đơn thật: một dòng hàng, biến thể đã
+// giữ chỗ đúng số lượng, dòng lịch sử đầu tiên, hạn thanh toán 30 phút sau, mã đơn chỉ gồm chữ/số/"-" (dùng làm jobId).
+export async function createOnlineOrder(
+  prisma: PrismaClient,
+  options: { quantity?: number; price?: number } = {},
+) {
+  const quantity = options.quantity ?? 1;
+  const price = options.price ?? 200_000;
+  const { product, variant } = await createSellableVariant(prisma, {
+    price,
+    stock: 10,
+    reserved: quantity,
+  });
+  const buyer = await createUser(prisma);
+  const subtotal = price * quantity;
+  const shippingFee = 30_000;
+  return prisma.order.create({
+    data: {
+      code: `MS-DB-${uniq().toUpperCase()}`,
+      userId: buyer.id,
+      customerName: 'Người Nhận Test',
+      customerPhone: '0912345678',
+      customerEmail: buyer.email,
+      shippingAddress:
+        '12 Lê Lợi, Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh',
+      provinceName: 'Thành phố Hồ Chí Minh',
+      districtName: 'Quận 1',
+      wardName: 'Phường Bến Nghé',
+      addressLine: '12 Lê Lợi',
+      subtotal,
+      shippingFee,
+      discountAmount: 0,
+      totalAmount: subtotal + shippingFee,
+      paymentMethod: PaymentMethod.ONLINE,
+      paymentStatus: PaymentStatus.UNPAID,
+      status: OrderStatus.PENDING_PAYMENT,
+      paymentExpiresAt: new Date(Date.now() + 30 * 60_000),
+      items: {
+        create: {
+          variantId: variant.id,
+          productName: product.name,
+          sku: variant.sku,
+          size: variant.size,
+          color: variant.color,
+          quantity,
+          price,
+        },
+      },
+      statusHistories: {
+        create: {
+          fromStatus: null,
+          toStatus: OrderStatus.PENDING_PAYMENT,
+          actorId: buyer.id,
+        },
+      },
     },
   });
 }
