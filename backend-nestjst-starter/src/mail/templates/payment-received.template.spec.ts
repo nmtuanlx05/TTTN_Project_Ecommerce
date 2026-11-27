@@ -88,10 +88,15 @@ describe('renderPaymentReceived', () => {
       },
     );
 
-    it('nói đúng việc tiếp theo: chờ cửa hàng xác nhận (không hứa thời gian)', () => {
+    it('câu trung tính về việc tiếp theo (không khẳng định trạng thái đơn lúc đọc thư)', () => {
       const { html, text } = render();
-      expect(html).toContain('Đơn hàng đang chờ cửa hàng xác nhận.');
-      expect(text).toContain('Đơn hàng đang chờ cửa hàng xác nhận.');
+      const sentence =
+        'Bạn có thể theo dõi trạng thái đơn trong mục Đơn hàng của tôi.';
+      expect(html).toContain(sentence);
+      expect(text).toContain(sentence);
+      for (const body of [html, text]) {
+        expect(body).not.toContain('chờ cửa hàng xác nhận');
+      }
     });
   });
 
