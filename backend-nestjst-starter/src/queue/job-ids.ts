@@ -16,3 +16,9 @@ export function orderConfirmationJobId(code: string): string {
   assertOrderCode(code);
   return `order-confirmation-${code}`;
 }
+
+// "payment-received-<mã đơn>", ví dụ payment-received-MS-261126-AB12
+export function paymentReceivedJobId(code: string): string {
+  assertOrderCode(code);
+  return `payment-received-${code}`;
+}

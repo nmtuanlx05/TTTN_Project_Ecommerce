@@ -10,7 +10,7 @@ import {
   type OrderMailJobData,
   type WelcomeJobData,
 } from './queue.constants';
-import { orderConfirmationJobId } from './job-ids';
+import { orderConfirmationJobId, paymentReceivedJobId } from './job-ids';
 import { readQueueConfig } from './queue.config';
 import { ThrottledErrorLogger } from './throttled-error-logger';
 
@@ -98,6 +98,19 @@ export class EmailQueueService implements OnModuleInit {
     const data: OrderMailJobData = { orderId };
     const job = await this.queue.add(EMAIL_JOB.ORDER_CONFIRMATION, data, {
       jobId: orderConfirmationJobId(code),
+    });
+    return job.id;
+  }
+
+  // Thư "Đã nhận thanh toán". Giống addOrderConfirmation: data CHỈ orderId, jobId cố định "payment-received-<mã đơn>".
+  // Nơi gọi (PaymentsService) chỉ gọi khi xác nhận chuyển khoản vừa thật sự chuyển đơn sang đã thanh toán, sau commit.
+  async addPaymentReceived(
+    orderId: number,
+    code: string,
+  ): Promise<string | undefined> {
+    const data: OrderMailJobData = { orderId };
+    const job = await this.queue.add(EMAIL_JOB.PAYMENT_RECEIVED, data, {
+      jobId: paymentReceivedJobId(code),
     });
     return job.id;
   }

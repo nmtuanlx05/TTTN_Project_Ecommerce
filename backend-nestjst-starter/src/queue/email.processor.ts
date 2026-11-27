@@ -12,6 +12,7 @@ import {
   type OrderConfirmationPayment,
   renderOrderConfirmation,
 } from '../mail/templates/order-confirmation.template';
+import { renderPaymentReceived } from '../mail/templates/payment-received.template';
 import { renderWelcome } from '../mail/templates/welcome.template';
 import {
   OrderStatus,
@@ -62,11 +63,38 @@ const orderMailSelect = {
   },
 } as const;
 
+// Trường đơn mà thư "Đã nhận thanh toán" được phép đọc: không cần địa chỉ (kể cả rút gọn), không đọc SĐT, số nhà, ghi chú.
+// Dòng hàng không có ảnh (thư này không hiển thị ảnh).
+const paymentMailSelect = {
+  code: true,
+  status: true,
+  paymentMethod: true,
+  paymentStatus: true,
+  paidAt: true,
+  customerEmail: true,
+  customerName: true,
+  subtotal: true,
+  discountAmount: true,
+  voucherCode: true,
+  shippingFee: true,
+  totalAmount: true,
+  items: {
+    select: {
+      productName: true,
+      size: true,
+      color: true,
+      quantity: true,
+      price: true,
+    },
+    orderBy: { id: 'asc' },
+  },
+} as const;
+
 const isPositiveInt = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value > 0;
 
-// WORKER: nhận job từ hàng đợi email và xử lý. Biết job "ping" (thử nghiệm), "welcome" (mail chào mừng) và
-// "order-confirmation" (thư "Đã nhận đơn hàng").
+// WORKER: nhận job từ hàng đợi email và xử lý. Biết job "ping" (thử nghiệm), "welcome" (mail chào mừng),
+// "order-confirmation" (thư "Đã nhận đơn hàng") và "payment-received" (thư "Đã nhận thanh toán").
 // Chỉ được nạp khi QUEUE_WORKER_ENABLED khác 'false' (xem QueueWorkerModule).
 @Processor(EMAIL_QUEUE)
 export class EmailProcessor extends WorkerHost {
@@ -90,6 +118,8 @@ export class EmailProcessor extends WorkerHost {
         return this.handleWelcome(job.data);
       case EMAIL_JOB.ORDER_CONFIRMATION:
         return this.handleOrderConfirmation(job.data);
+      case EMAIL_JOB.PAYMENT_RECEIVED:
+        return this.handlePaymentReceived(job.data);
       case EMAIL_JOB.PING:
         this.logger.log(
           `Nhận job ping id=${job.id}: hàng đợi hoạt động bình thường`,
@@ -248,6 +278,72 @@ export class EmailProcessor extends WorkerHost {
 
     this.logger.log(`Đã gửi thư xác nhận đơn orderId=${orderId}`);
     return { sent: true, payment: payment.kind };
+  }
+
+  // Thư "Đã nhận thanh toán" (đơn ONLINE vừa được xác nhận chuyển khoản). Đọc lại đơn từ DB; kết quả job và log chỉ có
+  // orderId và lý do bỏ qua, KHÔNG email, tên.
+  // - dữ liệu job sai, đơn không còn, không có email/dòng hàng, không phải đơn ONLINE đã PAID, đơn đã hủy, thiếu paidAt:
+  //   return { skipped } (không throw)
+  // - lỗi DB, FRONTEND_URL sai hoặc lỗi gửi mail: THROW để BullMQ thử lại
+  private async handlePaymentReceived(data: unknown) {
+    const orderId = (data as Partial<OrderMailJobData> | null | undefined)
+      ?.orderId;
+    if (!isPositiveInt(orderId)) {
+      this.logger.warn('Job payment-received có dữ liệu không hợp lệ, bỏ qua');
+      return { skipped: 'INVALID_DATA' };
+    }
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: paymentMailSelect,
+    });
+    const skip = (reason: string) => {
+      this.logger.log(
+        `Bỏ qua thư đã nhận thanh toán orderId=${orderId}: ${reason}`,
+      );
+      return { skipped: reason };
+    };
+    if (!order) return skip('ORDER_NOT_FOUND');
+    const to = order.customerEmail?.trim();
+    if (!to) return skip('NO_EMAIL');
+    if (order.items.length === 0) {
+      this.logger.warn(`Đơn orderId=${orderId} không có dòng hàng`);
+      return skip('NO_ITEMS');
+    }
+    // Thư này chỉ cho chuyển khoản: đơn COD hoàn tất cũng thành PAID nhưng không bao giờ có thư này
+    if (
+      order.paymentMethod !== PaymentMethod.ONLINE ||
+      order.paymentStatus !== PaymentStatus.PAID
+    ) {
+      return skip('NOT_PAID');
+    }
+    // Admin đã hủy đơn đã trả (hoàn tiền ngoài hệ thống): thanh tiến độ và câu "theo dõi đơn" trong thư sẽ gây hiểu lầm
+    if (order.status === OrderStatus.CANCELLED) return skip('ORDER_CANCELLED');
+    // paidAt luôn được ghi khi chuyển PENDING_PAYMENT → PENDING (order-workflow.service.ts); null là dữ liệu hỏng
+    if (!order.paidAt) {
+      this.logger.warn(`Đơn đã thanh toán orderId=${orderId} thiếu paidAt`);
+      return skip('NO_PAID_AT');
+    }
+
+    const mail = renderPaymentReceived({
+      code: order.code,
+      customerName: order.customerName,
+      items: order.items,
+      subtotal: order.subtotal,
+      discountAmount: order.discountAmount,
+      voucherCode: order.voucherCode,
+      shippingFee: order.shippingFee,
+      // Tổng tiền ĐÃ LƯU của đơn, không phải số tiền khách chuyển (thừa tiền thì Admin xử lý ngoài hệ thống)
+      totalAmount: order.totalAmount,
+      paidAt: order.paidAt,
+      frontendUrl: parseFrontendUrl(this.config.get<string>('FRONTEND_URL')),
+      freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
+    });
+
+    await this.mail.send({ to, ...mail });
+
+    this.logger.log(`Đã gửi thư đã nhận thanh toán orderId=${orderId}`);
+    return { sent: true };
   }
 
   // Worker có kết nối Redis riêng; không có listener thì BullMQ in thẳng mọi lỗi ra console khi Redis mất

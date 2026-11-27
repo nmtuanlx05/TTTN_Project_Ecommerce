@@ -6,13 +6,18 @@ import { EmailQueueService } from '../../src/queue/email-queue.service';
 export type RecordedJob =
   | { type: 'ping'; data?: undefined }
   | { type: 'welcome'; data: { userId: number } }
-  | { type: 'order-confirmation'; data: { orderId: number } };
+  | { type: 'order-confirmation'; data: { orderId: number } }
+  | { type: 'payment-received'; data: { orderId: number } };
 
 // `implements Pick<...>`: bản thật đổi/xóa/thêm hàm công khai mà bản giả không theo thì TypeScript báo lỗi biên dịch ngay
 // (ESLint/build/ts-jest), thay vì để test xanh giả với một bản giả đã lệch.
 export class FakeEmailQueueService implements Pick<
   EmailQueueService,
-  'checkConnection' | 'addPing' | 'addWelcome' | 'addOrderConfirmation'
+  | 'checkConnection'
+  | 'addPing'
+  | 'addWelcome'
+  | 'addOrderConfirmation'
+  | 'addPaymentReceived'
 > {
   readonly jobs: RecordedJob[] = [];
 
@@ -34,6 +39,12 @@ export class FakeEmailQueueService implements Pick<
   // Bỏ tham số thứ hai vẫn khớp kiểu Pick<EmailQueueService, ...> (TypeScript cho phép hàm nhận ít tham số hơn).
   addOrderConfirmation(orderId: number) {
     this.jobs.push({ type: 'order-confirmation', data: { orderId } });
+    return Promise.resolve(undefined);
+  }
+
+  // Như addOrderConfirmation: chỉ ghi lại orderId, mã đơn chỉ dùng làm jobId ở bản thật
+  addPaymentReceived(orderId: number) {
+    this.jobs.push({ type: 'payment-received', data: { orderId } });
     return Promise.resolve(undefined);
   }
 }

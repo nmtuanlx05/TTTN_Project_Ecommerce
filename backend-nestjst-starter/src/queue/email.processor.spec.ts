@@ -606,3 +606,213 @@ describe('EmailProcessor: job order-confirmation', () => {
     });
   });
 });
+
+describe('EmailProcessor: job payment-received', () => {
+  const PAID_AT = new Date('2026-11-27T07:45:00Z'); // 27/11/2026 14:45 giờ VN
+  const paidOrder = (overrides: Record<string, unknown> = {}) =>
+    orderRow({
+      status: 'PENDING',
+      paymentMethod: 'ONLINE',
+      paymentStatus: 'PAID',
+      paidAt: PAID_AT,
+      ...overrides,
+    });
+  // Không truyền data => { orderId: 15 }; truyền undefined thật sự => data undefined
+  const run = (ctx: ReturnType<typeof setup>, ...data: unknown[]) =>
+    ctx.run('payment-received', data.length > 0 ? data[0] : { orderId: 15 });
+  const ready = (overrides: Record<string, unknown> = {}) => {
+    const ctx = setup();
+    ctx.prisma.order.findUnique.mockResolvedValue(paidOrder(overrides));
+    return ctx;
+  };
+
+  beforeEach(() => {
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  describe('bỏ qua (không throw, không gửi)', () => {
+    it.each([
+      [undefined],
+      [null],
+      [{}],
+      [{ orderId: '15' }],
+      [{ orderId: 0 }],
+      [{ orderId: 2.5 }],
+    ])('data sai (%p) => INVALID_DATA', async (data) => {
+      const ctx = ready();
+      await expect(run(ctx, data)).resolves.toEqual({
+        skipped: 'INVALID_DATA',
+      });
+      expect(ctx.prisma.order.findUnique).not.toHaveBeenCalled();
+      expect(ctx.mail.send).not.toHaveBeenCalled();
+    });
+
+    it('không có đơn => ORDER_NOT_FOUND', async () => {
+      const ctx = setup();
+      ctx.prisma.order.findUnique.mockResolvedValue(null);
+      await expect(run(ctx)).resolves.toEqual({ skipped: 'ORDER_NOT_FOUND' });
+      expect(ctx.mail.send).not.toHaveBeenCalled();
+    });
+
+    it.each([[null], [''], ['  ']])(
+      'customerEmail rỗng (%p) => NO_EMAIL',
+      async (customerEmail) => {
+        const ctx = ready({ customerEmail });
+        await expect(run(ctx)).resolves.toEqual({ skipped: 'NO_EMAIL' });
+        expect(ctx.mail.send).not.toHaveBeenCalled();
+      },
+    );
+
+    it('không có dòng hàng => NO_ITEMS', async () => {
+      const ctx = ready({ items: [] });
+      await expect(run(ctx)).resolves.toEqual({ skipped: 'NO_ITEMS' });
+      expect(ctx.mail.send).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['đơn COD (kể cả đã PAID khi hoàn tất)', { paymentMethod: 'COD' }],
+      ['ONLINE chưa trả', { paymentStatus: 'UNPAID', paidAt: null }],
+    ])('%s => NOT_PAID', async (_label, overrides) => {
+      const ctx = ready(overrides);
+      await expect(run(ctx)).resolves.toEqual({ skipped: 'NOT_PAID' });
+      expect(ctx.mail.send).not.toHaveBeenCalled();
+    });
+
+    it('đơn đã trả rồi bị Admin hủy lúc worker chạy => ORDER_CANCELLED', async () => {
+      const ctx = ready({ status: 'CANCELLED' });
+      await expect(run(ctx)).resolves.toEqual({ skipped: 'ORDER_CANCELLED' });
+      expect(ctx.mail.send).not.toHaveBeenCalled();
+    });
+
+    it('đã PAID mà thiếu paidAt (dữ liệu hỏng) => NO_PAID_AT', async () => {
+      const ctx = ready({ paidAt: null });
+      await expect(run(ctx)).resolves.toEqual({ skipped: 'NO_PAID_AT' });
+      expect(ctx.mail.send).not.toHaveBeenCalled();
+    });
+  });
+
+  it('chỉ đọc đúng các trường cần, KHÔNG đọc SĐT, số nhà, ghi chú, địa chỉ', async () => {
+    const ctx = ready();
+    await run(ctx);
+    const args = ctx.prisma.order.findUnique.mock.calls[0][0] as {
+      where: unknown;
+      select: Record<string, unknown>;
+    };
+    expect(args.where).toEqual({ id: 15 });
+    expect(Object.keys(args.select).sort()).toEqual(
+      [
+        'code',
+        'customerEmail',
+        'customerName',
+        'discountAmount',
+        'items',
+        'paidAt',
+        'paymentMethod',
+        'paymentStatus',
+        'shippingFee',
+        'status',
+        'subtotal',
+        'totalAmount',
+        'voucherCode',
+      ].sort(),
+    );
+    for (const field of [
+      'customerPhone',
+      'addressLine',
+      'note',
+      'shippingAddress',
+      'wardName',
+      'districtName',
+      'provinceName',
+    ]) {
+      expect(args.select).not.toHaveProperty(field);
+    }
+    expect(args.select.items).toEqual({
+      select: {
+        productName: true,
+        size: true,
+        color: true,
+        quantity: true,
+        price: true,
+      },
+      orderBy: { id: 'asc' },
+    });
+  });
+
+  describe('gửi thư', () => {
+    it('gửi tới customerEmail của ĐƠN; số tiền = totalAmount đã lưu; thời gian = paidAt (giờ VN)', async () => {
+      const ctx = ready({ totalAmount: 630_000 });
+      await expect(run(ctx)).resolves.toEqual({ sent: true });
+
+      expect(ctx.mail.send).toHaveBeenCalledTimes(1);
+      const sent = ctx.mail.send.mock.calls[0][0];
+      expect(sent.to).toBe('nguoi.nhan@example.com');
+      expect(sent.subject).toBe(
+        'MONO STUDIO · Đã nhận thanh toán cho đơn hàng #MS-261127-AB12',
+      );
+      expect(sent.text).toContain('Số tiền đã thanh toán: 630.000₫');
+      expect(sent.text).toContain('Thời gian: 27/11/2026 14:45');
+      expect(sent.text).toContain('Cảm ơn Trần Thị B!');
+      expect(sent.text).toContain(
+        'Bạn có thể theo dõi trạng thái đơn trong mục Đơn hàng của tôi.',
+      );
+    });
+
+    it('đơn đã được xác nhận/giao khi worker chạy (vẫn PAID) => vẫn gửi', async () => {
+      const ctx = ready({ status: 'SHIPPING' });
+      await expect(run(ctx)).resolves.toEqual({ sent: true });
+    });
+
+    it('link dùng FRONTEND_URL', async () => {
+      const ctx = setup({ FRONTEND_URL: 'https://shop.example.com/' });
+      ctx.prisma.order.findUnique.mockResolvedValue(paidOrder());
+      await run(ctx);
+      expect(ctx.mail.send.mock.calls[0][0].html).toContain(
+        'href="https://shop.example.com/tai-khoan/don-hang/MS-261127-AB12"',
+      );
+    });
+
+    it('FRONTEND_URL thiếu => throw, không gửi', async () => {
+      const ctx = setup({});
+      ctx.prisma.order.findUnique.mockResolvedValue(paidOrder());
+      await expect(run(ctx)).rejects.toThrow(/FRONTEND_URL/);
+      expect(ctx.mail.send).not.toHaveBeenCalled();
+    });
+
+    it('gửi lỗi => throw (để BullMQ thử lại)', async () => {
+      const ctx = ready();
+      ctx.mail.send.mockRejectedValue(new Error('Không gửi được email.'));
+      await expect(run(ctx)).rejects.toThrow('Không gửi được email.');
+    });
+
+    it('lỗi DB khi đọc đơn => throw, không gửi', async () => {
+      const ctx = setup();
+      ctx.prisma.order.findUnique.mockRejectedValue(new Error('db down'));
+      await expect(run(ctx)).rejects.toThrow('db down');
+      expect(ctx.mail.send).not.toHaveBeenCalled();
+    });
+
+    it('kết quả job và log KHÔNG chứa email, tên', async () => {
+      const logged: string[] = [];
+      jest.restoreAllMocks();
+      for (const level of ['log', 'warn'] as const) {
+        jest
+          .spyOn(Logger.prototype, level)
+          .mockImplementation((...args: unknown[]) => {
+            logged.push(args.map(String).join(' '));
+          });
+      }
+      const ctx = ready();
+      const results = [await run(ctx)];
+      ctx.prisma.order.findUnique.mockResolvedValue(paidOrder({ items: [] }));
+      results.push(await run(ctx));
+      const text = JSON.stringify(results) + logged.join('\n');
+      for (const secret of ['nguoi.nhan@example.com', 'Trần Thị B']) {
+        expect(text).not.toContain(secret);
+      }
+      expect(logged.join('\n')).toContain('orderId=15');
+    });
+  });
+});

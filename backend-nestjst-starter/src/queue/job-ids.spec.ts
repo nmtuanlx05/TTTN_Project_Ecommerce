@@ -1,6 +1,6 @@
 import { Job } from 'bullmq';
 import { generateOrderCode } from '../orders/order-code';
-import { orderConfirmationJobId } from './job-ids';
+import { orderConfirmationJobId, paymentReceivedJobId } from './job-ids';
 
 // Queue giả TỐI THIỂU để dựng Job của BullMQ mà không cần Redis: constructor chỉ cần toKey (và qualifiedName).
 // validateOptions là ĐÚNG hàm BullMQ gọi trước khi ghi job vào Redis (Job.addJob), nên test này dùng quy tắc thật,
@@ -59,6 +59,34 @@ describe('orderConfirmationJobId', () => {
     'mã đơn lạ (%p) => ném lỗi, không đặt job với id sai',
     (code) => {
       expect(() => orderConfirmationJobId(code)).toThrow();
+    },
+  );
+});
+
+describe('paymentReceivedJobId', () => {
+  it('đúng tiền tố và mã đơn, nối bằng "-"', () => {
+    expect(paymentReceivedJobId('MS-261126-AB12')).toBe(
+      'payment-received-MS-261126-AB12',
+    );
+  });
+
+  it('mã đơn thật: không ":", không phải số nguyên, khác "0", BullMQ chấp nhận; khác jobId thư xác nhận đơn', () => {
+    for (let i = 0; i < 50; i++) {
+      const code = generateOrderCode(new Date());
+      const id = paymentReceivedJobId(code);
+      expect(id).toMatch(/^payment-received-/);
+      expect(id).not.toContain(':');
+      expect(`${parseInt(id, 10)}`).not.toBe(id);
+      expect(id).not.toBe('0');
+      expect(bullmqAccepts(id)).toBeNull();
+      expect(id).not.toBe(orderConfirmationJobId(code));
+    }
+  });
+
+  it.each([['MS-1:2'], [''], ['MS 1'], ['MS/1']])(
+    'mã đơn lạ (%p) => ném lỗi',
+    (code) => {
+      expect(() => paymentReceivedJobId(code)).toThrow();
     },
   );
 });
