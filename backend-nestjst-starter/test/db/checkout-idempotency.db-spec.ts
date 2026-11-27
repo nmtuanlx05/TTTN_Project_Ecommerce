@@ -32,7 +32,12 @@ describe('Checkout đồng thời: Idempotency-Key (MySQL thật)', () => {
 
   beforeEach(async () => {
     await resetDatabase(prisma);
+    testApp.emailQueue.jobs.length = 0;
   });
+
+  // Job thư "Đã nhận đơn hàng" đã được đặt (bỏ các loại job khác)
+  const orderMailJobs = () =>
+    testApp.emailQueue.jobs.filter((job) => job.type === 'order-confirmation');
 
   it.each([1, 2, 3])(
     'vòng %i: cùng khách, cùng key, 10 request đồng thời → đúng 1 đơn, mọi phản hồi cùng một mã đơn',
@@ -74,6 +79,10 @@ describe('Checkout đồng thời: Idempotency-Key (MySQL thật)', () => {
       });
       expect(freshVoucher.usedCount).toBe(1);
       expect(await prisma.cartItem.count()).toBe(0);
+      // Thư xác nhận: đúng MỘT job cho đơn đó dù 10 request cùng key
+      expect(orderMailJobs()).toEqual([
+        { type: 'order-confirmation', data: { orderId: order.id } },
+      ]);
     },
   );
 
@@ -93,6 +102,10 @@ describe('Checkout đồng thời: Idempotency-Key (MySQL thật)', () => {
 
     expect(tally(results)).toEqual({ '201': 1, '409:CART_EMPTY': 5 });
     expect(await prisma.order.count()).toBe(1);
+    const order = await prisma.order.findFirstOrThrow();
+    expect(orderMailJobs()).toEqual([
+      { type: 'order-confirmation', data: { orderId: order.id } },
+    ]);
     const freshVariant = await prisma.productVariant.findUniqueOrThrow({
       where: { id: variant.id },
     });
@@ -111,6 +124,10 @@ describe('Checkout đồng thời: Idempotency-Key (MySQL thật)', () => {
 
     expect(tally(results)).toEqual({ '201': 1, '409:CART_EMPTY': 4 });
     expect(await prisma.order.count()).toBe(1);
+    const order = await prisma.order.findFirstOrThrow();
+    expect(orderMailJobs()).toEqual([
+      { type: 'order-confirmation', data: { orderId: order.id } },
+    ]);
   });
 
   it('gửi lại cùng key SAU khi đơn đã tạo (giỏ đã trống) → 201, cùng mã đơn, không giữ chỗ thêm', async () => {
@@ -121,6 +138,11 @@ describe('Checkout đồng thời: Idempotency-Key (MySQL thật)', () => {
     const idempotencyKey = 'idem-replay-after-success';
 
     const first = await postOrder(testApp, buyer.id, { idempotencyKey });
+    const order = await prisma.order.findFirstOrThrow();
+    expect(orderMailJobs()).toEqual([
+      { type: 'order-confirmation', data: { orderId: order.id } },
+    ]);
+
     const second = await postOrder(testApp, buyer.id, { idempotencyKey });
 
     expect(first.status).toBe(201);
@@ -131,6 +153,10 @@ describe('Checkout đồng thời: Idempotency-Key (MySQL thật)', () => {
       where: { id: variant.id },
     });
     expect(freshVariant.reserved).toBe(2);
+    // Gửi lại cùng key: KHÔNG có job thứ hai
+    expect(orderMailJobs()).toEqual([
+      { type: 'order-confirmation', data: { orderId: order.id } },
+    ]);
   });
 
   it('hai khách khác nhau dùng CÙNG một key đồng thời → cả hai đều có đơn riêng (key chỉ có nghĩa trong phạm vi từng khách)', async () => {
@@ -151,6 +177,15 @@ describe('Checkout đồng thời: Idempotency-Key (MySQL thật)', () => {
     expect(tally(results)).toEqual({ '201': 2 });
     expect(results[0].body.data?.code).not.toBe(results[1].body.data?.code);
     expect(await prisma.order.count()).toBe(2);
+    const orderIds = (await prisma.order.findMany({ select: { id: true } }))
+      .map((o) => o.id)
+      .sort((a, b) => a - b);
+    expect(
+      orderMailJobs()
+        .map((job) => job.data.orderId)
+        .sort((a, b) => a - b),
+    ).toEqual(orderIds);
+    expect(orderMailJobs()).toHaveLength(2);
     const freshVariant = await prisma.productVariant.findUniqueOrThrow({
       where: { id: variant.id },
     });

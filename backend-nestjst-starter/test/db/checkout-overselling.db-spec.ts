@@ -40,7 +40,25 @@ describe('Checkout đồng thời: chống bán vượt tồn (MySQL thật)', (
 
   beforeEach(async () => {
     await resetDatabase(prisma);
+    testApp.emailQueue.jobs.length = 0;
   });
+
+  // Thư "Đã nhận đơn hàng": số job = số phản hồi 201, và tập orderId của job = id trong phản hồi 201 = id các đơn trong DB.
+  // Đơn bị từ chối (409) không có job.
+  async function expectOneMailJobPerCreatedOrder(results: HttpResult[]) {
+    const sortIds = (ids: number[]) => [...ids].sort((a, b) => a - b);
+    const jobs = testApp.emailQueue.jobs.filter(
+      (job) => job.type === 'order-confirmation',
+    );
+    const created = results.filter((r) => r.status === 201);
+    expect(jobs).toHaveLength(created.length);
+    const jobIds = sortIds(jobs.map((job) => job.data.orderId));
+    expect(jobIds).toEqual(sortIds(created.map((r) => r.body.data!.id!)));
+    const dbIds = (await prisma.order.findMany({ select: { id: true } })).map(
+      (o) => o.id,
+    );
+    expect(jobIds).toEqual(sortIds(dbIds));
+  }
 
   // Tồn kho phải nhất quán: stock không đổi (chỉ đổi khi giao hàng), reserved = tổng số lượng của các đơn chưa hủy,
   // và reserved <= stock.
@@ -103,6 +121,8 @@ describe('Checkout đồng thời: chống bán vượt tồn (MySQL thật)', (
     await expectInventoryConsistent(variant.id, 5, 2);
     expect(await prisma.order.count()).toBe(1);
     expect(await prisma.cartItem.count()).toBe(0);
+    await expectOneMailJobPerCreatedOrder([result]);
+    expect(testApp.emailQueue.jobs).toHaveLength(1);
   });
 
   it.each([1, 2, 3])(
@@ -126,6 +146,8 @@ describe('Checkout đồng thời: chống bán vượt tồn (MySQL thật)', (
       // Giữ/nhả reserved không ghi StockMovement (chỉ đổi stock mới ghi)
       expect(await prisma.stockMovement.count()).toBe(0);
       await expectCartsUntouchedOnFailure(userIds, results, 1);
+      await expectOneMailJobPerCreatedOrder(results);
+      expect(testApp.emailQueue.jobs).toHaveLength(5);
     },
   );
 
@@ -144,6 +166,8 @@ describe('Checkout đồng thời: chống bán vượt tồn (MySQL thật)', (
     await expectInventoryConsistent(variant.id, 10, 10);
     expect(await prisma.order.count()).toBe(5);
     await expectCartsUntouchedOnFailure(userIds, results, 1);
+    await expectOneMailJobPerCreatedOrder(results);
+    expect(testApp.emailQueue.jobs).toHaveLength(5);
   });
 
   it('không giữ chỗ một phần: tồn 3, 6 khách mỗi người mua 2 → đúng 1 thành công, còn lại 1 cái không bị giữ', async () => {
@@ -160,6 +184,8 @@ describe('Checkout đồng thời: chống bán vượt tồn (MySQL thật)', (
     expect(tally(results)).toEqual({ '201': 1, [CONFLICT]: 5 });
     await expectInventoryConsistent(variant.id, 3, 2);
     await expectCartsUntouchedOnFailure(userIds, results, 1);
+    await expectOneMailJobPerCreatedOrder(results);
+    expect(testApp.emailQueue.jobs).toHaveLength(1);
   });
 
   // Thử deadlock: hai nhóm khách có giỏ chứa CÙNG hai biến thể A và B nhưng thứ tự dòng giỏ NGƯỢC nhau.
@@ -199,6 +225,8 @@ describe('Checkout đồng thời: chống bán vượt tồn (MySQL thật)', (
       expect(await prisma.order.count()).toBe(5);
       expect(await prisma.orderItem.count()).toBe(10);
       await expectCartsUntouchedOnFailure(userIds, results, 2);
+      await expectOneMailJobPerCreatedOrder(results);
+      expect(testApp.emailQueue.jobs).toHaveLength(5);
     },
   );
 });

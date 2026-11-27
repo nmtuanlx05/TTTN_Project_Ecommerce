@@ -5,6 +5,7 @@ import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../src/app.module';
 import { configureApp } from '../../../src/app.setup';
 import { MediaCleanupCron } from '../../../src/media/media-cleanup.cron';
+import { OrdersService } from '../../../src/orders/orders.service';
 import { PaymentExpiryCron } from '../../../src/payments/payment-expiry.cron';
 import { EmailQueueService } from '../../../src/queue/email-queue.service';
 import { QueueModule } from '../../../src/queue/queue.module';
@@ -24,6 +25,8 @@ export interface TestApp {
   app: INestApplication;
   baseUrl: string;
   tokenFor(userId: number, role?: TestRole): string;
+  // Hàng đợi email giả DÙNG CHUNG cho cả app: test đọc/làm rỗng `emailQueue.jobs`
+  emailQueue: FakeEmailQueueService;
   close(): Promise<void>;
 }
 
@@ -44,9 +47,21 @@ export async function startTestApp(): Promise<TestApp> {
     .compile();
 
   // Chốt chặn thường trực: override hỏng thì dừng ngay, không để test lặng lẽ nối Redis thật
-  if (!(moduleRef.get(EmailQueueService) instanceof FakeEmailQueueService)) {
+  const emailQueue = moduleRef.get(FakeEmailQueueService);
+  const provided: unknown = moduleRef.get(EmailQueueService);
+  if (provided !== emailQueue) {
     throw new Error(
       'EmailQueueService trong test:db phải là FakeEmailQueueService',
+    );
+  }
+  // OrdersService import QueueModule riêng: kiểm instance THẬT SỰ được inject vào nó chính là bản giả mà test đọc
+  // (đọc trường private theo tên; đổi tên trường thì chốt này báo lỗi chứ không lặng lẽ bỏ qua)
+  const injected = moduleRef.get<OrdersService, { emailQueue?: unknown }>(
+    OrdersService,
+  ).emailQueue;
+  if (injected !== emailQueue) {
+    throw new Error(
+      'OrdersService trong test:db phải dùng đúng FakeEmailQueueService của test',
     );
   }
 
@@ -60,6 +75,7 @@ export async function startTestApp(): Promise<TestApp> {
     app,
     baseUrl: `http://127.0.0.1:${port}`,
     tokenFor: createTokenSigner(app),
+    emailQueue,
     close: () => app.close(),
   };
 }
