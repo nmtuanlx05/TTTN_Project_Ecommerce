@@ -1,6 +1,12 @@
 # Gửi mail (SMTP): cấu hình và cách thử
 
-Có **hạ tầng gửi mail** (`MailService` dùng nodemailer, lệnh thử `npm run mail:test`) và **một mail nghiệp vụ**: mail chào mừng sau khi đăng ký, gửi qua hàng đợi `email` (xem `docs/queue-redis-setup.md`).
+Có **hạ tầng gửi mail** (`MailService` dùng nodemailer, lệnh thử `npm run mail:test`) và **ba mail nghiệp vụ**, đều gửi qua hàng đợi `email` (xem `docs/queue-redis-setup.md`):
+
+| Thư                              | Job                  | Khi nào đặt job                                                                   | Mục |
+| -------------------------------- | -------------------- | --------------------------------------------------------------------------------- | --- |
+| Chào mừng                        | `welcome`            | Sau khi `POST /auth/register` lưu user                                            | 6   |
+| Đã nhận đơn hàng (COD và ONLINE) | `order-confirmation` | Sau khi transaction đặt đơn **commit**, chỉ với đơn **vừa tạo**                   | 7   |
+| Đã nhận thanh toán (chỉ ONLINE)  | `payment-received`   | Sau khi xác nhận chuyển khoản **commit** và đơn **vừa** chuyển sang đã thanh toán | 8   |
 
 Cùng một code chạy với **Mailpit** (dev, thư không ra khỏi máy) và **Gmail SMTP** (demo thật) chỉ bằng đổi biến môi trường.
 
@@ -139,18 +145,112 @@ Chuẩn bị: `npm run db:up` (Redis, MySQL, Mailpit), `.env.development` có `M
 
 Xem job trong Redis: `docker exec -it ecommerce_redis redis-cli -a "$REDIS_PASSWORD" hgetall ecommerce:email:welcome-<userId>` (có `returnvalue` là đã xử lý).
 
-## 7. Hạn chế đã biết
+## 7. Thư "Đã nhận đơn hàng"
 
-- **`MONO10` là mã công khai dùng chung**, ai cũng dùng được nhiều lần tới khi hết lượt (hệ thống chưa có voucher riêng theo user, chưa có "đơn đầu tiên"); mã còn hiện ở `GET /vouchers/available` cho mọi khách.
-- **Không có hủy nhận email**: chưa có mail quảng cáo nên thư chào mừng không có liên kết hủy. Làm thật cần cột lưu đồng ý, endpoint công khai nhận token ký có hạn, và trang FE.
-- **Không xác minh email, không giới hạn tốc độ đăng ký** (`/auth/register`): ai cũng có thể làm hệ thống gửi thư tới một địa chỉ bất kỳ. Thư chào mừng không chứa liên kết kích hoạt hay mật khẩu để giảm tác hại.
-- **Có thể gửi trùng** khi job bị ném lại sau hơn 1 giờ (hàng đợi chỉ nhớ job đã xong 1 giờ, sau đó `jobId` cố định không còn chặn được), hoặc khi SMTP đã nhận thư nhưng lần gửi bị coi là lỗi (quá hạn trước khi nhận phản hồi) rồi thử lại.
-- **Không có sổ tra cứu** thư đã gửi: chỉ biết qua log và Redis (job xong giữ 1 giờ, job lỗi 7 ngày).
-- Mất job khi Redis chết đúng lúc đăng ký (lỗi chỉ ghi log): người dùng không nhận thư chào mừng.
-- Chưa giới hạn tốc độ gửi theo hạn mức của nhà cung cấp.
-- Đổi trả, hỗ trợ khách, địa chỉ cửa hàng không có trong thư vì hệ thống chưa làm thật (trang chính sách ở FE chưa có nội dung).
-- **`FRONTEND_URL` là `localhost`** thì link trong thư chỉ mở được trên máy dev.
-- **CORS đang gắn cứng `http://localhost:5173`** ([main.ts:14](../src/main.ts#L14)), chưa đọc `FRONTEND_URL`: đổi `FRONTEND_URL` sang địa chỉ khác thì phải sửa cả CORS.
-- Chưa kiểm chứng với Gmail thật và với các ứng dụng mail thật (hiển thị phông chữ, ảnh): xem mục 3.
+**Khi nào bắn**
 
-**Hướng phát triển:** bảng `email_logs` (loại thư, đối tượng, trạng thái, `messageId`, `UNIQUE(type, referenceId)`) để chống gửi trùng bền vững và tra cứu; hủy nhận email; voucher riêng theo user (cần cột `perUserLimit`/gắn user); giới hạn tốc độ đăng ký và xác minh email; trang chính sách ở FE.
+```
+POST /orders ─► runWithRetry(transaction đặt đơn) ─► commit
+                     │                                 │
+                     ├─ replay Idempotency-Key ────────┼─► created=false ─► KHÔNG đặt job
+                     └─ đơn mới ───────────────────────┴─► created=true  ─► addOrderConfirmation(id, mã)
+lưới an toàn P2002 (trả đơn đã có) ──────────────────────────────────────► KHÔNG đặt job
+```
+
+1. `OrdersService.create` ([orders.service.ts](../src/orders/orders.service.ts)): `createInTransaction` trả `{ order, created }`. Chỉ khi `created` mới gọi hook, và gọi **sau** `runWithRetry` (đặt trong transaction thì bị lặp khi P2034 làm chạy lại cả transaction).
+2. Hook kiểu "bắn rồi quên" như mail chào mừng: lỗi đồng bộ hay reject của hàng đợi chỉ ghi log `orderId` + mã lỗi đã lọc (`src/queue/safe-error-code.ts`), **không làm hỏng đặt hàng**. Không log email, tên, địa chỉ, SĐT.
+3. Job chỉ chứa `{ orderId }`; `jobId = order-confirmation-<mã đơn>` (`src/queue/job-ids.ts`, nối bằng `-` vì BullMQ cấm `:` và jobId dạng số nguyên).
+4. Worker đọc lại đơn và dòng hàng (snapshot `order_items`), **không đọc** `customerPhone`, `addressLine`, `note`, `shippingAddress`. Người nhận là `orders.customerEmail` (chụp lúc đặt), không đọc `User.email`. Thứ tự kiểm (bỏ qua = `{ skipped }`, không throw):
+   - `orderId` sai kiểu → `INVALID_DATA`; không có đơn → `ORDER_NOT_FOUND`; `customerEmail` rỗng → `NO_EMAIL`; không có dòng hàng → `NO_ITEMS`;
+   - đơn đã `CANCELLED` lúc worker chạy → `ORDER_CANCELLED`;
+   - ONLINE chưa trả: thiếu `paymentExpiresAt` (dữ liệu hỏng; đơn ONLINE luôn có hạn lúc tạo) → `NO_PAYMENT_DEADLINE`; đã quá hạn mà tác vụ hết hạn chưa kịp hủy → `PAYMENT_EXPIRED`.
+5. Khối thanh toán theo trạng thái **lúc gửi**: COD → "Thanh toán khi nhận hàng"; ONLINE chưa trả → khung vàng "Vui lòng chuyển khoản trước `dd/MM/yyyy HH:mm` (giờ VN). Quá hạn, đơn sẽ tự hủy." + nút "Thanh toán ngay" (`/thanh-toan-online/<mã>`); ONLINE đã trả → ghi chú "Đã thanh toán", không link, không hạn. Thư **không** có số tài khoản hay QR.
+6. Mọi số tiền là giá trị đã lưu trong đơn (không tính lại). Địa chỉ rút gọn: phường/xã, quận/huyện, tỉnh/thành có giá trị (không số nhà, không SĐT, không ghi chú). Ảnh sản phẩm lấy từ `order_items.imageUrl`, chỉ `https`; URL Cloudinary dạng `/image/upload/v<số>/` được chèn `f_jpg,q_auto,c_fill,w_168,h_210` (`src/mail/email-image-url.ts`); không có ảnh hợp lệ thì dòng chỉ có chữ.
+7. Lỗi DB, `FRONTEND_URL` sai hoặc lỗi gửi → **throw**, BullMQ thử lại. Kết quả job: `{ sent: true, payment: 'COD' | 'ONLINE_PENDING' | 'ONLINE_PAID' }`.
+
+Mẫu: `src/mail/templates/order-confirmation.template.ts`, thiết kế gốc `docs/mail-templates/order-confirmation.design.html` (không sửa). Phần dùng chung với thư thanh toán ở `order-mail-parts.ts`.
+
+## 8. Thư "Đã nhận thanh toán"
+
+**Khi nào bắn**
+
+```
+webhook SePay ──────────────┐
+                            ├─► confirmBankTransfer ─► runWithRetry(transaction) ─► commit
+admin confirm-payment ──────┘          │                        │
+                                       │                        ├─ CONFIRMED (đủ hoặc THỪA tiền) ─► addPaymentReceived(id, mã)
+                                       │                        └─ NEEDS_REVIEW (thiếu tiền, đã trả, đơn đóng, không khớp) ─► KHÔNG
+                                       └─ trùng (provider, providerTxnId) ─► DUPLICATE ─► KHÔNG
+```
+
+1. Cả hai cửa vào (webhook `POST /payments/webhook/sepay` và `POST /admin/orders/:id/confirm-payment`) đều gọi `PaymentsService.confirmBankTransfer` ([payments.service.ts](../src/payments/payments.service.ts)), nên chỉ có **một** điểm đặt job. `confirmInTransaction` trả kết quả nội bộ `{ outcome, confirmedOrder }`; `confirmedOrder` chỉ khác `null` khi transaction vừa chuyển đơn `PENDING_PAYMENT → PENDING` (PAID). Kết quả công khai `ConfirmResult` và phản hồi HTTP **không đổi**.
+2. Không dựa vào `paymentStatus`: đơn COD hoàn tất cũng thành `PAID` nhưng không đi qua hàm này, nên không bao giờ có thư này. Không hook trong `OrderWorkflowService.transition`.
+3. Hook "bắn rồi quên" như mục 7: lỗi hàng đợi không làm hỏng webhook (SePay vẫn nhận phản hồi thành công) hay thao tác của admin.
+4. Job chỉ chứa `{ orderId }`; `jobId = payment-received-<mã đơn>`.
+5. Worker: `INVALID_DATA` → `ORDER_NOT_FOUND` → `NO_EMAIL` → `NO_ITEMS` → không phải ONLINE hoặc chưa `PAID` (`NOT_PAID`) → đơn đã `CANCELLED` (`ORDER_CANCELLED`: Admin hủy đơn đã trả và hoàn tiền ngoài hệ thống; thanh tiến độ trong thư sẽ gây hiểu lầm) → thiếu `paidAt` (`NO_PAID_AT`: dữ liệu hỏng, vì `paidAt` luôn được ghi khi xác nhận). Đơn đã được Staff xác nhận/giao khi worker chạy (vẫn `PAID`) thì **vẫn gửi**.
+6. "Số tiền đã thanh toán" là `totalAmount` **đã lưu của đơn**, không phải số tiền khách chuyển. **Thừa tiền** vẫn có thư, thư không nhắc phần thừa; khoản thừa Admin xử lý ngoài hệ thống (giao dịch có `reviewReason = OVERPAID` ở `GET /admin/payments/transactions`). Thời gian lấy từ `orders.paidAt` (giờ VN). Câu tiếp theo trung tính: "Bạn có thể theo dõi trạng thái đơn trong mục Đơn hàng của tôi." (thư có thể đến sau khi đơn đã đổi trạng thái). Thư ghi rõ "không phải hóa đơn VAT".
+
+Mẫu: `src/mail/templates/payment-received.template.ts`, thiết kế gốc `docs/mail-templates/payment-confirmation.design.html` (không sửa).
+
+> **Trang Admin "giao dịch" chỉ liệt kê giao dịch cần xử lý** (`reviewReason` khác null). Một khoản chuyển đủ tiền, khớp đơn không bao giờ hiện ở đó; xem trạng thái đơn để biết đã thanh toán.
+
+## 9. Thí nghiệm tay cho thư đơn hàng (Mailpit hoặc Gmail)
+
+Chuẩn bị như mục 6 (`npm run db:up`, `npm run dev`). Gmail: đổi biến theo mục 3, thư tới hộp thư thật (có thể vào Spam). Đơn ONLINE cần cấu hình `VIETQR_*` (xem `docs/api/payments.md`).
+
+| Thí nghiệm                                                                                   | Kết quả mong đợi                                                                                                                 |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Đặt đơn COD                                                                                  | 201; một thư "MONO STUDIO · Đơn hàng #MS-… đã được ghi nhận", khối "Thanh toán khi nhận hàng", địa chỉ rút gọn, không SĐT/số nhà |
+| Đặt đơn ONLINE                                                                               | Thư có khung vàng, hạn thanh toán giờ VN (giờ đặt + 30 phút), nút "Thanh toán ngay"; không số tài khoản, không QR                |
+| `POST /orders` hai lần cùng header `Idempotency-Key`                                         | Cùng mã đơn, **chỉ một** thư xác nhận                                                                                            |
+| Xác nhận thanh toán đơn ONLINE (webhook qua ngrok, xem mục 10, hoặc Admin xác nhận thủ công) | Thư "MONO STUDIO · Đã nhận thanh toán cho đơn hàng #MS-…", số tiền = tổng đơn                                                    |
+| Gửi lại **cùng** webhook (cùng `id` giao dịch) hoặc Admin xác nhận lần hai                   | Webhook trả `DUPLICATE`; Admin nhận 409 `ORDER_NOT_AWAITING_PAYMENT`; **không** có thư thứ hai                                   |
+| Webhook thiếu tiền                                                                           | Giao dịch `NEEDS_REVIEW` (`UNDERPAID`), **không** có thư thanh toán                                                              |
+| Dừng Redis (`docker stop ecommerce_redis`) rồi đặt đơn / xác nhận thanh toán                 | Vẫn 201 / 200. Log cảnh báo `Không đặt được job thư … orderId=… (code=…)`. Không có thư                                          |
+| Dừng Mailpit rồi đặt đơn                                                                     | Vẫn 201. Worker thử lại 3 lần rồi job vào `failed`; bật lại Mailpit **không** tự gửi bù                                          |
+
+Xem job trong Redis: `hgetall ecommerce:email:order-confirmation-<mã đơn>` hoặc `ecommerce:email:payment-received-<mã đơn>` (lệnh `redis-cli` như mục 6); `returnvalue` không có email hay tên.
+
+## 10. Webhook SePay ở máy dev (ngrok)
+
+SePay gọi webhook từ Internet nên **không tới được `localhost`**. Không có đường hầm thì chuyển khoản thật không bao giờ làm đơn thành "đã thanh toán" (màn hình khách vẫn chờ) và trang giao dịch của Admin trống.
+
+1. Backend chạy (`npm run dev`, cổng 3000); `.env.development` có `SEPAY_WEBHOOK_API_KEY` (thiếu thì webhook trả 404).
+2. Terminal khác: `ngrok http 3000`. Lần đầu có thể cần `ngrok config add-authtoken <token>` (lấy ở dashboard ngrok). Chép URL `https://….ngrok-free.app` ở dòng `Forwarding`.
+3. Trên SePay: URL webhook `https://….ngrok-free.app/payments/webhook/sepay`, xác thực **API Key** đúng giá trị `SEPAY_WEBHOOK_API_KEY`, chỉ nhận tiền vào.
+4. Theo dõi request ở <http://127.0.0.1:4040>: 200 = thông; 404 = thiếu khóa ở backend; 401 = khóa trên SePay khác backend; không có request = URL trên SePay sai.
+5. URL ngrok bản miễn phí **đổi mỗi lần chạy lại**: dán lại vào SePay. Tắt ngrok (Ctrl+C) ngay khi thử xong vì đường hầm công khai cả backend.
+
+Không cần chuyển tiền thật: dùng script curl ở `docs/api/payments.md` ("Thử webhook ở máy"), thay `http://localhost:3000` bằng URL ngrok nếu muốn thử cả đường hầm.
+
+## 11. Hạn chế đã biết
+
+**Chung cho mọi thư qua hàng đợi**
+
+- **Mất việc khi Redis chết đúng lúc đặt job** (chưa có outbox): lỗi chỉ ghi log `userId`/`orderId` + mã lỗi; người dùng không nhận thư, không tự gửi bù.
+- **Có thể gửi trùng** khi SMTP đã nhận thư nhưng lần gửi bị coi là lỗi (quá hạn 30 giây trước khi có phản hồi) rồi BullMQ thử lại.
+- **`jobId` cố định chỉ chặn trùng trong thời gian job còn trong Redis**: khoảng **1 giờ** với job đã xong, **7 ngày** với job lỗi. Thư đơn hàng không phụ thuộc vào lớp này vì job chỉ được đặt **một lần** tại đúng nơi trạng thái đổi; `jobId` chỉ là lớp chặn phụ.
+- **Không có sổ tra cứu** thư đã gửi: chỉ biết qua log và Redis.
+- **Gửi lỗi vĩnh viễn** (địa chỉ sai) không phân biệt với lỗi tạm thời: vẫn thử 3 lần rồi `failed`; thư bị trả về (bounce) sau khi SMTP đã nhận thì hệ thống không biết.
+- **Không có hủy nhận email / đồng ý nhận mail** (chưa có mail quảng cáo). Làm thật cần cột lưu đồng ý, endpoint công khai nhận token ký có hạn và trang FE.
+- **Không xác minh email, không giới hạn tốc độ đăng ký** (`/auth/register`): ai cũng có thể làm hệ thống gửi thư tới một địa chỉ bất kỳ.
+- Chưa giới hạn tốc độ gửi theo hạn mức của nhà cung cấp SMTP.
+- **`FRONTEND_URL` là `localhost`** thì link trong thư chỉ mở được trên máy dev. **CORS đang gắn cứng `http://localhost:5173`** ([main.ts:14](../src/main.ts#L14)), chưa đọc `FRONTEND_URL`.
+- Chưa kiểm chứng với Gmail thật và các ứng dụng mail thật (phông chữ, ảnh, thư vào Spam): xem mục 3.
+
+**Riêng thư đơn hàng**
+
+- **Thư "Đã nhận thanh toán" có thể đến trước thư "Đã nhận đơn hàng"**, ví dụ khi thư xác nhận đơn đang chờ thử lại (5s, 10s) mà khách đã chuyển khoản; lúc đó thư xác nhận đơn hiện khối "Đã thanh toán".
+- **Thừa tiền**: thư thanh toán chỉ ghi tổng tiền đơn; phần thừa Admin xử lý ngoài hệ thống.
+- **Ảnh Cloudinary trong thư tạo thêm biến thể ảnh** `168x210` cho mỗi ảnh sản phẩm, tính vào hạn mức gói (chưa kiểm chứng giới hạn gói miễn phí, xem `docs/cloudinary-setup.md`). URL Cloudinary không có `v<số>/` được giữ nguyên (ảnh gốc, nặng hơn).
+- **Dữ liệu hành chính đang ở chuẩn cũ 3 cấp** (63 tỉnh/696 quận huyện, trước 01/07/2025); địa chỉ rút gọn bỏ qua cấp trống nên vẫn đúng khi sau này bỏ cấp huyện.
+- **Thành phần dùng chung giữa mẫu chào mừng và mẫu đơn hàng đang chép tay**: font, `<head>`/CSS, khung bảng, chân thư trong `order-mail-parts.ts` chép từ `welcome.template.ts` (có ghi chú "ĐỒNG BỘ TAY"). Sửa giao diện chung phải sửa cả hai nơi.
+- **Tác vụ hết hạn không hủy đơn ONLINE có `paymentExpiresAt = null`** (lọc `paymentExpiresAt <= now`): đơn như vậy treo ở `PENDING_PAYMENT`. Đơn ONLINE luôn được đặt hạn lúc tạo nên chỉ xảy ra khi dữ liệu bị sửa tay; worker bỏ qua thư với `NO_PAYMENT_DEADLINE`.
+- Thư không hứa ngày giao, mã vận đơn, đổi trả, hoàn tiền tự động hay hóa đơn vì hệ thống chưa làm những việc đó.
+
+**Riêng thư chào mừng**
+
+- **`MONO10` là mã công khai dùng chung**, ai cũng dùng được nhiều lần tới khi hết lượt; mã còn hiện ở `GET /vouchers/available`.
+- Đổi trả, hỗ trợ khách, địa chỉ cửa hàng không có trong thư vì hệ thống chưa làm thật.
+
+**Hướng phát triển:** bảng `email_logs` (loại thư, đối tượng, trạng thái, `messageId`, `UNIQUE(type, referenceId)`) để chống gửi trùng bền vững và tra cứu; hoặc **outbox** (ghi "việc cần gửi" trong cùng transaction với đơn/thanh toán, tiến trình riêng đẩy vào hàng đợi) để không mất thư khi Redis chết; hủy nhận email; voucher riêng theo user; giới hạn tốc độ đăng ký và xác minh email; tách phần dùng chung của các mẫu thư; trang chính sách ở FE.
