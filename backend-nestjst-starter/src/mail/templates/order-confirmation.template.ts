@@ -31,7 +31,7 @@ import {
   topBar,
 } from './order-mail-parts';
 
-// Thư "Đơn hàng đã được ghi nhận": hàm TypeScript thuần. Bản thiết kế gốc: docs/mail-templates/order-confirmation.html.
+// Thư "Đơn hàng đã được ghi nhận": hàm TypeScript thuần. Bản thiết kế gốc: docs/mail-templates/order-confirmation.design.html.
 // So với thiết kế: bỏ "Đổi trả trong 30 ngày", menu danh mục, "Xem trên trình duyệt", "Hỗ trợ", địa chỉ công ty, năm bản quyền,
 // "Dự kiến giao", câu hứa "email tiếp theo", câu mời trả lời email. "Giao hàng tới" chỉ tên + địa chỉ rút gọn (không SĐT,
 // số nhà, ghi chú). Mọi số tiền là giá trị đã lưu trong đơn. Mọi giá trị chèn vào HTML đều qua escapeHtml.

@@ -30,7 +30,7 @@ import {
 import type { RenderedOrderMail } from './order-confirmation.template';
 
 // Thư "Đã nhận thanh toán" (chỉ đơn ONLINE chuyển khoản QR). Hàm TypeScript thuần. Bản thiết kế gốc:
-// docs/mail-templates/payment-confirmation.html. So với thiết kế: bỏ "Đổi trả trong 30 ngày", menu danh mục, "Xem trên trình duyệt",
+// docs/mail-templates/payment-confirmation.design.html. So với thiết kế: bỏ "Đổi trả trong 30 ngày", menu danh mục, "Xem trên trình duyệt",
 // "Hỗ trợ", địa chỉ công ty, năm bản quyền, dòng "Mã giao dịch" và "Dự kiến giao", câu hứa "1–2 ngày làm việc" (thay bằng
 // "Đơn hàng đang chờ cửa hàng xác nhận"), câu mời trả lời email. "Số tiền đã thanh toán" là totalAmount của đơn, KHÔNG phải
 // số tiền khách chuyển (thừa tiền thì Admin xử lý ngoài hệ thống, thư không nhắc). Mọi giá trị chèn vào HTML đều qua escapeHtml.
